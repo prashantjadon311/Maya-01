@@ -21,10 +21,10 @@
 - [x] **Acceptance:** Deterministic `ALLOW_PREAPPROVED` / `ASK_USER` / `DENY` outcomes. `sudo` always asks (`ASK_USER`). Files outside roots deny. Action hash changes invalidate approval. (Batch 2 verification passed: 10 targeted tests pass).
 
 ## PH-030 — Deterministic Action Registry
-- [x] Implement `ActionDefinition` and `ActionPack` schema (Completed in Foundation Closure).
-- [ ] Implement `ActionRegistry` for loading action packs.
-- [ ] Implement phrase matching and composite action validation.
-- [ ] **Acceptance:** Ambiguous phrase does not execute; disabled action ignored; malformed JSON keeps last valid pack.
+- [x] Implement `ActionDefinition` and `ActionPack` schema (Completed in Foundation Closure; hardened with required approval/risk and high/critical validation).
+- [x] Implement `ActionRegistry` for loading action packs with transactional reload and last-known-good snapshots.
+- [x] Implement phrase matching, safe slot substitution, and composite action validation.
+- [x] **Acceptance:** Ambiguous phrase does not execute; disabled action ignored; malformed JSON keeps last valid pack; 57 targeted tests pass; full suite 327 tests pass.
 
 ## PH-040 — Safe Executors and Action Dispatcher
 - [ ] Implement `ActionDispatcher` to wrap Policy + Executors.
@@ -100,11 +100,11 @@
 # Current Checkpoint
 
 ```text
-CURRENT_TASK: PH-030
-STATUS: FOUNDATION_CLOSURE_VERIFIED_CI_GREEN_READY_FOR_PH030
+CURRENT_TASK: PH-040
+STATUS: PH030_VERIFIED_CI_GREEN_READY_FOR_PH040
 ARCHITECTURE_REVIEWED_BY_GEMINI_31_PRO: true
 ARCHITECTURE_FROZEN: yes
 FIGMA_CREATED: yes
 LIVE_PROVIDER: NVIDIA Nemotron 3 Ultra
-NEXT_EXACT_ACTION: Codex implements PH-030 Action Registry only
+NEXT_EXACT_ACTION: Implement PH-040 Safe Executors and Action Dispatcher
 ```
