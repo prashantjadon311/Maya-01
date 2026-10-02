@@ -1,0 +1,74 @@
+[assistant]
+display_name = "Maya"
+wake_phrase = "Maya"
+language = "auto"
+start_on_login = true
+
+[voice]
+enabled = true
+always_listen = false
+push_to_talk_hotkey = "Ctrl+Space"
+wake_engine = "openwakeword"
+wake_model = "~/.config/project-h/wake/assistant_name.tflite"
+wake_threshold = 0.55
+vad_enabled = true
+max_command_seconds = 30
+retain_command_audio = false
+
+[stt]
+provider = "nvidia"
+model = "nvidia/parakeet-1_1b-rnnt-multilingual-asr"
+api_key_env = "NVIDIA_API_KEY"
+default_language = "hi-IN"
+
+[ai]
+provider = "nvidia"
+base_url = "https://integrate.api.nvidia.com/v1"
+model = "nvidia/nemotron-3-ultra-550b-a55b"
+api_key_env = "NVIDIA_API_KEY"
+timeout_seconds = 120
+reasoning_effort = "medium"
+reasoning_budget = 4096
+max_output_tokens = 8192
+
+[dashboard]
+host = "127.0.0.1"
+port = 8765
+open_browser = true
+
+[agents]
+max_active = 1
+max_steps = 30
+max_api_calls_per_task = 20
+default_timeout_minutes = 30
+
+[resources]
+memory_high_mb = 240
+memory_max_mb = 300
+max_event_queue = 256
+max_audio_command_seconds = 30
+
+[privacy]
+store_chat_history = true
+store_action_audit = true
+log_prompt_content = false
+log_response_content = false
+retain_audio = false
+
+[[browser.domains]]
+pattern = "https://www.google.com/*"
+enabled = true
+capabilities = ["open", "read", "click", "type", "submit"]
+adapter = "google"
+
+[[browser.domains]]
+pattern = "https://www.amazon.in/*"
+enabled = true
+capabilities = ["open", "read", "click", "type", "submit"]
+adapter = "amazon"
+
+[[files.roots]]
+path = "~/Projects"
+read = true
+write = true
+delete = false

@@ -1,1 +1,1 @@
-"""Project H application package."""
+"""Project H V2 Application Package."""

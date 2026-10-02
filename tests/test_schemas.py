@@ -1,87 +1,169 @@
+import json
 import pytest
 from pydantic import ValidationError
 
-def test_chat_message_valid():
-    from app.schemas import ChatMessage
-    msg = ChatMessage(role="user", content="Hello")
-    assert msg.role == "user"
-    assert msg.content == "Hello"
+from app.core.events import CommandRequest
+from app.actions.schema import ActionRequest, ActionResult, ActionDefinition, ActionPack
+from app.core.state import AppState
 
-def test_chat_message_empty_content_rejected():
-    from app.schemas import ChatMessage
+
+def test_command_request_valid():
+    cmd = CommandRequest(text="open vscode", source="voice", metadata={"channel": "mic"})
+    assert cmd.text == "open vscode"
+    assert cmd.source == "voice"
+    assert cmd.metadata["channel"] == "mic"
+
+
+def test_command_request_unknown_field_rejected():
     with pytest.raises(ValidationError):
-        ChatMessage(role="user", content="")
+        CommandRequest(text="test", source="dashboard", extra_field="forbidden")
 
-def test_chat_message_invalid_role_rejected():
-    from app.schemas import ChatMessage
+
+def test_command_request_invalid_source_rejected():
     with pytest.raises(ValidationError):
-        ChatMessage(role="system", content="System prompt")
+        CommandRequest(text="test", source="telepathy")
 
-def test_selection_auto_shape():
-    from app.schemas import AutoSelection, Selection
-    sel = AutoSelection(profile="balanced")
-    assert sel.mode == "auto"
-    assert sel.profile == "balanced"
 
-def test_selection_manual_shape():
-    from app.schemas import ManualSelection
-    sel = ManualSelection(model="nvidia:nemotron-ultra")
-    assert sel.mode == "manual"
-    assert sel.model == "nvidia:nemotron-ultra"
+def test_command_request_missing_required_rejected():
+    with pytest.raises(ValidationError):
+        CommandRequest(source="dashboard")
 
-def test_chat_request_forbidden_unknown_fields():
-    from app.schemas import ChatRequest, ChatMessage, AutoSelection
-    data = {
-        "messages": [{"role": "user", "content": "Hi"}],
-        "selection": {"mode": "auto", "profile": "balanced"},
-        "unknown_extra": "foo"
+
+def test_action_request_valid():
+    act = ActionRequest(
+        id="act-1",
+        tool="process.run",
+        arguments={"argv": ["ls", "-la"]},
+        reason="inspect directory",
+        request_id="req-123",
+        workspace="/home/user/project",
+    )
+    assert act.id == "act-1"
+    assert act.tool == "process.run"
+    assert act.arguments == {"argv": ["ls", "-la"]}
+    assert act.reason == "inspect directory"
+    assert act.request_id == "req-123"
+
+
+def test_action_request_unknown_field_rejected():
+    with pytest.raises(ValidationError):
+        ActionRequest(
+            id="act-1",
+            tool="process.run",
+            arguments={},
+            reason="test",
+            request_id="req-1",
+            unauthorized_key="bypass",
+        )
+
+
+def test_action_request_missing_required_rejected():
+    with pytest.raises(ValidationError):
+        ActionRequest(id="act-1")
+
+
+def test_action_request_canonical_serialization():
+    # Two requests with identical content but different dict insertion order
+    args1 = {"z_param": 1, "a_param": "hello", "nested": {"b": 2, "a": 1}}
+    args2 = {"a_param": "hello", "nested": {"a": 1, "b": 2}, "z_param": 1}
+
+    req1 = ActionRequest(
+        id="act-1",
+        tool="browser.open",
+        arguments=args1,
+        reason="search docs",
+        request_id="req-1",
+    )
+    req2 = ActionRequest(
+        id="act-1",
+        tool="browser.open",
+        arguments=args2,
+        reason="search docs",
+        request_id="req-1",
+    )
+
+    canonical1 = req1.to_canonical_json()
+    canonical2 = req2.to_canonical_json()
+    assert canonical1 == canonical2
+
+    # Must be valid compact JSON without extra whitespace
+    parsed = json.loads(canonical1)
+    assert parsed["id"] == "act-1"
+    assert parsed["tool"] == "browser.open"
+    assert " " not in canonical1.split(":")[1]  # separators should be (',', ':')
+
+    # Byte output matches UTF-8
+    assert req1.to_canonical_bytes() == canonical1.encode("utf-8")
+
+
+def test_action_result_valid():
+    res_success = ActionResult(success=True, output="All tests passed")
+    assert res_success.success is True
+    assert res_success.output == "All tests passed"
+    assert res_success.error is None
+
+    res_fail = ActionResult(success=False, output="", error="Command failed with code 1")
+    assert res_fail.success is False
+    assert res_fail.error == "Command failed with code 1"
+
+
+def test_action_result_unknown_field_rejected():
+    with pytest.raises(ValidationError):
+        ActionResult(success=True, unexpected="forbidden")
+
+
+def test_app_state_interface():
+    state = AppState()
+    initial_dict = state.get_state()
+    assert isinstance(initial_dict, dict)
+    assert "status" in initial_dict
+
+    state.update("status", "THINKING")
+    assert state.get_state()["status"] == "THINKING"
+
+
+def test_action_pack_schema_valid():
+    pack_data = {
+        "schema_version": 1,
+        "pack_id": "core",
+        "label": "Core actions",
+        "actions": [
+            {
+                "id": "app.open_vscode",
+                "enabled": True,
+                "phrases": ["open vscode", "vs code kholo"],
+                "executor": "process",
+                "arguments": {"argv": ["code"]},
+                "approval": "preapproved",
+                "risk": "low",
+                "timeout_seconds": 10,
+            }
+        ],
+    }
+    pack = ActionPack.model_validate(pack_data)
+    assert pack.pack_id == "core"
+    assert len(pack.actions) == 1
+    assert pack.actions[0].id == "app.open_vscode"
+    assert pack.actions[0].executor == "process"
+
+
+def test_action_pack_unknown_field_rejected():
+    pack_data = {
+        "schema_version": 1,
+        "pack_id": "core",
+        "label": "Core actions",
+        "unknown_pack_field": True,
+        "actions": [],
     }
     with pytest.raises(ValidationError):
-        ChatRequest.model_validate(data)
+        ActionPack.model_validate(pack_data)
 
-def test_chat_request_empty_messages_rejected():
-    from app.schemas import ChatRequest
-    data = {
-        "messages": [],
-        "selection": {"mode": "auto", "profile": "balanced"}
+
+def test_action_definition_invalid_executor_rejected():
+    action_data = {
+        "id": "app.invalid",
+        "executor": "arbitrary_eval",
+        "arguments": {},
     }
     with pytest.raises(ValidationError):
-        ChatRequest.model_validate(data)
-
-def test_error_codes():
-    from app.schemas import ErrorCode
-    assert ErrorCode.VALIDATION_ERROR == "VALIDATION_ERROR"
-    assert ErrorCode.RATE_LIMIT == "RATE_LIMIT"
-    assert ErrorCode.AUTH == "AUTH"
-
-def test_stream_event_models():
-    from app.schemas import StartEvent, DeltaEvent, FallbackEvent, UsageEvent, DoneEvent, ErrorEvent
-    
-    start = StartEvent(
-        request_id="req-123",
-        seq=0,
-        selection_mode="auto",
-        routing_profile="balanced",
-        provider="nvidia",
-        model="nvidia:nemotron-ultra",
-        attempt=1
-    )
-    assert start.type == "start"
-    assert start.seq == 0
-
-    delta = DeltaEvent(request_id="req-123", seq=1, text="Hello world")
-    assert delta.type == "delta"
-
-    with pytest.raises(ValidationError):
-        DeltaEvent(request_id="req-123", seq=1, text="")
-
-    done = DoneEvent(
-        request_id="req-123",
-        seq=2,
-        provider="nvidia",
-        model="nvidia:nemotron-ultra",
-        finish_reason="stop",
-        first_token_latency_ms=120.5,
-        total_latency_ms=500.0
-    )
-    assert done.type == "done"
+        ActionDefinition.model_validate(action_data)

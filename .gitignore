@@ -1,7 +1,10 @@
 # Environment and secrets
 .env
+.env.*
+!.env.example
 *.env
-.venv
+.venv/
+venv/
 env/
 env314/
 
@@ -10,12 +13,28 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+build/
+dist/
+*.egg-info/
 
 # Testing and coverage
 .pytest_cache/
 .coverage
 htmlcov/
 .hypothesis/
+
+# Audio / voice runtime recordings & diagnostics
+*.wav
+*.pcm
+*.raw
+recordings/
+audio_debug/
+
+# Scratch & runtime artifacts
+scratch/
+*.sock
+*.pid
+tmp/
 
 # IDE and OS files
 .vscode/

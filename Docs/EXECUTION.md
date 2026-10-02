@@ -1,269 +1,151 @@
-# Project H — Gemini / Antigravity Execution Protocol
+# Project H — Gemini / Antigravity Execution Contract V2
 
-**Execution Agent:** Gemini in Antigravity  
-**Runtime AI Provider:** NVIDIA Nemotron 3 Ultra  
-**Project type:** lightweight local Python web application  
-**Mode:** test-driven, checkpointed, architecture-preserving
+## 1. Role
 
-## 1. Start / Resume Procedure
+You are the implementation engineer. The documents in this directory are the product/architecture authority.
 
-At the start of every Antigravity session:
+Do not begin by redesigning the project. Begin by reading and inspecting.
 
-1. Locate the repository root.
-2. Read `SKILL.md`.
-3. Read `DOCS.md`, `ARCHITECTURE.md`, `PLAN.md`, and `TASKS.md`.
-4. Inspect the actual repository tree and current Git status.
-5. Do not assume a task is incomplete merely because the plan says so. Verify code/tests first.
-6. Create or update Antigravity's task artifact from `TASKS.md` and keep it current throughout the session.
-7. Resume at the first genuinely unfinished task whose dependencies are satisfied.
+## 2. First run
 
-Antigravity task tracking rule: use a task artifact/checklist, not background-process management, as the source of truth for execution progress.
+1. Read `SKILL.md`.
+2. Read all authority docs in its listed order.
+3. Inspect repository tree and git status.
+4. Identify existing code worth preserving.
+5. Compare it to V2 architecture.
+6. Update `TASKS.md` only with factual current state.
+7. Start at `CURRENT_TASK`.
 
-## 2. Before Writing Code
+## 3. Existing work
 
-For the current task, state internally:
+Do not delete existing Project H code because V2 changed.
 
-- exact task ID from `TASKS.md`;
-- files expected to change;
-- tests that prove success;
-- authority sections that constrain the change;
-- whether a live NVIDIA call is required or a fake provider is sufficient.
+Classify each existing file:
+- reuse unchanged;
+- adapt;
+- superseded;
+- unrelated.
 
-Use Context7 MCP for current FastAPI, Pydantic, and OpenAI Python SDK APIs when an API detail is uncertain. Prefer official NVIDIA documentation for Nemotron/NIM behavior.
+Preserve useful code until replacement tests pass.
 
-Do not browse for architecture inspiration after the architecture is frozen. Research is for verifying changing APIs, not reopening solved design decisions.
+## 4. TDD
 
-## 3. TDD Loop
+Security/policy/config code requires test-first development.
 
-For each behavior:
+For GUI/site/manual integrations where unit TDD is limited:
+- create protocol/schema tests first;
+- create fake adapter;
+- define manual acceptance steps;
+- record live smoke evidence.
 
-### RED
+## 5. Live API usage
 
-- Add the smallest test proving the missing behavior.
-- Run that test alone.
-- Confirm it fails for the expected reason.
+Default automated tests must not burn hosted API quota.
 
-### GREEN
+Use fakes.
 
-- Implement the minimal code required.
-- Do not add unrelated abstractions or future features.
-- Re-run the targeted test until it passes.
+Live NVIDIA calls are manual/integration-tagged.
 
-### REFACTOR
+Never print `NVIDIA_API_KEY`.
 
-- Simplify names, duplication, or boundaries only when behavior stays unchanged.
-- Run targeted tests again.
-- Run the phase regression set.
+## 6. Nemotron usage
 
-A task is not complete until acceptance criteria in `TASKS.md` are demonstrably satisfied.
+Project H runtime, not Gemini itself, uses Nemotron.
 
-## 4. Commit / Checkpoint Policy
+Gemini may implement/debug the code in Antigravity.
 
-Prefer one coherent commit per completed task or tightly coupled task group.
+Do not confuse:
+- implementation model: Gemini;
+- product runtime model: Nemotron.
 
-Before a commit:
+## 7. Terminal rules during development
 
-```text
-pytest <targeted tests>
-pytest
-```
+Gemini may run normal development commands in the development environment, but the product code it builds must obey Project H's runtime approval model.
 
-When frontend work exists, additionally verify the local app manually in a browser for the specific flow being changed.
+Do not weaken product runtime policy because development is trusted.
 
-Commit messages should be descriptive, e.g.:
+## 8. Browser extension development
 
-```text
-feat(config): add strict Project H config validation
-feat(provider): stream Nemotron chat completions
-feat(router): enforce pre-token fallback invariant
-feat(ui): implement lightweight streaming dashboard
-```
+Use Firefox WebExtension APIs and Native Messaging.
 
-Do not commit `.env`, local secrets, generated caches, virtualenvs, or browser history data.
+Keep permissions minimal.
 
-## 5. Exact Implementation Order
+Do not ship `<all_urls>` as a shortcut to finish faster.
 
-Do not start with the dashboard.
+Adapters must fail clearly when page structure is no longer recognized.
 
-Execute in this order:
+## 9. Memory workflow
 
-```text
-Repository/bootstrap
-→ canonical schemas
-→ strict config loader
-→ provider protocol + fake provider
-→ NVIDIA OpenAI-compatible adapter
-→ routing + health state
-→ orchestrator + retry/fallback
-→ FastAPI endpoints + NDJSON
-→ dashboard shell
-→ browser streaming/cancel/history
-→ hardening/integration tests
-→ final documentation and verification
-```
+After every new resident dependency/subsystem:
+1. measure daemon RSS;
+2. record delta;
+3. compare to budget;
+4. investigate surprising growth immediately.
 
-If a later layer seems to require changing an earlier public contract, stop and report the incompatibility rather than patching around it.
+Do not wait until the last task to discover that one inference library ate the budget.
 
-## 6. NVIDIA Integration Procedure
+## 10. UI workflow
 
-Use NVIDIA's hosted endpoint for the first real provider.
+Implement `UI.md`, not the old reference image literally.
 
-Environment:
+Use the image only as visual inspiration.
 
-```bash
-export NVIDIA_API_KEY="..."
-```
+The central visual is an original SVG AI Core.
 
-Never place the real key in source-controlled TOML.
+Do not introduce:
+- React;
+- npm build chain;
+- icon mega-library;
+- animation framework;
+- chart library;
+- remote background media.
 
-Provider defaults:
+## 11. Approval workflow
 
-```text
-base_url      = https://integrate.api.nvidia.com/v1
-model          = nvidia/nemotron-3-ultra-550b-a55b
-api_style      = chat_completions
-stream         = true
-sdk retries    = 0
-```
+Before wiring real execution:
+- test policy using fake executor;
+- test approval with fake popup;
+- test action hash;
+- then connect real process/files.
 
-NVIDIA supports reasoning controls and may emit `reasoning_content` separately from user-visible content. Project H MVP must:
+## 12. Coding agent workflow
 
-- never send reasoning trace to the browser;
-- never persist reasoning trace in browser history;
-- never log reasoning trace by default;
-- calculate visible TTFT from first content delta, not first reasoning delta;
-- preserve only final assistant content in portable conversation history.
+Implement one logical agent first.
 
-NVIDIA's current model documentation notes a coding-agent compatibility option `force_nonempty_content`. Keep NVIDIA-only chat-template options in provider configuration/adapter internals, not in public API schemas.
+Goal:
+`plan -> tool -> policy -> action -> observe -> verify -> finish`
 
-## 7. Retry / Fallback Execution Rules
+Do not build multi-agent delegation until one agent is safe and measurable.
 
-Project H owns all retry policy. Configure OpenAI SDK clients with `max_retries=0`.
+If multi-agent is later enabled, keep concurrency 1 by default and logical tasks in one process.
 
-A single user request has a hard maximum upstream-attempt budget.
-
-Same-model retry may be used only for eligible transient conditions defined in `DOCS.md`.
-
-Critical rule:
+## 13. Result packet per task
 
 ```text
-Before first visible delta: fallback may occur.
-After first visible delta: fallback is forbidden.
+TASK:
+STATUS:
+FILES CHANGED:
+TESTS ADDED:
+COMMANDS RUN:
+RESULT:
+NEGATIVE/SECURITY TEST:
+RSS BEFORE:
+RSS AFTER:
+KNOWN LIMITATIONS:
+NEXT TASK:
 ```
 
-After partial output, terminate with a normalized error and let the user Retry from scratch. Never concatenate two models' answers.
+## 14. Final result packet
 
-## 8. Frontend Execution Rules
+Must include objective evidence:
+- pytest totals;
+- failed/skipped tests;
+- live integration checks;
+- systemd unit status;
+- memory stress peak;
+- browser extension permissions;
+- voice pre-wake network assertion;
+- security red-team summary;
+- clean install test.
 
-Authority: Figma file + numeric UI contract in `DOCS.md`.
-
-Implementation constraints:
-
-- `index.html`
-- `app.css`
-- `app.js`
-- no build step;
-- no frontend framework;
-- no icon package;
-- no chart package;
-- no Markdown renderer in MVP;
-- render model text using safe text nodes / `textContent` and `white-space: pre-wrap`;
-- use `fetch()` + `ReadableStream` for NDJSON;
-- use `AbortController` for Stop;
-- use native `<dialog>` or similarly lightweight markup for Settings;
-- use `localStorage` only for local conversation history/preferences.
-
-The dashboard must remain usable with only NVIDIA configured. Other providers may appear as `Not configured` placeholders if defined in bootstrap/config.
-
-## 9. Frontend Required States
-
-Gemini must explicitly implement and test these UI states:
-
-```text
-initial / empty
-request starting
-streaming
-completed
-fallback before first visible token
-rate limited / unavailable
-partial-stream error
-stopped by user
-provider not configured
-history empty / populated
-mobile history drawer
-settings open / closed
-```
-
-Do not invent a global spinner that blocks the whole app. Streaming is local to the active assistant message.
-
-## 10. Verification Matrix
-
-### Unit
-
-- Pydantic schemas
-- config references/invariants
-- router filtering/order
-- retry decisions
-- health/cooldown state
-- event sequence invariants
-- provider error mapping
-
-### Fake-provider integration
-
-- normal streaming
-- pre-token failure then fallback
-- partial output then failure
-- cancellation
-- usage event
-- timeout
-- rate limit
-- auth failure
-
-### Live NVIDIA smoke tests
-
-Only when `NVIDIA_API_KEY` exists:
-
-- bootstrap shows NVIDIA configured;
-- manual Nemotron request streams visible content;
-- Auto route selects Nemotron when it is the only live candidate;
-- usage/latency are handled without crashing if optional fields are missing;
-- Stop cancels the browser stream cleanly;
-- no reasoning trace appears in browser payload/history/logs.
-
-Live tests should be opt-in/marked so normal `pytest` does not consume API quota.
-
-## 11. Definition of Done
-
-Project H MVP is done only when:
-
-- all normal tests pass;
-- live NVIDIA smoke test passes when a key is supplied;
-- the dashboard works without a frontend build tool;
-- Stop works;
-- browser refresh restores history when persistence is enabled;
-- missing API key does not crash startup;
-- raw secrets/reasoning/provider payloads do not leak;
-- fallback invariant is proven by tests;
-- app binds to `127.0.0.1` by default;
-- repository contains no unnecessary service/dependency introduced during implementation.
-
-## 12. Final Gemini Result Packet
-
-When implementation is finished, return a concise result packet containing:
-
-```text
-STATUS: PASS / PARTIAL / BLOCKED
-COMPLETED_TASKS:
-FILES_CHANGED:
-TESTS_RUN:
-TEST_RESULTS:
-LIVE_NVIDIA_TEST:
-MANUAL_UI_CHECK:
-KNOWN_LIMITATIONS:
-ARCHITECTURE_DEVIATIONS: none | explicit list
-GIT_STATUS:
-LAST_COMMIT:
-NEXT_EXACT_ACTION:
-```
-
-Never report `PASS` while known required tests are failing or unexecuted.
+No "should work" completion language.

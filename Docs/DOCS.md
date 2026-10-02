@@ -1,746 +1,448 @@
-# Project H — Product, API and Dashboard Specification
+# Project H — Product Requirements and Functional Contract V2
 
-**Version:** 1.0  
-**Status:** implementation authority  
-**Primary implementation agent:** Gemini / Antigravity  
-**First runtime provider:** NVIDIA Nemotron 3 Ultra
+## 1. Product statement
 
-## 1. Product Vision
+Project H is a local-first personal computer assistant for Ubuntu. It combines deterministic local automation with a remote reasoning model only when reasoning is actually needed.
 
-Project H is a **very small local AI console** that lets a user chat with one or more hosted LLM providers through one consistent interface.
+The product has four user surfaces:
 
-MVP mental model:
+1. **Voice** — push-to-talk or wake-name activation, available while the dashboard is closed.
+2. **Tray/panel menu** — always available in the Ubuntu top panel.
+3. **Dashboard** — configuration, chat, tasks, permissions, activity and diagnostics.
+4. **Native approval popup** — independent from the dashboard and shown for sensitive actions.
 
-```text
-Prompt
-→ choose model or Auto
-→ Project H backend
-→ provider adapter
-→ hosted LLM API
-→ normalized streamed answer
-```
+## 2. Primary runtime AI
 
-The product is intentionally not an agent platform yet. Its job is to establish a clean, reliable provider/routing/streaming foundation that future RETHINK capabilities can build on without rewriting the core.
+Initial provider:
 
-## 2. MVP Success Criteria
+- Provider: NVIDIA
+- Base URL: `https://integrate.api.nvidia.com/v1`
+- Model: `nvidia/nemotron-3-ultra-550b-a55b`
+- Protocol: OpenAI-compatible Chat Completions
+- Secret: `NVIDIA_API_KEY`
+- Streaming: enabled
+- Tool/function calling: enabled
+- SDK automatic retries: disabled; Project H owns retry policy.
+- Reasoning output is internal metadata. Do not expose or persist raw reasoning traces by default.
+- For coding-agent/tool workflows, support NVIDIA's `force_nonempty_content` chat-template behavior as an adapter option.
 
-Project H succeeds when a user can:
+Future providers must implement the same internal provider interface.
 
-- start it locally with one Python command;
-- open one lightweight browser dashboard;
-- send a prompt;
-- select Nemotron manually or use Auto;
-- see the answer stream incrementally;
-- stop generation;
-- retry/regenerate;
-- see provider/model/latency/token metadata when available;
-- see clear provider/error/fallback state;
-- keep basic browser-local conversation history;
-- configure providers via server-side environment variables without exposing keys to the browser.
+## 3. Voice behavior
 
-## 3. MVP Technology
+### 3.1 Push-to-talk
 
-```text
-Backend        Python + FastAPI + Uvicorn
-Validation     Pydantic v2
-Provider SDK   OpenAI Python async client against compatible endpoints
-Config         config.toml + environment variables
-Frontend       plain HTML + CSS + vanilla JavaScript
-Streaming      POST + NDJSON over fetch() ReadableStream
-Cancel         AbortController
-History        localStorage
-Server DB      none
-Processes      one
-```
+From the tray or dashboard:
+- user presses/toggles microphone;
+- command recording starts;
+- recording stops by VAD silence, explicit stop or configured duration;
+- audio is transcribed;
+- command router handles it;
+- optional TTS speaks the result.
 
-## 4. First Live Provider — NVIDIA Nemotron 3 Ultra
+Push-to-talk does not require the wake phrase.
 
-Current official NVIDIA hosted configuration:
+### 3.2 Always-listening mode
 
-```text
-Provider ID:       nvidia
-Base URL:          https://integrate.api.nvidia.com/v1
-Model:             nvidia/nemotron-3-ultra-550b-a55b
-API style:         OpenAI-compatible Chat Completions
-Secret env var:    NVIDIA_API_KEY
-Streaming:         supported
-Model context:     up to 1M tokens on the published model/hosted offering
-```
+When enabled:
+- microphone is continuously sampled locally;
+- only the local wake detector receives pre-wake audio;
+- wake phrase is customizable and is normally the assistant's configured name;
+- before wake, do not run cloud STT or call Nemotron;
+- after wake, capture only the command segment;
+- command audio may then be sent to configured STT;
+- command audio is deleted from memory after transcription unless the user explicitly enables diagnostics;
+- return to wake-only state after command completion.
 
-NVIDIA documents Nemotron 3 Ultra as a 550B-total / roughly 55B-active hybrid Mamba/MoE reasoning model with configurable reasoning behavior.
+### 3.3 Wake word
 
-### MVP NVIDIA behavior
+The wake phrase is configurable, e.g. `"Maya"` or `"Hey Maya"`.
 
-Project H uses Nemotron as **one provider behind the generic adapter boundary**. Do not make the rest of the application NVIDIA-specific.
+Recommended engine:
+- openWakeWord with one custom small model;
+- TFLite/LiteRT backend on Linux when supported;
+- one CPU thread;
+- optional local VAD/noise suppression only if memory profiling permits.
 
-Recommended client behavior:
+Training a new name is an offline setup operation, not resident runtime work.
 
-```text
-Async client
-custom base_url
-max_retries = 0
-Project H-owned timeout/retry policy
-stream = true
-```
+### 3.4 Speech-to-text
 
-Provider-only options should be adapter/config-owned. Current NVIDIA documentation includes reasoning controls and a coding-agent compatibility recommendation around `force_nonempty_content`.
+Default V1 strategy: remote STT **after wake only**.
 
-Nemotron streams reasoning separately in some configurations. The MVP must ignore reasoning trace for user-visible output.
+Recommended initial hosted STT:
+- NVIDIA Parakeet multilingual ASR where available;
+- Hindi (`hi-IN`) is supported by NVIDIA's multilingual model;
+- English is supported;
+- Hinglish should be treated as a product test case rather than assumed perfect. The transcript may be normalized by the command parser/Nemotron after STT.
 
-Do not:
+Do not use Vosk as the default resident STT: its own documentation says small models can require around 300 MB at runtime, which consumes the entire Project H budget.
 
-- send `reasoning_content` to browser;
-- store it in `localStorage`;
-- log it by default;
-- append it to later conversation turns.
+### 3.5 Text-to-speech
 
-Visible TTFT starts at the first non-empty assistant content delta.
+TTS is optional and independently toggleable:
+- default off in V1 unless a small solution is chosen;
+- remote TTS is allowed only after a user command;
+- no TTS library should be resident if it materially threatens the memory budget.
 
-## 5. Public HTTP API
+## 4. Tray/panel behavior
 
-MVP public endpoints:
+Project H runs as a user-level background service.
 
-```text
-GET  /healthz
-GET  /api/v1/bootstrap
-POST /api/v1/chat/stream
-```
+Ubuntu top-panel item should provide:
 
-There is no WebSocket API, server-side conversation CRUD, separate cancel endpoint, or non-streaming chat endpoint in MVP.
+- status icon;
+- current state: Ready / Listening for Wake / Recording / Thinking / Acting / Needs Approval / Error;
+- **Push to Talk** action;
+- **Always Listen** on/off;
+- **Voice Output** on/off;
+- **Open Dashboard**;
+- **Pause Assistant**;
+- **Quit/Stop Service**.
 
-### `GET /healthz`
+Preferred technical direction: expose a freedesktop StatusNotifierItem over the user session D-Bus rather than maintaining a heavyweight resident GUI window.
 
-Must not contact external providers.
+## 5. Command router
 
-```json
-{"status":"ok"}
-```
+Every command is classified in this order:
 
-### `GET /api/v1/bootstrap`
+1. **Exact/local action match**  
+   Resolve against enabled action packs. No AI call if confidence/rule is exact.
 
-Returns everything the browser needs to initialize:
+2. **Built-in deterministic capability**  
+   Examples: open configured app, open URL, Google search, show file, list directory, open project.
 
-```json
-{
-  "api_version": "v1",
-  "app": {"name":"Project H","version":"0.1.0"},
-  "defaults": {"routing_profile":"balanced"},
-  "routing_profiles": [{"id":"balanced","label":"Balanced"}],
-  "providers": [],
-  "models": []
-}
-```
+3. **Structured parser**  
+   Parse low-ambiguity commands with local patterns.
 
-The initial live setup may contain only NVIDIA. Future providers are config additions or adapter additions, not frontend rewrites.
+4. **Nemotron reasoning/tool selection**  
+   Used for ambiguous, multi-step, conversational, planning, coding or research tasks.
 
-### Public provider health
+The user can configure which deterministic actions are available and which require approval.
 
-Allowed values:
+## 6. Action registry
+
+Use versioned JSON action packs, not one giant unvalidated free-form JSON file.
+
+Directory example:
 
 ```text
-unknown
-healthy
-degraded
-cooldown
-unavailable
+~/.config/project-h/
+  actions.d/
+    core.json
+    developer.json
+    personal.json
+    browser.json
 ```
 
-`configured=true` means required server-side secret/config exists. It does not guarantee the credential has already been validated live.
+Why JSON remains the recommended format:
+- Python stdlib parser;
+- no executable semantics;
+- strict and easy to validate;
+- safe to edit from the dashboard;
+- diff-friendly;
+- multiple packs avoid one enormous file;
+- schema versioning is straightforward.
 
-### Public model shape
+Do not let JSON contain arbitrary Python or shell scripts. It references typed executors.
 
-```json
-{
-  "id":"nvidia:nemotron-ultra",
-  "label":"Nemotron 3 Ultra",
-  "provider_id":"nvidia",
-  "enabled":true,
-  "capabilities":["text","streaming"],
-  "routing_profiles":["balanced"],
-  "health":"unknown"
-}
-```
+Supported executor types in V1:
+- `process`
+- `xdg_open`
+- `browser`
+- `file`
+- `composite`
 
-The browser uses the stable Project H model ID. Upstream provider model IDs remain backend configuration details.
+Future:
+- `dbus`
+- `vscode`
+- signed local plugins.
 
-## 6. Chat Request Contract
+## 7. Browser control
 
-Endpoint:
+### 7.1 Browser architecture
+
+V1 target: Firefox WebExtension + Native Messaging bridge.
+
+Capabilities:
+- open URL/tab;
+- close/focus tab;
+- search Google;
+- read visible/accessible page text;
+- find text;
+- click an allowed element;
+- fill an allowed field;
+- submit;
+- scroll;
+- wait for content;
+- extract assistant response from supported AI sites.
+
+### 7.2 Domain allowlist
+
+Deny by default.
+
+Dashboard configuration stores domains, e.g.:
+- `google.com`
+- `amazon.in`
+- `chatgpt.com`
+- `gemini.google.com`
+- `claude.ai`
+
+Each domain has granular capabilities:
+- open
+- read
+- click
+- type
+- submit
+- download
+- upload
+- clipboard
+
+Adding a domain in Project H does not magically grant browser extension permission. The extension must also receive Firefox host permission.
+
+### 7.3 Site adapters
+
+Dedicated adapters for:
+- Google Search;
+- Google AI results/mode where the visible authenticated UI permits it;
+- Amazon search;
+- ChatGPT;
+- Gemini;
+- Claude.
+
+Adapters should rely on resilient semantic/accessibility cues when possible, not brittle absolute CSS paths.
+
+A generic adapter handles simple pages.
+
+UI changes on third-party websites are expected to break adapters occasionally. Treat adapter maintenance as normal, not as a reason to give the model unrestricted arbitrary browsing.
+
+### 7.4 Sensitive browser actions
+
+Never automatically:
+- submit a payment;
+- place an order;
+- send a message/email as the user;
+- change account security settings;
+- accept legal terms;
+- bypass CAPTCHA/MFA.
+
+These require explicit policy and typically user confirmation/takeover.
+
+Example "Amazon par phone cover dhoondo":
+- allowed: open Amazon, search, read result titles/prices;
+- not automatically allowed: add to cart or buy unless separately approved.
+
+## 8. Files
+
+Dashboard defines allowed roots. Example:
 
 ```text
-POST /api/v1/chat/stream
-Content-Type: application/json
+~/Projects
+~/Documents/ProjectHShared
+~/Downloads
 ```
 
-Auto example:
-
-```json
-{
-  "conversation_id":"browser-generated-id",
-  "messages":[
-    {"role":"user","content":"Explain async generators."}
-  ],
-  "selection":{
-    "mode":"auto",
-    "profile":"balanced"
-  }
-}
-```
-
-Manual example:
-
-```json
-{
-  "messages":[{"role":"user","content":"Hello"}],
-  "selection":{
-    "mode":"manual",
-    "model":"nvidia:nemotron-ultra"
-  }
-}
-```
-
-MVP browser transcript roles:
-
-```text
-user
-assistant
-```
-
-Application/system instructions remain backend-owned.
-
-## 7. NDJSON Streaming Contract
-
-Response content type:
-
-```text
-application/x-ndjson
-```
-
-MVP event types:
-
-```text
-start
-delta
-fallback
-usage
-done
-error
-```
-
-Every event contains:
-
-```json
-{
-  "type":"...",
-  "request_id":"uuid",
-  "seq":0
-}
-```
-
-Sequence numbers start at 0 and increase monotonically.
-
-### Start
-
-```json
-{
-  "type":"start",
-  "request_id":"...",
-  "seq":0,
-  "selection_mode":"auto",
-  "routing_profile":"balanced",
-  "provider":"nvidia",
-  "model":"nvidia:nemotron-ultra",
-  "attempt":1
-}
-```
-
-### Delta
-
-```json
-{
-  "type":"delta",
-  "request_id":"...",
-  "seq":1,
-  "text":"Visible output fragment"
-}
-```
-
-`text` is never empty.
-
-### Fallback
-
-Fallback event is legal only before the first visible `delta`.
-
-```json
-{
-  "type":"fallback",
-  "request_id":"...",
-  "seq":1,
-  "from_provider":"nvidia",
-  "from_model":"nvidia:nemotron-ultra",
-  "to_provider":"future-provider",
-  "to_model":"future:model",
-  "reason":"UNAVAILABLE",
-  "attempt":2
-}
-```
-
-For the first MVP with only NVIDIA live, this behavior is proven using fake providers even when no real second provider is configured.
-
-### Usage
-
-At most one event:
-
-```json
-{
-  "type":"usage",
-  "request_id":"...",
-  "seq":42,
-  "input_tokens":1024,
-  "output_tokens":382,
-  "total_tokens":1406
-}
-```
-
-Unavailable values are `null`, never guessed and presented as provider fact.
-
-### Done
-
-```json
-{
-  "type":"done",
-  "request_id":"...",
-  "seq":43,
-  "provider":"nvidia",
-  "model":"nvidia:nemotron-ultra",
-  "finish_reason":"stop",
-  "first_token_latency_ms":812,
-  "total_latency_ms":3218
-}
-```
-
-### Error
-
-```json
-{
-  "type":"error",
-  "request_id":"...",
-  "seq":3,
-  "code":"RATE_LIMIT",
-  "message":"The selected AI service is temporarily rate limited.",
-  "retryable":true,
-  "provider":"nvidia",
-  "model":"nvidia:nemotron-ultra",
-  "partial_output":false
-}
-```
-
-Terminal invariant:
-
-```text
-A stream ends in exactly one of: done | error.
-No event follows either terminal event.
-```
-
-A client disconnect may prevent the final error event from physically reaching the browser.
-
-## 8. Canonical Error Codes
-
-```text
-VALIDATION_ERROR
-MODEL_NOT_FOUND
-PROVIDER_NOT_CONFIGURED
-AUTH
-RATE_LIMIT
-TIMEOUT
-UNAVAILABLE
-NETWORK
-CONTEXT_LIMIT
-INVALID_REQUEST
-CANCELLED
-INTERNAL
-```
-
-Frontend logic reacts to these stable codes, not raw NVIDIA/provider strings.
-
-## 9. Retry and Fallback Rules
-
-Default policy:
-
-```text
-retries_per_model      = 1
-max_upstream_attempts  = 4
-cooldown_after_failures= 2
-cooldown_seconds       = 60
-```
-
-Eligible same-model retry:
-
-```text
-NETWORK
-UNAVAILABLE
-```
-
-Rate limit may retry only when provider `Retry-After` fits the configured wait budget and overall request deadline.
-
-Do not automatically retry:
-
-```text
-AUTH
-INVALID_REQUEST
-VALIDATION_ERROR
-PROVIDER_NOT_CONFIGURED
-```
-
-Timeout does not retry the same candidate. Context limit does not retry the same model.
-
-Most important invariant:
-
-```text
-pre-first-visible-delta failure  → fallback may occur
-post-first-visible-delta failure → fallback forbidden; terminate partial answer with error
-```
-
-## 10. Configuration Contract
-
-Use:
-
-```text
-config.toml
-+
-environment variables for secrets
-+
-strict Pydantic validation
-```
-
-All config models use `extra="forbid"` except a deliberately opaque provider-specific request-extra dictionary.
-
-Recommended initial config shape:
-
-```toml
-[app]
-name = "Project H"
-host = "127.0.0.1"
-port = 8000
-log_level = "INFO"
-
-[runtime]
-request_timeout_seconds = 120
-connect_timeout_seconds = 10
-retries_per_model = 1
-retry_backoff_ms = 250
-retry_after_max_seconds = 2
-max_upstream_attempts = 4
-cooldown_after_failures = 2
-cooldown_seconds = 60
-max_messages_per_request = 100
-max_message_characters = 100000
-max_request_characters = 250000
-
-[defaults]
-routing_profile = "balanced"
-
-[[providers]]
-id = "nvidia"
-label = "NVIDIA"
-adapter = "openai_protocol"
-api_style = "chat_completions"
-base_url = "https://integrate.api.nvidia.com/v1"
-api_key_env = "NVIDIA_API_KEY"
-enabled = true
-
-[providers.request_extra.chat_template_kwargs]
-enable_thinking = true
-force_nonempty_content = true
-reasoning_budget = 8192
-
-[[models]]
-id = "nvidia:nemotron-ultra"
-label = "Nemotron 3 Ultra"
-provider = "nvidia"
-upstream_model = "nvidia/nemotron-3-ultra-550b-a55b"
-enabled = true
-capabilities = ["text", "streaming"]
-context_window_tokens = 1000000
-max_output_tokens = 16384
-
-[routing.balanced]
-label = "Balanced"
-models = ["nvidia:nemotron-ultra"]
-```
-
-If current NVIDIA hosted API behavior changes, verify the provider-specific options against official docs rather than weakening the generic contract.
-
-Startup must fail on broken structural references (duplicate IDs, unknown provider/model references, invalid profile), but must **not** fail merely because `NVIDIA_API_KEY` is absent. The provider becomes `configured=false` instead.
-
-## 11. Dashboard Product Requirements
-
-The dashboard is intentionally plain and fast.
-
-### Required primary screen
-
-Desktop contains:
-
-```text
-Left sidebar
-  Project H identity
-  New chat
-  recent conversations
-  provider status summary
-
-Top bar
-  Auto/manual selector
-  model selector
-  connection state
-  Settings
-
-Main conversation area
-  user messages
-  assistant messages
-  quiet routing/fallback events
-  response metadata
-  Copy / Retry
-
-Composer
-  multiline input
-  Send
-  Stop while streaming
-  shortcut hint
-```
-
-### Required settings surface
-
-Settings contains:
-
-- default routing profile;
-- request timeout;
-- history enabled;
-- persistent-history toggle;
-- provider configured/status state;
-- environment-variable name only, never the secret value;
-- security notice that secrets remain server-side.
-
-### Required operational states
-
-Design and implementation must represent:
-
-- empty/new conversation;
-- request starting;
-- streaming;
-- completion;
-- fallback before first token;
-- rate limit/unavailable;
-- partial-stream error;
-- stopped generation;
-- provider unconfigured.
-
-No blocking whole-screen loading state.
-
-## 12. Figma Dashboard Authority
-
-Figma file:
-
-`https://www.figma.com/design/32qadE21g6ZK8g5afK1bt0`
-
-Created top-level frames:
-
-```text
-Desktop / Streaming Chat  node 2:2     1440 × 900
-Desktop / Settings        node 2:80     720 × 760
-Mobile / Chat             node 2:144    390 × 844
-Operational States        node 2:174   1200 × 250
-```
-
-The Figma Starter MCP call quota was reached immediately after creation, so screenshot validation could not be completed in the originating session. Gemini should treat the numeric contract below plus the actual Figma nodes as authority and visually inspect the file during frontend implementation if Figma access is available.
-
-## 13. UI Design Tokens
-
-MVP uses one quiet dark theme. No theme switch is required initially.
-
-```text
-Background       #0F1115
-Surface          #151922
-Surface 2        #1B202A
-Surface 3        #202631
-Border           #2A313D
-Text             #E8ECF3
-Muted            #929BAA
-Faint            #687181
-Accent           #84A3FF
-Accent soft      #BDD0FF
-Success          #63C99C
-Warning          #E9B96E
-Error            #EF7A7A
-Font             Inter / system sans fallback
-Radius           8–12px controls; 16px major desktop frames
-```
-
-Desktop target:
-
-```text
-Viewport design  1440 × 900
-Sidebar          240px
-Topbar            68px
-Chat content max ~760px
-Composer target  ~860px wide
-```
-
-Mobile target:
-
-```text
-390 × 844 reference
-no persistent sidebar
-history becomes drawer
-compact Auto/model selector
-composer remains always reachable
-```
-
-### Visual rules
-
-Do not add:
-
-- avatars;
-- character art;
-- glassmorphism;
-- gradients for decoration;
-- giant marketing typography;
-- 3D effects;
-- animated backgrounds;
-- charts;
-- permanent reasoning panel;
-- icon libraries just to display four simple controls.
-
-Tiny CSS transitions and a small streaming pulse are acceptable.
-
-## 14. Frontend Behavior
-
-Streaming transport:
-
-```text
-fetch(POST /api/v1/chat/stream)
-→ response.body.getReader()
-→ incremental UTF-8 decode
-→ newline buffer
-→ JSON.parse each complete NDJSON line
-→ dispatch by event.type
-```
-
-Stop:
-
-```text
-AbortController.abort()
-```
-
-Regenerate removes the last assistant response and resends the portable transcript from the preceding user turn.
-
-Retry resends the same portable transcript. In Auto mode routing starts fresh against current runtime health.
-
-### Rendering security
-
-MVP output is plain text:
-
-```text
-textContent
-white-space: pre-wrap
-```
-
-Do not inject raw model output via `innerHTML`.
-
-## 15. Browser History
-
-Use `localStorage` for:
-
-```text
-conversation_id
-title
-created_at
-updated_at
-messages
-assistant response metadata
-preferences
-```
-
-Provide:
-
-- New chat;
-- select conversation;
-- delete/clear history;
-- persistence toggle.
-
-Document that localStorage is plaintext on the device.
-
-## 16. Logging
-
-Default structured fields:
-
-```text
-request_id
-conversation_id (if present)
-selection_mode
-routing_profile
-provider
-model
-attempt_number
-status
-error_code
-first_token_latency_ms
-total_latency_ms
-input_tokens
-output_tokens
-```
-
-Never log by default:
-
-```text
-API keys
-Authorization header
-prompt/body text
-generated answer text
-reasoning trace
-raw provider request/response payload
-```
-
-## 17. Explicit MVP Non-Goals
-
-```text
-agents
-autonomous planning
-tool execution
-MCP execution
-RAG/vector DB
-embeddings
-files/images/audio/voice
-server conversation storage
-multi-user auth
-billing
-cost dashboards
-parallel model comparison
-semantic LLM router
-React/Next frontend
-cloud deployment architecture
-```
-
-The architecture may leave seams for these; it must not implement them now.
-
-## 18. References Used To Freeze This Spec
-
-NVIDIA:
-
-- https://build.nvidia.com/nvidia/nemotron-3-ultra-550b-a55b
-- https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-ultra-550b-a55b
-- https://docs.api.nvidia.com/nim/re/reference/nvidia-nemotron-3-ultra-550b-a55b-infer
-- https://docs.nvidia.com/nim/large-language-models/2.0.7/day-0/get-started-nemotron-3-ultra.html
-- https://research.nvidia.com/labs/nemotron/Nemotron-3-Ultra/
-
-FastAPI:
-
-- https://fastapi.tiangolo.com/advanced/custom-response/
-- https://fastapi.tiangolo.com/tutorial/stream-json-lines/
-- https://fastapi.tiangolo.com/tutorial/static-files/
-- https://fastapi.tiangolo.com/advanced/async-tests/
-
-OpenAI Python client compatibility layer:
-
-- https://github.com/openai/openai-python
-
-The OpenAI Python SDK is used here as an OpenAI-compatible transport client for NVIDIA; Project H's public API remains provider-neutral.
+Permissions are independent:
+- read;
+- create;
+- edit;
+- rename/move;
+- delete.
+
+Requirements:
+- resolve real path before policy check;
+- prevent `..` and symlink escape;
+- protect hidden/system paths by default;
+- atomic file write where practical;
+- size limit;
+- binary-file policy;
+- deletion requires stronger policy than read/write;
+- source repositories should expose diff before/after edits.
+
+## 9. Terminal / Linux commands
+
+### 9.1 Default behavior
+
+A command is not executed merely because an LLM generated it.
+
+Flow:
+`proposal -> schema -> policy -> approval/preapproval -> execution -> bounded output -> audit`
+
+### 9.2 Approval popup
+
+Approval UI is not part of the dashboard.
+
+Popup shows:
+- command/executable;
+- arguments;
+- working directory;
+- reason;
+- risk level;
+- proposed agent/task;
+- timeout;
+- buttons: `Allow once`, `Deny`;
+- optional `Allow for this session` only for eligible low/medium-risk commands.
+
+The approval token is tied to an immutable action hash and expires quickly.
+
+### 9.3 Pre-approved commands
+
+Configured in dashboard.
+
+Preapproval rules are structured:
+- executable;
+- allowed argv prefixes/patterns;
+- allowed working roots;
+- timeout;
+- environment allowlist;
+- risk;
+- whether network is allowed.
+
+Examples that may be pre-approved:
+- `pwd`
+- `ls` within allowed roots
+- `git status`
+- `git diff`
+- `pytest` inside selected repos
+- `python -m pytest` inside selected repos
+
+Do not preapprove by arbitrary substring.
+
+### 9.4 Always-approval examples
+
+- `sudo`
+- package install/remove
+- service modification
+- chmod/chown on broad paths
+- network/firewall changes
+- destructive filesystem operations
+- commands outside configured roots
+- secret/credential operations
+
+## 10. Developer assistant / VS Code
+
+V1 should be a competent coding assistant without pretending UI clicking is the best engineering interface.
+
+Preferred capabilities:
+- read repository;
+- search files;
+- modify files;
+- create files;
+- run tests/linters/build commands under policy;
+- inspect git diff/status;
+- open workspace/file in VS Code via `code` CLI;
+- open terminal at repo;
+- use browser adapters for docs/ChatGPT/Gemini/Claude;
+- create logical task agents;
+- plan → edit → test → inspect → retry loops;
+- produce evidence.
+
+Future VS Code bridge:
+- optional tiny VS Code extension;
+- selected text/editor context;
+- execute approved editor commands;
+- diagnostics/problems;
+- diff preview.
+This is future because it adds another integration surface and is not required for useful V1 coding.
+
+## 11. Agents
+
+Agent = task state, not a heavyweight process.
+
+Each agent stores:
+- id;
+- name/role;
+- objective;
+- workspace;
+- allowed tools;
+- approval policy;
+- step count;
+- API-call budget;
+- status;
+- artifacts/evidence.
+
+Default:
+- one active agent at a time;
+- bounded steps;
+- bounded transcript;
+- same provider client;
+- same tool/policy engine;
+- no separate worker process unless an external command itself is being run.
+
+## 12. Dashboard
+
+Dashboard is configuration/control, not the assistant's only operating surface.
+
+Implementation:
+- HTML;
+- CSS;
+- Bootstrap 5.3 CSS stored locally;
+- vanilla JavaScript;
+- native browser APIs;
+- no Node frontend runtime;
+- no React/Vue/Angular;
+- no frontend build server.
+
+FastAPI may serve static assets from the local backend on `127.0.0.1`. That is not a separate frontend server.
+
+See `UI.md`.
+
+## 13. History and memory
+
+V1 categories:
+- chat history;
+- task history;
+- action audit;
+- user preferences;
+- optional short assistant notes.
+
+Do not call this "self-learning". No hidden model retraining.
+
+Storage:
+- SQLite is acceptable for structured local state and audit metadata;
+- secrets are not stored in SQLite;
+- content retention is configurable;
+- audio retention default: none;
+- ambient/pre-wake audio retention: forbidden.
+
+## 14. Resource budget
+
+Hard target:
+- resident Project H cgroup <= 300 MiB.
+
+Recommended operational budget:
+
+| Component | Design budget |
+|---|---:|
+| Python daemon/core + config + HTTP client | 55 MiB |
+| wake/audio runtime | 100 MiB |
+| local dashboard server when active | 30 MiB |
+| tray/D-Bus integration | 10 MiB |
+| browser native bridge + queues | 20 MiB |
+| safety margin | 85 MiB |
+| **Total cap** | **300 MiB** |
+
+These are engineering budgets, not measured claims.
+
+External processes such as Firefox, VS Code and user-approved command processes must be reported separately.
+
+Systemd acceptance controls:
+- `MemoryHigh=240M`
+- `MemoryMax=300M`
+
+If `MemoryMax` is crossed, the failure is real and must be fixed; do not raise the limit silently.
+
+## 15. V1 non-goals
+
+- local LLM;
+- autonomous purchase/payment;
+- mobile app;
+- Windows/macOS parity;
+- arbitrary unrestricted web automation;
+- background keylogging/screen recording;
+- self-modifying security policy;
+- model-controlled `sudo`;
+- unbounded multi-agent swarm;
+- computer-vision desktop automation as primary interface;
+- RAG/vector DB by default;
+- cloud account/multi-user server.
