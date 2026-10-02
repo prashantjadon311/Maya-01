@@ -61,3 +61,17 @@
 - GREEN RESULT: Pass.
 - RESIDUAL RISK: None.
 
+
+## ISSUE J: APPSTATE STATUS MUTABILITY
+- SEVERITY: IMPORTANT
+- CONFIRMED: YES
+- RECOMMENDED SOLUTION: Use `Literal` for status and set default to `"DISABLED"`. Enable `validate_assignment=True`.
+- SOLUTION DECISION: ACCEPT_RECOMMENDED
+- SELECTED SOLUTION: Implemented strict Literal assignment in `AppState`.
+- RATIONALE: It ensures that no unknown state can be introduced via runtime updates, preventing invalid UI transitions.
+- RED TEST: `test_ISSUE_J_app_state_mutability` added.
+- RED RESULT: `AppState` status allowed `"THINKING"` or random string. Default was `"READY"`.
+- IMPLEMENTATION: Updated `app/core/state.py` and `tests/test_schemas.py`.
+- GREEN RESULT: Pass.
+- RESIDUAL RISK: None.
+

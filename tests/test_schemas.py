@@ -118,8 +118,8 @@ def test_app_state_interface():
     assert isinstance(initial_dict, dict)
     assert "status" in initial_dict
 
-    state.update("status", "THINKING")
-    assert state.get_state()["status"] == "THINKING"
+    state.update("status", "EXECUTING")
+    assert state.get_state()["status"] == "EXECUTING"
 
 
 def test_action_pack_schema_valid():
@@ -167,3 +167,19 @@ def test_action_definition_invalid_executor_rejected():
     }
     with pytest.raises(ValidationError):
         ActionDefinition.model_validate(action_data)
+def test_ISSUE_J_app_state_mutability():
+    from app.core.state import AppState
+    from pydantic import ValidationError
+    import pytest
+
+    state = AppState()
+    assert state.status == "DISABLED"
+
+    state.status = "IDLE"
+    assert state.status == "IDLE"
+
+    with pytest.raises(ValidationError):
+        state.status = "HACKED"
+    
+    with pytest.raises(ValidationError):
+        state.update("status", "INVALID")

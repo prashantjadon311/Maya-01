@@ -1,15 +1,15 @@
 """Project H Core AppState."""
 
-from typing import Any
+from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class AppState(BaseModel):
     """In-memory state store for daemon and dashboard synchronization."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
-    status: str = "READY"
+    status: Literal["DISABLED", "IDLE", "EXECUTING", "AWAITING_APPROVAL", "ERROR"] = "DISABLED"
     always_listen: bool = False
     voice_output: bool = False
     active_task_id: str | None = None
