@@ -117,3 +117,17 @@
 - GREEN RESULT: Pass.
 - RESIDUAL RISK: None.
 
+
+## ISSUE N: APPROVAL_REQUEST TEST WEAKNESS
+- SEVERITY: IMPORTANT
+- CONFIRMED: YES
+- RECOMMENDED SOLUTION: Use a valid baseline helper to avoid false-positive test passes.
+- SOLUTION DECISION: ACCEPT_RECOMMENDED
+- SELECTED SOLUTION: Re-wrote `test_approval_request_digest_validation` to build fully valid kwargs first, then mutate exactly the target field.
+- RATIONALE: False positive security tests provide dangerous false confidence.
+- RED TEST: Re-written test failed initially because `action_snapshot` was entirely missing in the original test!
+- RED RESULT: `ValidationError` for missing `action_snapshot`, rather than invalid hash format.
+- IMPLEMENTATION: Updated `tests/test_policy.py`.
+- GREEN RESULT: Pass.
+- RESIDUAL RISK: None.
+

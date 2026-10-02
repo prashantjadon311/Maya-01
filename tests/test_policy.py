@@ -106,15 +106,30 @@ def test_approval_request_strict_and_frozen():
 def test_approval_request_digest_validation():
     """Verify ApprovalRequest validates SHA-256 hex format."""
     now = time.time()
+    from app.actions.schema import ActionRequest
+    dummy_req = ActionRequest(id="act-1", tool="process.run", arguments={"argv": ["ls"]})
+    
+    def valid_kwargs():
+        return {
+            "action_hash": hash_action(dummy_req),
+            "action_id": "act-1",
+            "tool": "process.run",
+            "created_at": now,
+            "expires_at": now + 60.0,
+            "action_snapshot": dummy_req.to_canonical_json()
+        }
+        
     # Invalid length
+    kwargs1 = valid_kwargs()
+    kwargs1["action_hash"] = "short_hash"
     with pytest.raises(ValidationError):
-        ApprovalRequest(
-            action_hash="short_hash",
-            action_id="act-1",
-            tool="process.run",
-            created_at=now,
-            expires_at=now + 60.0,
-        )
+        ApprovalRequest(**kwargs1)
+
+    # Invalid non-hex characters
+    kwargs2 = valid_kwargs()
+    kwargs2["action_hash"] = "g" * 64
+    with pytest.raises(ValidationError):
+        ApprovalRequest(**kwargs2)
 
     # Invalid non-hex characters
     with pytest.raises(ValidationError):
@@ -343,10 +358,9 @@ def test_I_timestamp_validation():
 
 def test_J_action_argument_canonicalization():
     """J. Action Argument Canonicalization: Reject NaN, Infinity."""
-    # JSON doesn't strictly support NaN/Infinity in strict mode without allow_nan=False
-    req = ActionRequest(id="1", tool="process.run", arguments={"value": math.nan})
-    with pytest.raises(ValueError):
-        req.to_canonical_json()
+    from pydantic import ValidationError
+    with pytest.raises(ValidationError):
+        ActionRequest(id="1", tool="process.run", arguments={"value": math.nan})
 
 def test_K_security_defaults():
     """K. Security Defaults: Enforce permanently denied paths."""
