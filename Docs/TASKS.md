@@ -27,11 +27,11 @@
 - [x] **Acceptance:** Ambiguous phrase does not execute; disabled action ignored; malformed JSON keeps last valid pack; 57 targeted tests pass; full suite 327 tests pass.
 
 ## PH-040 — Safe Executors and Action Dispatcher
-- [ ] Implement `ActionDispatcher` to wrap Policy + Executors.
-- [ ] Implement `ProcessExecutor` (argv only, `shell=False`, cwd roots).
-- [ ] Implement `FileExecutor` (canonicalization, root containment, atomic write).
-- [ ] Implement `BrowserBridge` interface stub.
-- [ ] **Acceptance:** Dispatcher enforces `PolicyEngine` decision. Direct invocation of executors is prevented by design. Symlinks/`..` paths in `FileExecutor` fail.
+- [x] Implement `ActionDispatcher` to wrap Policy + Executors.
+- [x] Implement `ProcessExecutor` (argv only, `shell=False`, cwd roots).
+- [x] Implement `FileExecutor` (canonicalization, root containment, atomic write).
+- [x] Implement `BrowserBridge` interface stub.
+- [x] **Acceptance:** Dispatcher enforces `PolicyEngine` decision. Direct invocation of executors is prevented by design. Symlinks/`..` paths in `FileExecutor` fail. 29 targeted executor & dispatcher tests pass; full suite 366 tests pass.
 
 ## PH-050 — Approval Popup
 - [ ] Implement `ApprovalBroker`.
@@ -101,10 +101,10 @@
 
 ```text
 CURRENT_TASK: PH-040
-STATUS: PH030_VERIFIED_CI_GREEN_READY_FOR_PH040
+STATUS: PH040_IMPLEMENTED_CI_GREEN_AWAITING_SECURITY_REVIEW
 ARCHITECTURE_REVIEWED_BY_GEMINI_31_PRO: true
 ARCHITECTURE_FROZEN: yes
 FIGMA_CREATED: yes
 LIVE_PROVIDER: NVIDIA Nemotron 3 Ultra
-NEXT_EXACT_ACTION: Implement PH-040 Safe Executors and Action Dispatcher
+NEXT_EXACT_ACTION: Independent PH-040 security/code review before merge
 ```

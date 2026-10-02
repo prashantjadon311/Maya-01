@@ -1,5 +1,6 @@
 """Project H Policy Engine and Decision Outcomes."""
 
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 import os
@@ -11,6 +12,54 @@ from app.core.config import FileRootConfig
 
 from app.policy.paths import canonical_path
 from app.policy.risk import RiskLevel, assess_risk, NEVER_PREAPPROVE_EXECUTABLES
+
+TRUSTED_EXEC_DIRS: tuple[Path, ...] = (
+    Path("/usr/bin"),
+    Path("/bin"),
+    Path("/usr/local/bin"),
+)
+
+
+def resolve_trusted_executable(
+    executable_str: str,
+    trusted_dirs: tuple[Path, ...] = TRUSTED_EXEC_DIRS,
+) -> Path | None:
+    """Resolve an executable securely without consulting ambient os.environ['PATH'].
+
+    - If executable_str is an absolute path, verify it is resolved.
+    - If executable_str is a basename without slashes, search trusted_dirs only.
+    - Relative paths with slashes (e.g. './foo', 'bin/foo') are never resolved.
+    """
+    if not isinstance(executable_str, str) or not executable_str.strip() or "\x00" in executable_str:
+        return None
+
+    p = Path(executable_str)
+    if p.is_absolute():
+        try:
+            resolved = p.resolve(strict=False)
+            return resolved
+        except (OSError, RuntimeError):
+            return None
+    elif "/" not in executable_str and "\\" not in executable_str:
+        for d in trusted_dirs:
+            candidate = (d / executable_str).resolve(strict=False)
+            try:
+                if candidate.exists() and candidate.is_file() and os.access(candidate, os.X_OK):
+                    return candidate
+            except (OSError, RuntimeError):
+                continue
+    return None
+
+
+@dataclass(frozen=True)
+class PolicyEvaluation:
+    """Detailed policy evaluation outcome including trusted risk and matched rule constraints."""
+
+    decision: "PolicyDecision"
+    trusted_risk: RiskLevel
+    matched_preapproval_rule: "PreapprovalRule | None" = None
+    resolved_executable: Path | None = None
+
 
 class PreapprovalRule(BaseModel):
     model_config = ConfigDict(
@@ -95,6 +144,7 @@ class PolicyEngine:
         allowed_file_roots: list[FileRootConfig] | None = None,
         preapproved_rules: list[dict[str, Any] | PreapprovalRule] | None = None,
         permanently_denied_paths: list[str] | None = None,
+        trusted_search_path: tuple[Path, ...] = TRUSTED_EXEC_DIRS,
     ) -> None:
         self.allowed_file_roots = []
         for root in (allowed_file_roots or []):
@@ -109,6 +159,7 @@ class PolicyEngine:
             else:
                 parsed_rules.append(r)
         self.preapproved_rules = parsed_rules
+        self.trusted_search_path = trusted_search_path
         
         custom_paths = set(permanently_denied_paths) if permanently_denied_paths else set()
         all_denied = set(DEFAULT_SENSITIVE_PATHS).union(custom_paths)
@@ -121,32 +172,34 @@ class PolicyEngine:
     def assess_risk(self, action: ActionRequest) -> RiskLevel:
         return assess_risk(action)
 
-    def evaluate(self, action: ActionRequest) -> PolicyDecision:
-        """Evaluate action against configured policy rules and security invariants."""
+    def evaluate_detailed(self, action: ActionRequest) -> PolicyEvaluation:
+        """Evaluate action against configured policy rules and security invariants, returning full evaluation context."""
+        risk = self.assess_risk(action)
+
         # 1. Unknown or unsupported tool fails closed
         if action.tool not in SUPPORTED_TOOLS:
-            return PolicyDecision.DENY
+            return PolicyEvaluation(decision=PolicyDecision.DENY, trusted_risk=risk)
 
         # 2. Terminal commands policy check
         if action.tool == "process.run":
             argv = action.arguments.get("argv")
             if not isinstance(argv, list) or not argv:
-                return PolicyDecision.DENY
+                return PolicyEvaluation(decision=PolicyDecision.DENY, trusted_risk=risk)
             for arg in argv:
                 if not isinstance(arg, str) or not arg.strip() or "\x00" in arg:
-                    return PolicyDecision.DENY
+                    return PolicyEvaluation(decision=PolicyDecision.DENY, trusted_risk=risk)
 
             action_cwd = action.arguments.get("cwd", action.workspace)
             if "cwd" in action.arguments or action_cwd is not None:
                 try:
                     canonical_path(action_cwd)
                 except (ValueError, OSError, RuntimeError):
-                    return PolicyDecision.DENY
+                    return PolicyEvaluation(decision=PolicyDecision.DENY, trusted_risk=risk)
 
             executable = argv[0]
             exec_basename = os.path.basename(executable)
             if exec_basename in NEVER_PREAPPROVE_EXECUTABLES:
-                return PolicyDecision.ASK_USER
+                return PolicyEvaluation(decision=PolicyDecision.ASK_USER, trusted_risk=RiskLevel.HIGH)
 
         # 3. File actions policy check
         if action.tool.startswith("file."):
@@ -154,18 +207,18 @@ class PolicyEngine:
             try:
                 target_path = canonical_path(path_str)
             except (ValueError, OSError, RuntimeError):
-                return PolicyDecision.DENY
+                return PolicyEvaluation(decision=PolicyDecision.DENY, trusted_risk=risk)
 
             # Check permanently denied sensitive locations
             for denied_str in self.permanently_denied_paths:
                 denied_path = Path(denied_str)
                 if target_path == denied_path or denied_path in target_path.parents:
-                    return PolicyDecision.DENY
+                    return PolicyEvaluation(decision=PolicyDecision.DENY, trusted_risk=risk)
 
             # Credential check inside any allowed project roots
             basename = target_path.name
             if basename == ".env" or basename.startswith(".env."):
-                return PolicyDecision.DENY
+                return PolicyEvaluation(decision=PolicyDecision.DENY, trusted_risk=risk)
 
             # Check allowed roots containment
             in_allowed_root = False
@@ -173,7 +226,7 @@ class PolicyEngine:
                 try:
                     root_path = canonical_path(root_config.path)
                 except (ValueError, OSError, RuntimeError):
-                    return PolicyDecision.DENY
+                    return PolicyEvaluation(decision=PolicyDecision.DENY, trusted_risk=risk)
                 if target_path == root_path or root_path in target_path.parents:
                     if action.tool == "file.read" and not root_config.read:
                         continue
@@ -188,11 +241,11 @@ class PolicyEngine:
                     break
 
             if not in_allowed_root:
-                return PolicyDecision.DENY
+                return PolicyEvaluation(decision=PolicyDecision.DENY, trusted_risk=risk)
 
         # 4. High-risk operations are NEVER silently pre-approved in V1
-        if self.assess_risk(action) in (RiskLevel.HIGH, RiskLevel.CRITICAL):
-            return PolicyDecision.ASK_USER
+        if risk in (RiskLevel.HIGH, RiskLevel.CRITICAL):
+            return PolicyEvaluation(decision=PolicyDecision.ASK_USER, trusted_risk=risk)
 
         # 5. Check structured preapproval rules
         for rule in self.preapproved_rules:
@@ -201,12 +254,10 @@ class PolicyEngine:
                 continue
 
             argv = action.arguments.get("argv")
-            # We already validated argv above, so we know it's a non-empty list of strings
             if not argv:
                 continue
 
             executable = argv[0]
-
             if rule.executable != executable:
                 continue
 
@@ -221,11 +272,24 @@ class PolicyEngine:
                 cwd_path = canonical_path(action_cwd)
                 in_work_root = any(cwd_path.is_relative_to(canonical_path(r)) for r in rule.working_roots)
             except (ValueError, OSError, RuntimeError):
-                return PolicyDecision.DENY
+                return PolicyEvaluation(decision=PolicyDecision.DENY, trusted_risk=risk)
             if not in_work_root:
                 continue
 
-            return PolicyDecision.ALLOW_PREAPPROVED
+            resolved_exe = resolve_trusted_executable(executable, trusted_dirs=self.trusted_search_path)
+            if resolved_exe is None:
+                continue
+
+            return PolicyEvaluation(
+                decision=PolicyDecision.ALLOW_PREAPPROVED,
+                trusted_risk=risk,
+                matched_preapproval_rule=rule,
+                resolved_executable=resolved_exe,
+            )
 
         # Default fallback for valid actions requiring user confirmation
-        return PolicyDecision.ASK_USER
+        return PolicyEvaluation(decision=PolicyDecision.ASK_USER, trusted_risk=risk)
+
+    def evaluate(self, action: ActionRequest) -> PolicyDecision:
+        """Evaluate action against configured policy rules and security invariants."""
+        return self.evaluate_detailed(action).decision

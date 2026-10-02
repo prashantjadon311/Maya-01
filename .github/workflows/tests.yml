@@ -24,7 +24,7 @@ jobs:
         python -m pip install -e ".[dev]"
     - name: Verify installed imports outside checkout
       working-directory: ${{ runner.temp }}
-      run: python -I -c "import app; import app.actions.schema; import app.core.config; import app.policy.engine"
+      run: python -I -c "import app; import app.actions.schema; import app.actions.registry; import app.core.config; import app.core.dispatcher; import app.policy.engine; import app.executors.base; import app.executors.process; import app.executors.files; import app.executors.xdg; import app.browser.protocol"
     - name: Run tests
       run: |
         pytest -v

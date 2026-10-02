@@ -7,7 +7,8 @@ import os
 from pathlib import Path
 import re
 import stat
-from typing import Any
+from types import MappingProxyType
+from typing import Any, Mapping
 
 from app.actions.matcher import (
     extract_argument_slots,
@@ -20,9 +21,20 @@ from app.actions.schema import ActionDefinition, ActionPack
 MAX_PACK_BYTES = 1_048_576      # 1 MiB per pack file
 MAX_PACK_FILES = 64             # Maximum number of pack files in actions.d
 MAX_TOTAL_ACTIONS = 2048        # Maximum total actions across all packs
+MAX_TOTAL_PHRASES = 4096        # Conservative global phrase budget to prevent regex/memory exhaustion
 MAX_PHRASES_PER_ACTION = 32     # Maximum phrases per action definition
 MAX_PHRASE_CHARS = 512          # Maximum characters per phrase template
 MAX_COMMAND_CHARS = 4096        # Maximum characters in a command string
+
+
+def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    """Deterministic duplicate-key rejection for all JSON object nesting levels."""
+    res: dict[str, Any] = {}
+    for k, v in pairs:
+        if k in res:
+            raise ValueError(f"Duplicate JSON key: '{k}'")
+        res[k] = v
+    return res
 
 
 @dataclass(frozen=True)
@@ -37,7 +49,15 @@ class RegistryMatch:
     """
 
     action_id: str
-    captured_slots: dict[str, str] = field(default_factory=dict)
+    snapshot_version: int = 0
+    captured_slots: Mapping[str, str] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "captured_slots",
+            MappingProxyType(dict(self.captured_slots)),
+        )
 
 
 @dataclass(frozen=True)
@@ -47,7 +67,14 @@ class RegistryAmbiguity:
     Deterministic command resolution never guesses or picks by arbitrary ordering.
     """
 
-    action_ids: list[str] = field(default_factory=list)
+    action_ids: tuple[str, ...] = field(default_factory=tuple)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "action_ids",
+            tuple(self.action_ids),
+        )
 
 
 @dataclass
@@ -135,10 +162,10 @@ class ActionRegistry:
             return None
 
         normalized = normalize_text(command)
-        if not normalized:
+        if not normalized or len(normalized) > MAX_COMMAND_CHARS:
             return None
 
-        matching_actions: dict[str, dict[str, str]] = {}
+        distinct_matches: dict[tuple[str, tuple[tuple[str, str], ...]], dict[str, str]] = {}
         for pattern, action_id, declared_slots in self._active_snapshot.matchers:
             m = pattern.match(normalized)
             if m is not None:
@@ -151,16 +178,23 @@ class ActionRegistry:
                         break
                     slot_vals[s] = val.strip()
                 if valid_match:
-                    matching_actions[action_id] = slot_vals
+                    slot_key = tuple(sorted(slot_vals.items()))
+                    match_key = (action_id, slot_key)
+                    distinct_matches[match_key] = slot_vals
 
-        if not matching_actions:
+        if not distinct_matches:
             return None
 
-        if len(matching_actions) > 1:
-            return RegistryAmbiguity(action_ids=sorted(matching_actions.keys()))
+        if len(distinct_matches) > 1:
+            unique_action_ids = tuple(sorted({k[0] for k in distinct_matches.keys()}))
+            return RegistryAmbiguity(action_ids=unique_action_ids)
 
-        action_id, captured_slots = next(iter(matching_actions.items()))
-        return RegistryMatch(action_id=action_id, captured_slots=captured_slots)
+        (action_id, _), captured_slots = next(iter(distinct_matches.items()))
+        return RegistryMatch(
+            action_id=action_id,
+            snapshot_version=self._snapshot_version,
+            captured_slots=captured_slots,
+        )
 
     def reload(self) -> bool:
         """
@@ -196,11 +230,12 @@ class ActionRegistry:
             self.diagnostics = diagnostics
             return False
 
-        # Drop last-known-good entries for pack files that were intentionally deleted from disk
+        # Drop last-known-good entries in candidate copy for files intentionally removed from disk
+        candidate_lkg = dict(self._last_known_good)
         existing_names = {p.name for p in entries}
-        for filename in list(self._last_known_good.keys()):
+        for filename in list(candidate_lkg.keys()):
             if filename not in existing_names:
-                del self._last_known_good[filename]
+                del candidate_lkg[filename]
 
         if not entries:
             # Actions directory is empty: publish valid empty registry
@@ -220,13 +255,14 @@ class ActionRegistry:
                 had_file_loading_errors = True
                 diagnostics.append(error_msg)
                 # Check for existing last-known-good pack
-                if filename in self._last_known_good:
-                    candidate_packs[filename] = self._last_known_good[filename]
+                if filename in candidate_lkg:
+                    candidate_packs[filename] = candidate_lkg[filename]
                     diagnostics.append(f"Retained last-known-good pack for '{filename}'")
                 else:
                     diagnostics.append(f"Skipped brand-new malformed pack '{filename}'")
             elif pack is not None:
                 candidate_packs[filename] = pack
+                candidate_lkg[filename] = pack
 
         # If files were present on disk, but none could be loaded and none had LKG:
         if not candidate_packs and entries:
@@ -258,6 +294,14 @@ class ActionRegistry:
                     return False
                 all_actions[action.id] = action
                 action_source_file[action.id] = filename
+
+        total_phrases = sum(len(a.phrases) for a in all_actions.values())
+        if total_phrases > MAX_TOTAL_PHRASES:
+            diagnostics.append(
+                f"Total phrases ({total_phrases}) exceeds MAX_TOTAL_PHRASES ({MAX_TOTAL_PHRASES})"
+            )
+            self.diagnostics = diagnostics
+            return False
 
         # Validate per-action limits, phrases, and argument slots
         seen_normalized_phrases: dict[str, str] = {}  # normalized_phrase -> action_id
@@ -327,6 +371,14 @@ class ActionRegistry:
                         )
                         self.diagnostics = diagnostics
                         return False
+                    if action.enabled:
+                        child = all_actions[step]
+                        if not child.enabled:
+                            diagnostics.append(
+                                f"Enabled composite action '{action_id}' references disabled action '{step}'"
+                            )
+                            self.diagnostics = diagnostics
+                            return False
 
         # Validate composite cycle freedom
         try:
@@ -351,7 +403,7 @@ class ActionRegistry:
             actions=all_actions,
             matchers=matchers,
         )
-        self._last_known_good = dict(candidate_packs)
+        self._last_known_good = candidate_lkg
         self._snapshot_version += 1
         self.diagnostics = diagnostics
         return True
@@ -371,7 +423,20 @@ class ActionRegistry:
             if st.st_size > MAX_PACK_BYTES:
                 return None, f"File '{file_path.name}' size ({st.st_size} bytes) exceeds MAX_PACK_BYTES ({MAX_PACK_BYTES})"
 
-            content_bytes = os.read(fd, st.st_size + 1)
+            chunks: list[bytes] = []
+            total_read = 0
+            max_to_read = MAX_PACK_BYTES + 1
+            chunk_size = 65536
+
+            while total_read < max_to_read:
+                to_read = min(chunk_size, max_to_read - total_read)
+                chunk = os.read(fd, to_read)
+                if not chunk:
+                    break
+                chunks.append(chunk)
+                total_read += len(chunk)
+
+            content_bytes = b"".join(chunks)
             if len(content_bytes) > MAX_PACK_BYTES:
                 return None, f"File '{file_path.name}' content exceeds MAX_PACK_BYTES ({MAX_PACK_BYTES})"
 
@@ -385,7 +450,7 @@ class ActionRegistry:
                 return None, f"File '{file_path.name}' resolves outside actions directory"
 
             try:
-                data = json.loads(content_str)
+                data = json.loads(content_str, object_pairs_hook=_reject_duplicate_keys)
             except Exception as exc:
                 return None, f"JSON parse error in '{file_path.name}': {exc}"
 

@@ -76,7 +76,7 @@ class ActionResult(BaseModel):
 class ActionDefinition(BaseModel):
     """Definition of an action loaded from an action pack."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", strict=True)
 
     id: str = Field(pattern=r"^[a-z0-9_]+\.[a-z0-9_]+$")
     enabled: bool = True
@@ -101,7 +101,7 @@ class ActionDefinition(BaseModel):
 class ActionPack(BaseModel):
     """Versioned action pack containing multiple action definitions."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", strict=True)
 
     schema_version: Literal[1] = 1
     pack_id: str = Field(pattern=r"^[a-z0-9_]+$")
