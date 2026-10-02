@@ -15,10 +15,10 @@
 - [x] **Acceptance:** Valid config passes, unknown fields fail (`extra="forbid"`), invalid memory limits fail (memory_max_mb <= 300, memory_high_mb <= memory_max_mb). Schemas use Pydantic v2. `ActionRequest` defines canonical deterministic JSON serialization for hashing (`to_canonical_json` / `to_canonical_bytes`). (Batch 1B verification passed: 22 targeted tests pass).
 
 ## PH-020 — Policy Engine
-- [ ] Implement `PolicyDecision` enum (`ALLOW_PREAPPROVED`, `ASK_USER`, `DENY`).
-- [ ] Implement `ApprovalRequest` with `ConfigDict(frozen=True)` and strict SHA-256 action hash.
-- [ ] Implement `PolicyEngine`.
-- [ ] **Acceptance:** Deterministic `ALLOW_PREAPPROVED` / `ASK_USER` / `DENY` outcomes. `sudo` always asks. Files outside roots deny. Action hash changes invalidate approval.
+- [x] Implement `PolicyDecision` enum (`ALLOW_PREAPPROVED`, `ASK_USER`, `DENY`).
+- [x] Implement `ApprovalRequest` with `ConfigDict(frozen=True)` and strict SHA-256 action hash.
+- [x] Implement `PolicyEngine`.
+- [x] **Acceptance:** Deterministic `ALLOW_PREAPPROVED` / `ASK_USER` / `DENY` outcomes. `sudo` always asks (`ASK_USER`). Files outside roots deny. Action hash changes invalidate approval. (Batch 2 verification passed: 10 targeted tests pass).
 
 ## PH-030 — Deterministic Action Registry
 - [ ] Implement `ActionDefinition` schema.
@@ -100,11 +100,11 @@
 # Current Checkpoint
 
 ```text
-CURRENT_TASK: PH-020
-STATUS: BATCH_1B_COMPLETE_READY_FOR_BATCH_2
+CURRENT_TASK: PH-020-PRO-REVIEW
+STATUS: BATCH_2_IMPLEMENTED_AWAITING_PRO_REVIEW
 ARCHITECTURE_REVIEWED_BY_GEMINI_31_PRO: true
 ARCHITECTURE_FROZEN: yes
 FIGMA_CREATED: yes
 LIVE_PROVIDER: NVIDIA Nemotron 3 Ultra
-NEXT_EXACT_ACTION: Gemini 3.8 Flash High executes Batch 2 (Policy Engine) as defined in GEMINI_38_FLASH_EXECUTION_HANDOFF.md
+NEXT_EXACT_ACTION: Gemini 3.1 Pro High reviews Batch 2 implementation before Batch 3 can begin
 ```
