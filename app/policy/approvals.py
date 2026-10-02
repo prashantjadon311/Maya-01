@@ -1,7 +1,10 @@
 """Project H Policy Approval Models and Action Hashing."""
 
 import hashlib
+import hmac
+import math
 import re
+import time
 from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -18,7 +21,10 @@ def hash_action(action: ActionRequest) -> str:
 
 def verify_action(action: ActionRequest, expected_digest: str) -> bool:
     """Verify that an ActionRequest matches the expected SHA-256 digest."""
-    return hash_action(action) == expected_digest.lower()
+    if len(expected_digest) != 64:
+        return False
+    computed = hash_action(action)
+    return hmac.compare_digest(computed.encode('utf-8'), expected_digest.lower().encode('utf-8'))
 
 
 class ApprovalRequest(BaseModel):
@@ -36,6 +42,21 @@ class ApprovalRequest(BaseModel):
     workspace: str | None = None
     agent_id: str | None = None
 
+    @classmethod
+    def from_action(cls, action: ActionRequest, expires_in: float = 300.0) -> "ApprovalRequest":
+        now = time.time()
+        return cls(
+            action_hash=hash_action(action),
+            action_id=action.id,
+            tool=action.tool,
+            created_at=now,
+            expires_at=now + expires_in,
+            reason=action.reason,
+            request_id=action.request_id,
+            workspace=action.workspace,
+            agent_id=action.agent_id
+        )
+
     @field_validator("action_hash")
     @classmethod
     def validate_action_hash(cls, v: str) -> str:
@@ -45,6 +66,10 @@ class ApprovalRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_expiry(self) -> "ApprovalRequest":
+        if math.isnan(self.created_at) or math.isinf(self.created_at):
+            raise ValueError("created_at must be a finite number")
+        if math.isnan(self.expires_at) or math.isinf(self.expires_at):
+            raise ValueError("expires_at must be a finite number")
         if self.expires_at <= self.created_at:
             raise ValueError("expires_at must be strictly greater than created_at")
         return self

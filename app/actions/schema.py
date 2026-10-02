@@ -31,7 +31,7 @@ class ActionRequest(BaseModel):
             "tool": self.tool,
             "workspace": self.workspace,
         }
-        return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
 
     def to_canonical_bytes(self) -> bytes:
         """Deterministic UTF-8 encoded bytes of the canonical JSON representation."""

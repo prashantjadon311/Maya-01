@@ -263,3 +263,128 @@ def test_policy_unknown_tool_fails_closed():
         request_id="req-8",
     )
     assert engine.evaluate(unknown_action) == PolicyDecision.DENY
+
+import math
+
+def test_A_preapproval_rule_validation():
+    """A. PreapprovalRule model validation."""
+    from app.policy.engine import PreapprovalRule
+    
+    # Should forbid extra fields
+    with pytest.raises(ValidationError):
+        PreapprovalRule(tool="process.run", extra_field="bad")
+
+def test_B_trusted_risk_classification():
+    """B. Trusted Risk Classification: PolicyEngine must prevent privileged categories from being preapproved."""
+    rules = [
+        {"tool": "process.run", "executable": "apt", "argv_prefix": ["install"], "risk": "low"}
+    ]
+    # The rules above should either fail to parse or be ignored.
+    # We will test the evaluation side.
+    engine = PolicyEngine(preapproved_rules=rules)
+    
+    req_apt = ActionRequest(id="1", tool="process.run", arguments={"argv": ["apt", "install", "nmap"]})
+    assert engine.evaluate(req_apt) == PolicyDecision.ASK_USER
+    
+    req_systemctl = ActionRequest(id="2", tool="process.run", arguments={"argv": ["systemctl", "restart"]})
+    assert engine.evaluate(req_systemctl) == PolicyDecision.ASK_USER
+
+def test_C_privilege_bypass_forms():
+    """C. Sudo / Privilege Bypass Forms."""
+    rules = [
+        {"tool": "process.run", "executable": "env", "risk": "low"},
+        {"tool": "process.run", "executable": "pkexec", "risk": "low"},
+        {"tool": "process.run", "executable": "su", "risk": "low"},
+        {"tool": "process.run", "executable": "doas", "risk": "low"}
+    ]
+    engine = PolicyEngine(preapproved_rules=rules)
+    req_env_sudo = ActionRequest(id="1", tool="process.run", arguments={"argv": ["env", "sudo", "rm", "-rf", "/"]})
+    assert engine.evaluate(req_env_sudo) == PolicyDecision.ASK_USER
+
+    req_pkexec = ActionRequest(id="2", tool="process.run", arguments={"argv": ["pkexec", "bash"]})
+    assert engine.evaluate(req_pkexec) == PolicyDecision.ASK_USER
+
+    req_su = ActionRequest(id="3", tool="process.run", arguments={"argv": ["su", "-"]})
+    assert engine.evaluate(req_su) == PolicyDecision.ASK_USER
+
+    req_doas = ActionRequest(id="4", tool="process.run", arguments={"argv": ["doas", "apt"]})
+    assert engine.evaluate(req_doas) == PolicyDecision.ASK_USER
+
+def test_D_path_normalization():
+    """D. Path Normalization: block .. traversals."""
+    engine = PolicyEngine(allowed_file_roots=["/allowed/root"])
+    
+    req_traversal = ActionRequest(id="1", tool="file.read", arguments={"path": "/allowed/root/../../etc/passwd"})
+    assert engine.evaluate(req_traversal) == PolicyDecision.DENY
+
+def test_E_working_directory_preapproval():
+    """E. Working Directory Preapproval: enforce containment against working_roots."""
+    rules = [
+        {"tool": "process.run", "executable": "ls", "working_roots": ["/allowed/root"]}
+    ]
+    engine = PolicyEngine(preapproved_rules=rules)
+    
+    req_bad_cwd = ActionRequest(
+        id="1", tool="process.run", 
+        arguments={"argv": ["ls"], "cwd": "/allowed/root/../../etc"}
+    )
+    assert engine.evaluate(req_bad_cwd) == PolicyDecision.ASK_USER
+
+def test_F_file_root_operation_permissions():
+    """F. File Root Operation Permissions: independently enforce read/write/delete booleans."""
+    from app.core.config import FileRootConfig
+    
+    roots = [FileRootConfig(path="/safe", read=True, write=False, delete=False)]
+    # We pass allowed_file_roots directly to PolicyEngine or modify PolicyEngine to accept FileRootConfig
+    # For now, let's assume PolicyEngine accepts FileRootConfig objects directly.
+    engine = PolicyEngine(allowed_file_roots=roots)
+    
+    req_write = ActionRequest(id="1", tool="file.write", arguments={"path": "/safe/file.txt", "content": "hello"})
+    assert engine.evaluate(req_write) == PolicyDecision.DENY
+    
+    req_delete = ActionRequest(id="2", tool="file.delete", arguments={"path": "/safe/file.txt"})
+    assert engine.evaluate(req_delete) == PolicyDecision.DENY
+
+def test_G_approval_display_hash_binding():
+    """G. Approval Display/Hash Binding: implement from_action."""
+    req = ActionRequest(id="1", tool="process.run", arguments={"argv": ["ls"]}, reason="test")
+    # Should be created via from_action
+    approval = ApprovalRequest.from_action(req, expires_in=60.0)
+    assert approval.action_hash == hash_action(req)
+    assert approval.tool == req.tool
+    assert approval.action_id == req.id
+
+def test_H_hash_verification():
+    """H. Hash Verification: securely compare digests."""
+    req = ActionRequest(id="1", tool="process.run", arguments={"argv": ["ls"]})
+    digest = hash_action(req)
+    
+    # Using verify_action which should use hmac.compare_digest
+    assert verify_action(req, digest) is True
+    assert verify_action(req, "a" * 64) is False
+
+def test_I_timestamp_validation():
+    """I. Timestamp Validation: Reject NaN, inf, -inf."""
+    with pytest.raises(ValidationError):
+        ApprovalRequest(
+            action_hash="a" * 64, action_id="1", tool="process.run",
+            created_at=math.nan, expires_at=time.time() + 60
+        )
+    with pytest.raises(ValidationError):
+        ApprovalRequest(
+            action_hash="a" * 64, action_id="1", tool="process.run",
+            created_at=time.time(), expires_at=math.inf
+        )
+
+def test_J_action_argument_canonicalization():
+    """J. Action Argument Canonicalization: Reject NaN, Infinity."""
+    # JSON doesn't strictly support NaN/Infinity in strict mode without allow_nan=False
+    req = ActionRequest(id="1", tool="process.run", arguments={"value": math.nan})
+    with pytest.raises(ValueError):
+        req.to_canonical_json()
+
+def test_K_security_defaults():
+    """K. Security Defaults: Enforce permanently denied paths."""
+    engine = PolicyEngine(allowed_file_roots=["/"])
+    req = ActionRequest(id="1", tool="file.read", arguments={"path": "~/.ssh/../.ssh/id_rsa"})
+    assert engine.evaluate(req) == PolicyDecision.DENY
