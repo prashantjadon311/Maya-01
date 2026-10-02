@@ -85,21 +85,25 @@ class PolicyEngine:
 
         # 2. Terminal commands policy check
         if action.tool == "process.run":
-            argv = action.arguments.get("argv", [])
-            executable = argv[0] if argv else action.arguments.get("executable", "")
+            argv = action.arguments.get("argv")
+            if not isinstance(argv, list) or not argv:
+                return PolicyDecision.DENY
+            for arg in argv:
+                if not isinstance(arg, str) or not arg.strip():
+                    return PolicyDecision.DENY
+
+            executable = argv[0]
+            exec_basename = os.path.basename(executable)
+            privileged = {"sudo", "su", "doas", "pkexec", "apt", "systemctl", "dpkg", "dnf", "yum"}
+            if exec_basename in privileged:
+                return PolicyDecision.ASK_USER
             
-            if executable:
-                exec_basename = os.path.basename(executable)
-                privileged = {"sudo", "su", "doas", "pkexec", "apt", "systemctl", "dpkg", "dnf", "yum"}
-                if exec_basename in privileged:
-                    return PolicyDecision.ASK_USER
-                
-                if exec_basename == "env":
-                    for arg in argv[1:]:
-                        if not arg.startswith("-") and "=" not in arg:
-                            if os.path.basename(arg) in privileged:
-                                return PolicyDecision.ASK_USER
-                            break
+            if exec_basename == "env":
+                for arg in argv[1:]:
+                    if not arg.startswith("-") and "=" not in arg:
+                        if os.path.basename(arg) in privileged:
+                            return PolicyDecision.ASK_USER
+                        break
 
         # 3. File actions policy check
         if action.tool.startswith("file."):
@@ -150,8 +154,12 @@ class PolicyEngine:
             if action.tool != "process.run":
                 continue
 
-            argv = action.arguments.get("argv", [])
-            executable = argv[0] if argv else action.arguments.get("executable", "")
+            argv = action.arguments.get("argv")
+            # We already validated argv above, so we know it's a non-empty list of strings
+            if not argv:
+                continue
+
+            executable = argv[0]
 
             if rule.executable != executable:
                 continue

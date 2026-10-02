@@ -500,3 +500,36 @@ def test_ISSUE_A_wildcard_preapproval_rule():
     # Accept canonical
     git_rule = PreapprovalRule.model_validate({"id": "git", "executable": "git", "argv_prefix": ["status"], "working_roots": ["~/Projects"], "approval": "preapproved", "timeout_seconds": 30})
     assert git_rule.id == "git"
+def test_ISSUE_B_malformed_process_representation():
+    from app.policy.engine import PolicyEngine, PolicyDecision
+    from app.actions.schema import ActionRequest
+
+    engine = PolicyEngine()
+    
+    # Missing argv
+    req1 = ActionRequest(id="1", tool="process.run", arguments={"executable": "git"})
+    assert engine.evaluate(req1) == PolicyDecision.DENY
+
+    # argv=None
+    req2 = ActionRequest(id="1", tool="process.run", arguments={"argv": None})
+    assert engine.evaluate(req2) == PolicyDecision.DENY
+
+    # argv=""
+    req3 = ActionRequest(id="1", tool="process.run", arguments={"argv": ""})
+    assert engine.evaluate(req3) == PolicyDecision.DENY
+
+    # argv=[]
+    req4 = ActionRequest(id="1", tool="process.run", arguments={"argv": []})
+    assert engine.evaluate(req4) == PolicyDecision.DENY
+
+    # argv=[123]
+    req5 = ActionRequest(id="1", tool="process.run", arguments={"argv": [123]})
+    assert engine.evaluate(req5) == PolicyDecision.DENY
+
+    # argv=[""]
+    req6 = ActionRequest(id="1", tool="process.run", arguments={"argv": [""]})
+    assert engine.evaluate(req6) == PolicyDecision.DENY
+
+    # argv=["git", 123]
+    req7 = ActionRequest(id="1", tool="process.run", arguments={"argv": ["git", 123]})
+    assert engine.evaluate(req7) == PolicyDecision.DENY
