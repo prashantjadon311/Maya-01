@@ -4,6 +4,7 @@ from pydantic import ValidationError
 
 from app.actions.schema import ActionRequest
 from app.policy.engine import PolicyDecision, PolicyEngine
+from app.core.config import FileRootConfig
 from app.policy.approvals import ApprovalRequest, hash_action, verify_action
 
 
@@ -166,7 +167,7 @@ def test_policy_sudo_requires_ask_user():
 
 def test_policy_file_outside_allowed_root_denied():
     """Targeting files outside configured roots must resolve to DENY."""
-    engine = PolicyEngine(allowed_file_roots=["~/Projects", "/tmp/project_h"])
+    engine = PolicyEngine(allowed_file_roots=[FileRootConfig(path="~/Projects", read=True, write=True), FileRootConfig(path="/tmp/project_h", read=True, write=True)])
 
     outside_action = ActionRequest(
         id="act-3",
@@ -272,7 +273,7 @@ def test_B_trusted_risk_classification():
 
 def test_D_path_normalization():
     """D. Path Normalization: block .. traversals."""
-    engine = PolicyEngine(allowed_file_roots=["/allowed/root"])
+    engine = PolicyEngine(allowed_file_roots=[FileRootConfig(path="/allowed/root", read=True, write=True)])
     
     req_traversal = ActionRequest(id="1", tool="file.read", arguments={"path": "/allowed/root/../../etc/passwd"})
     assert engine.evaluate(req_traversal) == PolicyDecision.DENY
@@ -349,7 +350,7 @@ def test_J_action_argument_canonicalization():
 
 def test_K_security_defaults():
     """K. Security Defaults: Enforce permanently denied paths."""
-    engine = PolicyEngine(allowed_file_roots=["/"])
+    engine = PolicyEngine(allowed_file_roots=[FileRootConfig(path="/", read=True, write=True)])
     req = ActionRequest(id="1", tool="file.read", arguments={"path": "~/.ssh/../.ssh/id_rsa"})
     assert engine.evaluate(req) == PolicyDecision.DENY
 
@@ -412,7 +413,7 @@ def test_DEFECT_H_file_root_string_compatibility():
     from app.policy.engine import PolicyEngine, PolicyDecision
     from app.actions.schema import ActionRequest
     
-    engine = PolicyEngine(allowed_file_roots=["/tmp/safe"])
+    engine = PolicyEngine(allowed_file_roots=[FileRootConfig(path="/tmp/safe", read=True)])
     req = ActionRequest(id="1", tool="file.write", arguments={"path": "/tmp/safe/foo.txt", "content": "hi"})
     assert engine.evaluate(req) == PolicyDecision.DENY
 def test_ISSUE_A_wildcard_preapproval_rule():
@@ -520,3 +521,39 @@ def test_ISSUE_C_never_preapprove_executables():
     # Env wrapper (no longer parsed for deep preapproval bypasses, but 'env' itself is blocked)
     req_env = ActionRequest(id="1", tool="process.run", arguments={"argv": ["env", "sudo", "ls"]})
     assert engine.evaluate(req_env) == PolicyDecision.ASK_USER
+def test_ISSUE_D_E_F_file_security_invariants():
+    from app.policy.engine import PolicyEngine, PolicyDecision
+    from app.core.config import FileRootConfig
+    from app.actions.schema import ActionRequest
+
+    # Test D & E: Defaults cannot be replaced, and ~/.config/project-h is strictly denied.
+    # We pass a custom denied paths list. It must not override the defaults.
+    # We also allow HOME root to test that allowed roots don't bypass denied paths.
+    engine = PolicyEngine(
+        permanently_denied_paths=["/custom"],
+        allowed_file_roots=[FileRootConfig(path="~/", read=True, write=True, delete=True)]
+    )
+    
+    # Must deny built-in
+    req_etc = ActionRequest(id="1", tool="file.read", arguments={"path": "/etc/passwd"})
+    assert engine.evaluate(req_etc) == PolicyDecision.DENY
+    
+    req_ssh = ActionRequest(id="1", tool="file.read", arguments={"path": "~/.ssh/id_rsa"})
+    assert engine.evaluate(req_ssh) == PolicyDecision.DENY
+    
+    # Must deny ~/.config/project-h
+    req_ph_config = ActionRequest(id="1", tool="file.read", arguments={"path": "~/.config/project-h/config.toml"})
+    assert engine.evaluate(req_ph_config) == PolicyDecision.DENY
+    
+    req_ph_write = ActionRequest(id="1", tool="file.write", arguments={"path": "~/.config/project-h/config.toml", "content": "x"})
+    assert engine.evaluate(req_ph_write) == PolicyDecision.DENY
+    
+    req_ph_list = ActionRequest(id="1", tool="file.list", arguments={"path": "~/.config/project-h"})
+    assert engine.evaluate(req_ph_list) == PolicyDecision.DENY
+
+    # Test F: Credential files inside allowed roots
+    req_env = ActionRequest(id="1", tool="file.read", arguments={"path": "~/Projects/repo/.env"})
+    assert engine.evaluate(req_env) == PolicyDecision.DENY
+    
+    req_env_local = ActionRequest(id="1", tool="file.read", arguments={"path": "~/Projects/repo/.env.local"})
+    assert engine.evaluate(req_env_local) == PolicyDecision.DENY

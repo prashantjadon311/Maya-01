@@ -114,8 +114,8 @@ class FileRootConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     path: str
-    read: bool = True
-    write: bool = True
+    read: bool = False
+    write: bool = False
     delete: bool = False
 
 

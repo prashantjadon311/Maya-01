@@ -69,6 +69,9 @@ DEFAULT_SENSITIVE_PATHS = [
     "/dev",
     "~/.ssh",
     "~/.gnupg",
+    "~/.mozilla",
+    "~/.local/share/keyrings",
+    "~/.config/project-h",
 ]
 
 
@@ -77,11 +80,16 @@ class PolicyEngine:
 
     def __init__(
         self,
-        allowed_file_roots: list[str | FileRootConfig] | None = None,
+        allowed_file_roots: list[FileRootConfig] | None = None,
         preapproved_rules: list[dict[str, Any] | PreapprovalRule] | None = None,
         permanently_denied_paths: list[str] | None = None,
     ) -> None:
-        self.allowed_file_roots = allowed_file_roots or []
+        self.allowed_file_roots = []
+        for root in (allowed_file_roots or []):
+            if isinstance(root, str):
+                raise ValueError("Raw string roots are no longer supported. Use FileRootConfig.")
+            self.allowed_file_roots.append(root)
+
         parsed_rules = []
         for r in (preapproved_rules or []):
             if isinstance(r, dict):
@@ -89,7 +97,14 @@ class PolicyEngine:
             else:
                 parsed_rules.append(r)
         self.preapproved_rules = parsed_rules
-        self.permanently_denied_paths = permanently_denied_paths or DEFAULT_SENSITIVE_PATHS
+        
+        custom_paths = set(permanently_denied_paths) if permanently_denied_paths else set()
+        all_denied = set(DEFAULT_SENSITIVE_PATHS).union(custom_paths)
+        
+        self.permanently_denied_paths = [
+            str(Path(os.path.normpath(Path(p).expanduser())).resolve())
+            for p in all_denied
+        ]
 
     def evaluate(self, action: ActionRequest) -> PolicyDecision:
         """Evaluate action against configured policy rules and security invariants."""
@@ -117,35 +132,35 @@ class PolicyEngine:
             if not path_str:
                 return PolicyDecision.DENY
 
-            target_path = Path(os.path.normpath(Path(path_str).expanduser()))
+            target_path = Path(os.path.normpath(Path(path_str).expanduser())).resolve()
 
             # Check permanently denied sensitive locations
             for denied_str in self.permanently_denied_paths:
-                denied_path = Path(os.path.normpath(Path(denied_str).expanduser()))
+                denied_path = Path(denied_str)
                 if target_path == denied_path or denied_path in target_path.parents:
                     return PolicyDecision.DENY
+
+            # Credential check inside any allowed project roots
+            basename = target_path.name
+            if basename == ".env" or basename.startswith(".env."):
+                return PolicyDecision.DENY
 
             # Check allowed roots containment
             in_allowed_root = False
             for root_config in self.allowed_file_roots:
-                if isinstance(root_config, FileRootConfig):
-                    root_path = Path(os.path.normpath(Path(root_config.path).expanduser()))
-                    if target_path == root_path or root_path in target_path.parents:
-                        if action.tool == "file.read" and not root_config.read:
-                            continue
-                        if action.tool == "file.write" and not root_config.write:
-                            continue
-                        if action.tool == "file.delete" and not root_config.delete:
-                            continue
-                        in_allowed_root = True
-                        break
-                else:
-                    root_path = Path(os.path.normpath(Path(root_config).expanduser()))
-                    if target_path == root_path or root_path in target_path.parents:
-                        if action.tool != "file.read":
-                            continue
-                        in_allowed_root = True
-                        break
+                root_path = Path(os.path.normpath(Path(root_config.path).expanduser())).resolve()
+                if target_path == root_path or root_path in target_path.parents:
+                    if action.tool == "file.read" and not root_config.read:
+                        continue
+                    if action.tool == "file.list" and not root_config.read:
+                        continue
+                    if action.tool == "file.write" and not root_config.write:
+                        continue
+                    if action.tool == "file.delete" and not root_config.delete:
+                        continue
+                        
+                    in_allowed_root = True
+                    break
 
             if not in_allowed_root:
                 return PolicyDecision.DENY

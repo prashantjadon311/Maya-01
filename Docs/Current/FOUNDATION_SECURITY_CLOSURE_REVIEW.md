@@ -47,3 +47,17 @@
 - GREEN RESULT: Pass.
 - RESIDUAL RISK: None.
 
+
+## ISSUES D, E, F, G, H, I: FILE ROOTS, INVARIANTS, AND CREDENTIALS
+- SEVERITY: CRITICAL
+- CONFIRMED: YES
+- RECOMMENDED SOLUTION: Enforce strict `FileRootConfig`, union defaults with custom denied paths, default permissions to `False`, block `.env` and `~/.config/project-h`, and map `file.list` to `read`.
+- SOLUTION DECISION: ACCEPT_RECOMMENDED
+- SELECTED SOLUTION: Implemented strict type constraints on `allowed_file_roots`, added credential matching logic to `evaluate`, hard-coded invariant sets in `DEFAULT_SENSITIVE_PATHS`, mapped `file.list` correctly.
+- RATIONALE: Closes significant file access bypass vectors and ensures safe-by-default initialization.
+- RED TEST: `test_ISSUE_D_E_F_file_security_invariants` added and failed initially.
+- RED RESULT: Failed to block access to credential files or built-in paths overridden by custom list.
+- IMPLEMENTATION: Updated `app/policy/engine.py` and `app/core/config.py`. Fixed tests to use `FileRootConfig`.
+- GREEN RESULT: Pass.
+- RESIDUAL RISK: None.
+
