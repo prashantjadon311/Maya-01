@@ -21,7 +21,7 @@
 - [x] **Acceptance:** Deterministic `ALLOW_PREAPPROVED` / `ASK_USER` / `DENY` outcomes. `sudo` always asks (`ASK_USER`). Files outside roots deny. Action hash changes invalidate approval. (Batch 2 verification passed: 10 targeted tests pass).
 
 ## PH-030 — Deterministic Action Registry
-- [ ] Implement `ActionDefinition` schema.
+- [x] Implement `ActionDefinition` and `ActionPack` schema (Completed in Foundation Closure).
 - [ ] Implement `ActionRegistry` for loading action packs.
 - [ ] Implement phrase matching and composite action validation.
 - [ ] **Acceptance:** Ambiguous phrase does not execute; disabled action ignored; malformed JSON keeps last valid pack.
@@ -101,7 +101,7 @@
 
 ```text
 CURRENT_TASK: PH-030
-STATUS: BATCH_2_PRO_REVIEW_PASSED_READY_FOR_BATCH_3
+STATUS: FOUNDATION_AND_SECURITY_CLOSURE_COMPLETE
 ARCHITECTURE_REVIEWED_BY_GEMINI_31_PRO: true
 ARCHITECTURE_FROZEN: yes
 FIGMA_CREATED: yes

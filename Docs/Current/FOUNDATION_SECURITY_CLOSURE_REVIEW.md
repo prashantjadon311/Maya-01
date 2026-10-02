@@ -131,3 +131,36 @@
 - GREEN RESULT: Pass.
 - RESIDUAL RISK: None.
 
+
+## ISSUE O: HASH IMPLEMENTATION UNIFICATION
+- SEVERITY: MODERATE
+- CONFIRMED: YES
+- RECOMMENDED SOLUTION: Unify hashing and use `hmac.compare_digest`.
+- SOLUTION DECISION: ACCEPT_RECOMMENDED
+- SELECTED SOLUTION: Verified `hmac.compare_digest` is used in `verify_action`.
+- RATIONALE: Prevents timing attacks on hash verification.
+- GREEN RESULT: Already verified in previous commits.
+
+## ISSUE P: RISK RESULT CONTRACT
+- SEVERITY: LOW (DOCUMENTATION)
+- CONFIRMED: YES
+- RECOMMENDED SOLUTION: Document future API direction for Trusted Risk.
+- SOLUTION DECISION: ACCEPT_RECOMMENDED
+- SELECTED SOLUTION: Documented that `risk` calculation is currently purely schema-based and in the future will integrate dynamically with a Trusted Risk engine that overrides model hints.
+
+## ISSUE Q: DETERMINISTIC ACTION FORGEABILITY
+- SEVERITY: LOW (DOCUMENTATION)
+- CONFIRMED: YES
+- RECOMMENDED SOLUTION: Document boundary contract for preapproved actions.
+- SOLUTION DECISION: ACCEPT_RECOMMENDED
+- SELECTED SOLUTION: Documented that a model cannot forge "preapproved" status via payload manipulation because the PolicyEngine derives the verdict securely based on predefined rules matching the executor payload, stripping any unauthorized model-supplied risk hints.
+
+
+## ISSUE R & HYGIENE: PACKAGING & CI
+- SEVERITY: LOW (HYGIENE)
+- CONFIRMED: YES
+- RECOMMENDED SOLUTION: Update TASKS.md, add CI, `.env.example`, `README.md`, delete temp scripts.
+- SOLUTION DECISION: ACCEPT_RECOMMENDED
+- SELECTED SOLUTION: Created `.github/workflows/tests.yml`, `README.md`, `.env.example`, updated `pyproject.toml` with `pydantic>=2,<3`. Deleted all temporary repair scripts in root.
+- GREEN RESULT: Pass.
+
