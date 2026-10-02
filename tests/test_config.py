@@ -102,6 +102,9 @@ def test_config_nested_unknown_field_fails():
 
 def test_invalid_memory_limits_order():
     toml_str = """
+    [assistant]
+    display_name = "Maya"
+    wake_phrase = "Maya"
     [resources]
     memory_high_mb = 280
     memory_max_mb = 240
@@ -113,6 +116,9 @@ def test_invalid_memory_limits_order():
 
 def test_invalid_memory_limits_exceed_300():
     toml_str = """
+    [assistant]
+    display_name = "Maya"
+    wake_phrase = "Maya"
     [resources]
     memory_high_mb = 240
     memory_max_mb = 400
@@ -124,6 +130,9 @@ def test_invalid_memory_limits_exceed_300():
 
 def test_invalid_memory_limits_non_positive():
     toml_str = """
+    [assistant]
+    display_name = "Maya"
+    wake_phrase = "Maya"
     [resources]
     memory_high_mb = -10
     memory_max_mb = 300
