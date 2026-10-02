@@ -12,7 +12,8 @@ from app.actions.schema import ActionRequest
 
 def definition(action_id="app.open", **overrides):
     return dict(id=action_id, phrases=["open vscode", "vs code kholo"],
-                executor="process", arguments={"argv": ["code"]}) | overrides
+                executor="process", arguments={"argv": ["code"]},
+                approval="preapproved", risk="low") | overrides
 
 
 def write_pack(directory, name="core", actions=None, **overrides):
@@ -64,8 +65,8 @@ def test_slots_and_safe_substitution(tmp_path, phrase, text):
     write_pack(tmp_path, actions=[definition(phrases=[phrase], arguments={"query": "{query}", "nested": ["prefix:{query}", 1, True]})])
     reg = registry(tmp_path)
     match = reg.resolve(text)
-    assert dict(match.captured_slots) == {"query": "python docs"}
-    assert substitute_arguments(reg.get_definition(match.action_id).arguments, match.captured_slots) == {"query": "python docs", "nested": ["prefix:python docs", 1, True]}
+    assert dict(match.captured_slots) == {"query": "Python Docs"}
+    assert substitute_arguments(reg.get_definition(match.action_id).arguments, match.captured_slots) == {"query": "Python Docs", "nested": ["prefix:Python Docs", 1, True]}
     assert reg.resolve(text.replace("Python Docs", "")) is None
 
 
@@ -209,3 +210,151 @@ def test_model_id_does_not_grant_preapproval(tmp_path):
     match = registry(tmp_path).resolve("open vscode")
     proposed = ActionRequest(id=match.action_id, tool="process.run", arguments={"argv": ["code"]})
     assert PolicyEngine().evaluate(proposed) == PolicyDecision.ASK_USER
+
+
+def test_action_definition_missing_approval_rejected():
+    from pydantic import ValidationError
+    from app.actions.schema import ActionDefinition
+    with pytest.raises(ValidationError):
+        ActionDefinition(id="app.test", executor="process", risk="low")
+
+
+def test_action_definition_missing_risk_rejected():
+    from pydantic import ValidationError
+    from app.actions.schema import ActionDefinition
+    with pytest.raises(ValidationError):
+        ActionDefinition(id="app.test", executor="process", approval="preapproved")
+
+
+def test_action_definition_high_preapproved_rejected():
+    from pydantic import ValidationError
+    from app.actions.schema import ActionDefinition
+    with pytest.raises(ValidationError):
+        ActionDefinition(id="app.test", executor="process", approval="preapproved", risk="high")
+
+
+def test_action_definition_critical_preapproved_rejected():
+    from pydantic import ValidationError
+    from app.actions.schema import ActionDefinition
+    with pytest.raises(ValidationError):
+        ActionDefinition(id="app.test", executor="process", approval="preapproved", risk="critical")
+
+
+def test_captured_slot_preserves_original_case(tmp_path):
+    write_pack(tmp_path, actions=[definition("file.open", phrases=["open file {filename}"], arguments={"path": "/data/{filename}"})])
+    reg = registry(tmp_path)
+    match = reg.resolve("open file MyDocument_V2.PDF")
+    assert match.action_id == "file.open"
+    assert match.captured_slots["filename"] == "MyDocument_V2.PDF"
+
+
+def test_symlinked_pack_rejected(tmp_path):
+    real_file = tmp_path / "target.json"
+    real_file.write_text(json.dumps(dict(pack_id="core", label="Core", schema_version=1, actions=[definition()])), encoding="utf-8")
+    link_file = tmp_path / "symlinked.json"
+    link_file.symlink_to(real_file)
+    reg = registry(tmp_path)
+    assert any("Symlink rejected" in d for d in reg.diagnostics)
+
+
+def test_non_utf8_pack_rejected(tmp_path):
+    write_pack(tmp_path)
+    bad_path = tmp_path / "non_utf8.json"
+    bad_path.write_bytes(b"\xff\xfe\x00\x00")
+    reg = registry(tmp_path)
+    assert any("Non-UTF-8" in d for d in reg.diagnostics)
+    assert reg.resolve("open vscode").action_id == "app.open"
+
+
+def test_max_pack_files_enforced(tmp_path):
+    from app.actions.registry import MAX_PACK_FILES, ActionRegistry
+    for i in range(MAX_PACK_FILES + 1):
+        write_pack(tmp_path, name=f"pack_{i:03d}", actions=[definition(f"app.act_{i:03d}", phrases=[f"act {i}"])])
+    reg = ActionRegistry(tmp_path)
+    assert not reg.reload()
+    assert any("MAX_PACK_FILES" in d for d in reg.diagnostics)
+
+
+def test_max_total_actions_enforced(tmp_path):
+    from app.actions.registry import MAX_TOTAL_ACTIONS, ActionRegistry
+    actions = [definition(f"app.a_{i:04d}", phrases=[f"phrase {i}"]) for i in range(MAX_TOTAL_ACTIONS + 1)]
+    write_pack(tmp_path, actions=actions)
+    reg = ActionRegistry(tmp_path)
+    assert not reg.reload()
+    assert any("MAX_TOTAL_ACTIONS" in d for d in reg.diagnostics)
+
+
+def test_phrase_count_limit_enforced(tmp_path):
+    from app.actions.registry import MAX_PHRASES_PER_ACTION, ActionRegistry
+    phrases = [f"phrase {i}" for i in range(MAX_PHRASES_PER_ACTION + 1)]
+    write_pack(tmp_path, actions=[definition("app.heavy", phrases=phrases)])
+    reg = ActionRegistry(tmp_path)
+    assert not reg.reload()
+    assert any("MAX_PHRASES_PER_ACTION" in d for d in reg.diagnostics)
+
+
+def test_phrase_length_limit_enforced(tmp_path):
+    from app.actions.registry import MAX_PHRASE_CHARS, ActionRegistry
+    long_phrase = "x" * (MAX_PHRASE_CHARS + 1)
+    write_pack(tmp_path, actions=[definition("app.long", phrases=[long_phrase])])
+    reg = ActionRegistry(tmp_path)
+    assert not reg.reload()
+    assert any("512" in d or "exceed" in d for d in reg.diagnostics)
+
+
+def test_command_length_limit_enforced(tmp_path):
+    from app.actions.registry import MAX_COMMAND_CHARS
+    write_pack(tmp_path)
+    reg = registry(tmp_path)
+    oversized_command = "open vscode " + ("x" * MAX_COMMAND_CHARS)
+    assert reg.resolve(oversized_command) is None
+
+
+def test_deleting_valid_pack_removes_actions(tmp_path):
+    write_pack(tmp_path, "core", [definition("app.core", phrases=["open core"])])
+    extra_path = write_pack(tmp_path, "extra", [definition("app.extra", phrases=["open extra"])])
+    reg = registry(tmp_path)
+    assert reg.resolve("open core").action_id == "app.core"
+    assert reg.resolve("open extra").action_id == "app.extra"
+
+    extra_path.unlink()
+    assert reg.reload()
+    assert reg.resolve("open core").action_id == "app.core"
+    assert reg.resolve("open extra") is None
+    assert reg.get_definition("app.extra") is None
+
+
+def test_empty_directory_publishes_empty_registry(tmp_path):
+    pack_path = write_pack(tmp_path, "core", [definition("app.core", phrases=["open core"])])
+    reg = registry(tmp_path)
+    assert reg.resolve("open core").action_id == "app.core"
+
+    pack_path.unlink()
+    assert reg.reload()
+    assert reg.resolve("open core") is None
+    assert reg.get_definition("app.core") is None
+    assert reg.snapshot_version == 2
+
+
+def test_get_definition_deep_copy_cannot_mutate_active_nested_arguments(tmp_path):
+    write_pack(tmp_path, actions=[definition("app.open", arguments={"argv": ["code"], "options": {"env": {"DEBUG": "1"}, "flags": ["-v"]}})])
+    reg = registry(tmp_path)
+    defn1 = reg.get_definition("app.open")
+    defn1.arguments["argv"].append("--hacked")
+    defn1.arguments["options"]["env"]["DEBUG"] = "0"
+    defn1.arguments["options"]["flags"].append("--mutated")
+
+    defn2 = reg.get_definition("app.open")
+    assert defn2.arguments == {"argv": ["code"], "options": {"env": {"DEBUG": "1"}, "flags": ["-v"]}}
+
+
+def test_model_forged_action_request_gives_no_registry_trust(tmp_path):
+    from app.policy.engine import PolicyEngine, PolicyDecision
+    write_pack(tmp_path, actions=[definition("app.open", phrases=["open vscode"], executor="process", arguments={"argv": ["code"]}, approval="preapproved", risk="low")])
+    reg = registry(tmp_path)
+    match = reg.resolve("open vscode")
+    assert match.action_id == "app.open"
+
+    forged = ActionRequest(id=match.action_id, tool="process.run", arguments={"argv": ["rm", "-rf", "/"]})
+    decision = PolicyEngine().evaluate(forged)
+    assert decision != PolicyDecision.ALLOW_PREAPPROVED

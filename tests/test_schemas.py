@@ -148,7 +148,7 @@ def test_action_pack_schema_valid():
 
 
 def test_pack_duplicate_action_ids_rejected():
-    action = ActionDefinition(id="app.open", executor="process")
+    action = ActionDefinition(id="app.open", executor="process", approval="preapproved", risk="low")
     with pytest.raises(ValidationError, match="Duplicate action ID"):
         ActionPack(pack_id="core", label="Core", actions=[action, action])
 
@@ -162,7 +162,7 @@ def test_pack_label_nonempty_and_trimmed():
 @pytest.mark.parametrize("value", [b"bytes", {1, 2}, (1, 2), float("nan"), float("inf"), {1: "bad key"}])
 def test_definition_arguments_require_recursive_json(value):
     with pytest.raises(ValidationError):
-        ActionDefinition(id="app.open", executor="process", arguments={"nested": [value]})
+        ActionDefinition(id="app.open", executor="process", arguments={"nested": [value]}, approval="preapproved", risk="low")
 
 
 def test_action_pack_unknown_field_rejected():
@@ -182,6 +182,8 @@ def test_action_definition_invalid_executor_rejected():
         "id": "app.invalid",
         "executor": "arbitrary_eval",
         "arguments": {},
+        "approval": "preapproved",
+        "risk": "low",
     }
     with pytest.raises(ValidationError):
         ActionDefinition.model_validate(action_data)
@@ -256,13 +258,13 @@ def test_ISSUE_M_action_pack_weaknesses():
 
     # timeout_seconds > 0
     with pytest.raises(ValidationError):
-        ActionDefinition(id="test.action", executor="process", timeout_seconds=0)
+        ActionDefinition(id="test.action", executor="process", timeout_seconds=0, approval="preapproved", risk="low")
     
     # id pattern
     with pytest.raises(ValidationError):
-        ActionDefinition(id="invalid-id", executor="process")
+        ActionDefinition(id="invalid-id", executor="process", approval="preapproved", risk="low")
     with pytest.raises(ValidationError):
-        ActionDefinition(id="invalid.ID", executor="process")
+        ActionDefinition(id="invalid.ID", executor="process", approval="preapproved", risk="low")
 
     # pack schema version and id
     with pytest.raises(ValidationError):
@@ -271,5 +273,5 @@ def test_ISSUE_M_action_pack_weaknesses():
         ActionPack(schema_version=1, pack_id="invalid-pack", label="Core")
 
     # Valid
-    ActionDefinition(id="core.open", executor="process", timeout_seconds=10)
+    ActionDefinition(id="core.open", executor="process", timeout_seconds=10, approval="preapproved", risk="low")
     ActionPack(schema_version=1, pack_id="core", label="Core")

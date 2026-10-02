@@ -83,14 +83,20 @@ class ActionDefinition(BaseModel):
     phrases: list[str] = Field(default_factory=list)
     executor: Literal["process", "xdg_open", "browser", "file", "composite"]
     arguments: dict[str, Any] = Field(default_factory=dict)
-    approval: Literal["preapproved", "ask_user", "always_ask", "deny"] = "preapproved"
-    risk: Literal["low", "medium", "high", "critical"] = "low"
+    approval: Literal["preapproved", "ask_user", "always_ask", "deny"]
+    risk: Literal["low", "medium", "high", "critical"]
     timeout_seconds: int = Field(default=30, gt=0)
 
     @field_validator("arguments", mode="before")
     @classmethod
     def validate_json_args(cls, value: Any) -> Any:
         return validate_canonical_json(value)
+
+    @model_validator(mode="after")
+    def validate_security_contract(self) -> "ActionDefinition":
+        if self.risk in {"high", "critical"} and self.approval == "preapproved":
+            raise ValueError(f"Action '{self.id}' with risk '{self.risk}' cannot be preapproved")
+        return self
 
 class ActionPack(BaseModel):
     """Versioned action pack containing multiple action definitions."""
