@@ -269,26 +269,6 @@ def test_A_preapproval_rule_validation():
 def test_B_trusted_risk_classification():
     pass
 
-def test_C_privilege_bypass_forms():
-    """C. Sudo / Privilege Bypass Forms."""
-    rules = [
-        {"id": "test-env", "executable": "env", "argv_prefix": [], "working_roots": ["/"], "approval": "preapproved", "timeout_seconds": 30},
-        {"id": "test-pkexec", "executable": "pkexec", "argv_prefix": [], "working_roots": ["/"], "approval": "preapproved", "timeout_seconds": 30},
-        {"id": "test-su", "executable": "su", "argv_prefix": [], "working_roots": ["/"], "approval": "preapproved", "timeout_seconds": 30},
-        {"id": "test-doas", "executable": "doas", "argv_prefix": [], "working_roots": ["/"], "approval": "preapproved", "timeout_seconds": 30}
-    ]
-    engine = PolicyEngine(preapproved_rules=rules)
-    req_env_sudo = ActionRequest(id="1", tool="process.run", arguments={"argv": ["env", "sudo", "rm", "-rf", "/"]})
-    assert engine.evaluate(req_env_sudo) == PolicyDecision.ASK_USER
-
-    req_pkexec = ActionRequest(id="2", tool="process.run", arguments={"argv": ["pkexec", "bash"]})
-    assert engine.evaluate(req_pkexec) == PolicyDecision.ASK_USER
-
-    req_su = ActionRequest(id="3", tool="process.run", arguments={"argv": ["su", "-"]})
-    assert engine.evaluate(req_su) == PolicyDecision.ASK_USER
-
-    req_doas = ActionRequest(id="4", tool="process.run", arguments={"argv": ["doas", "apt"]})
-    assert engine.evaluate(req_doas) == PolicyDecision.ASK_USER
 
 def test_D_path_normalization():
     """D. Path Normalization: block .. traversals."""
@@ -385,40 +365,7 @@ def test_DEFECT_B_broad_preapproval_rules():
     with pytest.raises(ValidationError):
         PolicyEngine(preapproved_rules=[{"tool": "process.run"}])
         
-def test_DEFECT_C_privileged_executable_path_bypass():
-    """Defect C: Absolute paths to privileged executables must be blocked."""
-    from app.policy.engine import PolicyEngine, PolicyDecision
-    from app.actions.schema import ActionRequest
-    
-    rules = [
-        {"id": "test", "executable": "/usr/bin/sudo", "argv_prefix": [], "working_roots": ["/"], "approval": "preapproved", "timeout_seconds": 30},
-        {"id": "test", "executable": "/bin/su", "argv_prefix": [], "working_roots": ["/"], "approval": "preapproved", "timeout_seconds": 30}
-    ]
-    # We will assume test_DEFECT_B enforces argv_prefix, so let's add it
-    for r in rules: r["argv_prefix"] = []
-    
-    engine = PolicyEngine(preapproved_rules=rules)
-    req1 = ActionRequest(id="1", tool="process.run", arguments={"argv": ["/usr/bin/sudo", "rm", "-rf", "/"]})
-    assert engine.evaluate(req1) == PolicyDecision.ASK_USER
-    
-    req2 = ActionRequest(id="2", tool="process.run", arguments={"argv": ["/bin/su", "-"]})
-    assert engine.evaluate(req2) == PolicyDecision.ASK_USER
 
-def test_DEFECT_D_env_wrapper_bypass():
-    """Defect D: Env wrapper bypass via -i or FOO=bar arguments."""
-    from app.policy.engine import PolicyEngine, PolicyDecision
-    from app.actions.schema import ActionRequest
-    
-    rules = [
-        {"id": "test", "executable": "env", "argv_prefix": [], "working_roots": ["/"], "approval": "preapproved", "timeout_seconds": 30},
-        {"id": "test", "executable": "/usr/bin/env", "argv_prefix": [], "working_roots": ["/"], "approval": "preapproved", "timeout_seconds": 30}
-    ]
-    engine = PolicyEngine(preapproved_rules=rules)
-    req1 = ActionRequest(id="1", tool="process.run", arguments={"argv": ["env", "-i", "sudo", "bash"]})
-    assert engine.evaluate(req1) == PolicyDecision.ASK_USER
-    
-    req2 = ActionRequest(id="2", tool="process.run", arguments={"argv": ["/usr/bin/env", "FOO=bar", "/bin/su"]})
-    assert engine.evaluate(req2) == PolicyDecision.ASK_USER
     
 def test_DEFECT_E_approval_hash_binding():
     """Defect E: ApprovalRequest must not allow mismatched metadata."""
@@ -533,3 +480,43 @@ def test_ISSUE_B_malformed_process_representation():
     # argv=["git", 123]
     req7 = ActionRequest(id="1", tool="process.run", arguments={"argv": ["git", 123]})
     assert engine.evaluate(req7) == PolicyDecision.DENY
+def test_ISSUE_C_never_preapprove_executables():
+    from app.policy.engine import PolicyEngine, PolicyDecision, PreapprovalRule, NEVER_PREAPPROVE_EXECUTABLES
+    from app.actions.schema import ActionRequest
+    from pydantic import ValidationError
+    import pytest
+
+    # PreapprovalRule validation
+    for exe in NEVER_PREAPPROVE_EXECUTABLES:
+        with pytest.raises(ValidationError):
+            PreapprovalRule.model_validate({
+                "id": f"test-{exe}",
+                "executable": exe,
+                "argv_prefix": [],
+                "working_roots": ["/"],
+                "approval": "preapproved",
+                "timeout_seconds": 30
+            })
+        
+        with pytest.raises(ValidationError):
+            PreapprovalRule.model_validate({
+                "id": f"test-{exe}-abs",
+                "executable": f"/usr/bin/{exe}",
+                "argv_prefix": [],
+                "working_roots": ["/"],
+                "approval": "preapproved",
+                "timeout_seconds": 30
+            })
+
+    engine = PolicyEngine()
+    # Runtime actions
+    for exe in NEVER_PREAPPROVE_EXECUTABLES:
+        req = ActionRequest(id="1", tool="process.run", arguments={"argv": [exe, "arg"]})
+        assert engine.evaluate(req) == PolicyDecision.ASK_USER
+        
+        req_abs = ActionRequest(id="1", tool="process.run", arguments={"argv": [f"/bin/{exe}", "arg"]})
+        assert engine.evaluate(req_abs) == PolicyDecision.ASK_USER
+
+    # Env wrapper (no longer parsed for deep preapproval bypasses, but 'env' itself is blocked)
+    req_env = ActionRequest(id="1", tool="process.run", arguments={"argv": ["env", "sudo", "ls"]})
+    assert engine.evaluate(req_env) == PolicyDecision.ASK_USER

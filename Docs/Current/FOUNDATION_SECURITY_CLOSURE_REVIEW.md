@@ -33,3 +33,17 @@
 - GREEN RESULT: Pass.
 - RESIDUAL RISK: None.
 
+
+## ISSUE C: SHELL / ENV / PRIVILEGE BROKER PREAPPROVAL
+- SEVERITY: CRITICAL
+- CONFIRMED: YES
+- RECOMMENDED SOLUTION: Do not parse wrappers for bypass; use one centralized constant `NEVER_PREAPPROVE_EXECUTABLES`.
+- SOLUTION DECISION: ACCEPT_RECOMMENDED
+- SELECTED SOLUTION: Added `NEVER_PREAPPROVE_EXECUTABLES`. Validated via `os.path.basename` in `evaluate()` returning `ASK_USER` and `PreapprovalRule.validate_executable()` raising `ValidationError`.
+- RATIONALE: It's significantly simpler and robust compared to parsing unbounded wrapper commands.
+- RED TEST: `test_ISSUE_C_never_preapprove_executables`
+- RED RESULT: PreapprovalRule failed to reject privileged executables.
+- IMPLEMENTATION: Updated `engine.py`. Redundant tests deleted.
+- GREEN RESULT: Pass.
+- RESIDUAL RISK: None.
+

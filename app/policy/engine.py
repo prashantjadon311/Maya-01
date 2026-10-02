@@ -4,10 +4,17 @@ from enum import Enum
 from pathlib import Path
 import os
 from typing import Any, Literal
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.actions.schema import ActionRequest
 from app.core.config import FileRootConfig
+
+NEVER_PREAPPROVE_EXECUTABLES = frozenset({
+    "sudo", "su", "doas", "pkexec", "env",
+    "sh", "bash", "dash", "zsh", "fish",
+    "apt", "apt-get", "dpkg", "dnf", "yum", "rpm", "snap", "flatpak",
+    "systemctl", "service"
+})
 
 class PreapprovalRule(BaseModel):
     model_config = ConfigDict(
@@ -21,6 +28,13 @@ class PreapprovalRule(BaseModel):
     working_roots: tuple[str, ...] = Field(min_length=1)
     approval: Literal["preapproved"]
     timeout_seconds: int = Field(gt=0)
+
+    @model_validator(mode="after")
+    def validate_executable(self) -> "PreapprovalRule":
+        import os
+        if os.path.basename(self.executable) in NEVER_PREAPPROVE_EXECUTABLES:
+            raise ValueError(f"Executable {self.executable} cannot be preapproved")
+        return self
 
 
 class PolicyDecision(str, Enum):
@@ -94,16 +108,8 @@ class PolicyEngine:
 
             executable = argv[0]
             exec_basename = os.path.basename(executable)
-            privileged = {"sudo", "su", "doas", "pkexec", "apt", "systemctl", "dpkg", "dnf", "yum"}
-            if exec_basename in privileged:
+            if exec_basename in NEVER_PREAPPROVE_EXECUTABLES:
                 return PolicyDecision.ASK_USER
-            
-            if exec_basename == "env":
-                for arg in argv[1:]:
-                    if not arg.startswith("-") and "=" not in arg:
-                        if os.path.basename(arg) in privileged:
-                            return PolicyDecision.ASK_USER
-                        break
 
         # 3. File actions policy check
         if action.tool.startswith("file."):
