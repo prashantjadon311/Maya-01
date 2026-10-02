@@ -103,3 +103,17 @@
 - GREEN RESULT: Pass.
 - RESIDUAL RISK: None.
 
+
+## ISSUE M: ACTION DEFINITION/PACK SCHEMA WEAKNESS
+- SEVERITY: IMPORTANT
+- CONFIRMED: YES
+- RECOMMENDED SOLUTION: Enforce strict constraints on pack schema version, ID patterns, and timeouts.
+- SOLUTION DECISION: ACCEPT_RECOMMENDED
+- SELECTED SOLUTION: `schema_version: Literal[1]`, regex pattern for IDs, `timeout_seconds` > 0.
+- RATIONALE: It prevents future parsing ambiguity and ensures actions can never hang indefinitely due to negative/zero timeouts.
+- RED TEST: `test_ISSUE_M_action_pack_weaknesses` added.
+- RED RESULT: Configuration successfully parsed invalid IDs and 0 timeout.
+- IMPLEMENTATION: Updated `app/actions/schema.py`.
+- GREEN RESULT: Pass.
+- RESIDUAL RISK: None.
+

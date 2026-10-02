@@ -78,20 +78,21 @@ class ActionDefinition(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    id: str
+    id: str = Field(pattern=r"^[a-z0-9_]+\.[a-z0-9_]+$")
     enabled: bool = True
     phrases: list[str] = Field(default_factory=list)
     executor: Literal["process", "xdg_open", "browser", "file", "composite"]
     arguments: dict[str, Any] = Field(default_factory=dict)
     approval: Literal["preapproved", "ask_user", "always_ask", "deny"] = "preapproved"
     risk: Literal["low", "medium", "high", "critical"] = "low"
-    timeout_seconds: int = 30
+    timeout_seconds: int = Field(default=30, gt=0)
+
 class ActionPack(BaseModel):
     """Versioned action pack containing multiple action definitions."""
 
     model_config = ConfigDict(extra="forbid")
 
-    schema_version: int = 1
-    pack_id: str
+    schema_version: Literal[1] = 1
+    pack_id: str = Field(pattern=r"^[a-z0-9_]+$")
     label: str
     actions: list[ActionDefinition] = Field(default_factory=list)

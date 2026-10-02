@@ -202,3 +202,27 @@ def test_ISSUE_L_canonical_json_types():
         ActionRequest(id="1", tool="test", arguments={"data": {"nested": set([1,2])}})    
     # Valid
     ActionRequest(id="1", tool="test", arguments={"data": {"nested": [1, 2, 3.14, "str", True, None]}})
+def test_ISSUE_M_action_pack_weaknesses():
+    from app.actions.schema import ActionDefinition, ActionPack
+    from pydantic import ValidationError
+    import pytest
+
+    # timeout_seconds > 0
+    with pytest.raises(ValidationError):
+        ActionDefinition(id="test.action", executor="process", timeout_seconds=0)
+    
+    # id pattern
+    with pytest.raises(ValidationError):
+        ActionDefinition(id="invalid-id", executor="process")
+    with pytest.raises(ValidationError):
+        ActionDefinition(id="invalid.ID", executor="process")
+
+    # pack schema version and id
+    with pytest.raises(ValidationError):
+        ActionPack(schema_version=2, pack_id="core", label="Core")
+    with pytest.raises(ValidationError):
+        ActionPack(schema_version=1, pack_id="invalid-pack", label="Core")
+
+    # Valid
+    ActionDefinition(id="core.open", executor="process", timeout_seconds=10)
+    ActionPack(schema_version=1, pack_id="core", label="Core")
