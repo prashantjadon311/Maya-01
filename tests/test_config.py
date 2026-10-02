@@ -94,3 +94,25 @@ def test_env_key_reference_only_no_real_key_required(monkeypatch):
     cfg = load_config(fixture_path)
     assert cfg.ai.api_key_env == "NVIDIA_API_KEY"
     assert cfg.stt.api_key_env == "NVIDIA_API_KEY"
+def test_ISSUE_K_config_model_constraints():
+    from app.core.config import DashboardConfig, ResourcesConfig, BrowserDomainConfig
+    from pydantic import ValidationError
+    import pytest
+
+    # Dashboard port bounds
+    with pytest.raises(ValidationError):
+        DashboardConfig(port=-1)
+    with pytest.raises(ValidationError):
+        DashboardConfig(port=99999)
+
+    # Resources bounds
+    with pytest.raises(ValidationError):
+        ResourcesConfig(memory_high_mb=10, memory_max_mb=20) # Below 50
+    with pytest.raises(ValidationError):
+        ResourcesConfig(max_event_queue=-5)
+    with pytest.raises(ValidationError):
+        ResourcesConfig(max_audio_command_seconds=0)
+
+    # Browser capabilities
+    with pytest.raises(ValidationError):
+        BrowserDomainConfig(pattern="*", capabilities=["HACK_SYS"])

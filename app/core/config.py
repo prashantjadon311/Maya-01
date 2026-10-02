@@ -2,7 +2,7 @@
 
 from pathlib import Path
 import tomllib
-from typing import Any
+from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
@@ -55,7 +55,7 @@ class DashboardConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     host: str = "127.0.0.1"
-    port: int = 8765
+    port: int = Field(default=8765, ge=1, le=65535)
     open_browser: bool = True
 
 
@@ -71,10 +71,10 @@ class AgentsConfig(BaseModel):
 class ResourcesConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    memory_high_mb: int = Field(default=240, gt=0)
-    memory_max_mb: int = Field(default=300, gt=0)
-    max_event_queue: int = 256
-    max_audio_command_seconds: int = 30
+    memory_high_mb: int = Field(default=240, ge=50, le=2048)
+    memory_max_mb: int = Field(default=300, ge=50, le=2048)
+    max_event_queue: int = Field(default=256, ge=1)
+    max_audio_command_seconds: int = Field(default=30, ge=1, le=300)
 
     @model_validator(mode="after")
     def validate_memory_limits(self) -> "ResourcesConfig":
@@ -98,9 +98,9 @@ class PrivacyConfig(BaseModel):
 class BrowserDomainConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    pattern: str
+    pattern: str = Field(min_length=1)
     enabled: bool = True
-    capabilities: list[str] = Field(default_factory=list)
+    capabilities: list[Literal["open", "read", "click", "type", "submit", "evaluate", "javascript", "cookies", "local_storage", "downloads", "camera", "microphone"]] = Field(default_factory=list)
     adapter: str | None = None
 
 

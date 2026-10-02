@@ -75,3 +75,17 @@
 - GREEN RESULT: Pass.
 - RESIDUAL RISK: None.
 
+
+## ISSUE K: MISSING SEMANTIC SECURITY ON CONFIG MODELS
+- SEVERITY: IMPORTANT
+- CONFIRMED: YES
+- RECOMMENDED SOLUTION: Use strict Pydantic bounds for memory, ports, timeouts, etc.
+- SOLUTION DECISION: ACCEPT_RECOMMENDED
+- SELECTED SOLUTION: Added strict `ge` and `le` bounds on `DashboardConfig`, `ResourcesConfig`, and `BrowserDomainConfig`. Hardcoded semantic Literal capabilities for the browser.
+- RATIONALE: Fails config parsing completely instead of allowing runtime bounds failures or malicious limits (like `memory_max_mb=-10` or `port=99999`).
+- RED TEST: `test_ISSUE_K_config_model_constraints` added.
+- RED RESULT: Configuration successfully parsed invalid logical values.
+- IMPLEMENTATION: Updated `app/core/config.py`.
+- GREEN RESULT: Pass.
+- RESIDUAL RISK: None.
+
