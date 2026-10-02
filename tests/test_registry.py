@@ -358,3 +358,219 @@ def test_model_forged_action_request_gives_no_registry_trust(tmp_path):
     forged = ActionRequest(id=match.action_id, tool="process.run", arguments={"argv": ["rm", "-rf", "/"]})
     decision = PolicyEngine().evaluate(forged)
     assert decision != PolicyDecision.ALLOW_PREAPPROVED
+
+
+def test_registry_match_immutability_and_snapshot_version(tmp_path):
+    from app.actions.registry import RegistryAmbiguity
+    write_pack(
+        tmp_path,
+        actions=[
+            definition(
+                "app.copy",
+                phrases=["copy {target} to {dest}"],
+                arguments={"argv": ["cp", "{target}", "{dest}"]},
+            )
+        ],
+    )
+    reg = registry(tmp_path)
+    match = reg.resolve("copy file1 to file2")
+    assert match is not None
+    assert match.snapshot_version == reg.snapshot_version == 1
+    assert match.captured_slots["target"] == "file1"
+    assert match.captured_slots["dest"] == "file2"
+
+    # Slot mapping must be immutable
+    with pytest.raises(TypeError):
+        match.captured_slots["target"] = "hacked"
+
+    # Ambiguity action_ids must be immutable
+    ambiguity = RegistryAmbiguity(action_ids=["app.one", "app.two"])
+    assert isinstance(ambiguity.action_ids, tuple)
+    with pytest.raises(TypeError):
+        ambiguity.action_ids[0] = "app.hacked"
+    with pytest.raises(AttributeError):
+        ambiguity.action_ids.append("app.three")
+
+
+def test_same_action_overlapping_phrases_returns_ambiguity(tmp_path):
+    from app.actions.registry import RegistryAmbiguity
+    write_pack(
+        tmp_path,
+        actions=[
+            definition(
+                "app.copy",
+                phrases=["copy {x}", "{x} foo"],
+                arguments={"argv": ["cp", "{x}"]},
+            )
+        ],
+    )
+    reg = registry(tmp_path)
+    # "copy foo" matches both "copy {x}" (x="foo") and "{x} foo" (x="copy")
+    result = reg.resolve("copy foo")
+    assert isinstance(result, RegistryAmbiguity)
+    assert result.action_ids == ("app.copy",)
+
+
+def test_strict_argument_substitution():
+    from app.actions.matcher import substitute_arguments
+
+    template = {"argv": ["cp", "{src}", "{dest}"], "meta": {"owner": "{user}"}}
+    slots = {"src": "/a", "dest": "/b", "user": "alice"}
+    result = substitute_arguments(template, slots)
+    assert result == {"argv": ["cp", "/a", "/b"], "meta": {"owner": "alice"}}
+
+    # Missing slot must fail closed (raise ValueError)
+    with pytest.raises(ValueError, match="Missing required captured slot 'dest'"):
+        substitute_arguments(template, {"src": "/a", "user": "alice"})
+
+    # Extra slots are safely ignored if not referenced
+    extra_slots = {"src": "/a", "dest": "/b", "user": "alice", "unused": "ignored"}
+    assert substitute_arguments(template, extra_slots) == result
+
+
+def test_json_duplicate_keys_rejected(tmp_path):
+    from app.actions.registry import ActionRegistry
+
+    dup_json = """{
+        "pack_id": "core",
+        "label": "core",
+        "schema_version": 1,
+        "actions": [
+            {
+                "id": "app.test",
+                "phrases": ["test"],
+                "executor": "process",
+                "approval": "deny",
+                "approval": "preapproved",
+                "risk": "low",
+                "arguments": {"argv": ["test"]}
+            }
+        ]
+    }"""
+    (tmp_path / "core.json").write_text(dup_json, encoding="utf-8")
+    reg = ActionRegistry(tmp_path)
+    assert not reg.reload()
+    assert any("Duplicate JSON key" in d for d in reg.diagnostics)
+
+
+def test_bounded_file_reading_chunks(tmp_path, monkeypatch):
+    import os
+    from app.actions.registry import ActionRegistry
+
+    write_pack(tmp_path, "core")
+    reg = ActionRegistry(tmp_path)
+
+    # Simulate chunked os.read calls returning at most 7 bytes per read
+    real_os_read = os.read
+    def chunked_read(fd, n):
+        return real_os_read(fd, min(n, 7))
+
+    monkeypatch.setattr(os, "read", chunked_read)
+    assert reg.reload()
+    assert reg.get_definition("app.open") is not None
+
+
+def test_lkg_transactionality(tmp_path):
+    from app.actions.registry import ActionRegistry
+
+    write_pack(tmp_path, "pack1", [definition("app.one", phrases=["action one"])])
+    write_pack(tmp_path, "pack2", [definition("app.two", phrases=["action two"])])
+    reg = ActionRegistry(tmp_path)
+    assert reg.reload()
+    assert reg.snapshot_version == 1
+    assert "pack1.json" in reg._last_known_good
+    assert "pack2.json" in reg._last_known_good
+    initial_lkg = dict(reg._last_known_good)
+
+    # Intentionally delete pack2 from disk
+    (tmp_path / "pack2.json").unlink()
+
+    # Modify pack1 to fail candidate validation (invalid composite reference)
+    bad_action = definition(
+        "app.bad_comp",
+        executor="composite",
+        phrases=["bad comp"],
+        arguments={"steps": ["nonexistent.step"]},
+    )
+    write_pack(tmp_path, "pack1", [definition("app.one", phrases=["action one"]), bad_action])
+
+    # Reload must fail validation; because reload failed, candidate deletions must NOT mutate _last_known_good
+    assert not reg.reload()
+    assert reg._last_known_good == initial_lkg
+    assert reg.snapshot_version == 1
+    assert reg.resolve("action one").action_id == "app.one"
+    assert reg.resolve("action two").action_id == "app.two"
+
+
+def test_bounds_after_nfkc_normalization(tmp_path):
+    from app.actions.matcher import parse_phrase_template
+    from app.actions.registry import ActionRegistry
+
+    # \ufdfa expands from 1 char to 18 chars in NFKC.
+    # 35 * 18 = 630 chars > MAX_PHRASE_CHARS (512), though len(phrase) == 35 <= 512
+    expanding_phrase = "\ufdfa" * 35
+    assert len(expanding_phrase) == 35 <= 512
+    with pytest.raises(ValueError, match="Normalized phrase exceeds maximum length"):
+        parse_phrase_template(expanding_phrase)
+
+    write_pack(tmp_path, "core", [definition("app.open", phrases=["open app"])])
+    reg = ActionRegistry(tmp_path)
+    assert reg.reload()
+
+    # Command that expands beyond 4096 characters under NFKC
+    expanding_cmd = "\ufdfa" * 300  # 300 * 18 = 5400 > 4096, but len == 300 <= 4096
+    assert len(expanding_cmd) <= 4096
+    assert reg.resolve(expanding_cmd) is None
+
+
+def test_max_total_phrases_limit(tmp_path):
+    from app.actions.registry import ActionRegistry, MAX_TOTAL_PHRASES
+
+    # Create packs that exceed MAX_TOTAL_PHRASES in total
+    actions = []
+    # 130 actions with 32 phrases each = 4160 phrases > 4096
+    for i in range(130):
+        phrases = [f"phrase {i} variant {j}" for j in range(32)]
+        actions.append(definition(f"app.act_{i}", phrases=phrases))
+
+    write_pack(tmp_path, "bulk", actions=actions)
+    reg = ActionRegistry(tmp_path)
+    assert not reg.reload()
+    assert any("MAX_TOTAL_PHRASES" in d for d in reg.diagnostics)
+
+
+def test_composite_disabled_child_rejected(tmp_path):
+    from app.actions.registry import ActionRegistry
+
+    child = definition("app.child", enabled=False)
+    composite = definition(
+        "app.comp",
+        enabled=True,
+        executor="composite",
+        phrases=["run comp"],
+        arguments={"steps": ["app.child"]},
+    )
+    write_pack(tmp_path, "core", actions=[child, composite])
+    reg = ActionRegistry(tmp_path)
+    assert not reg.reload()
+    assert any("references disabled action 'app.child'" in d for d in reg.diagnostics)
+
+
+def test_strict_action_pack_models():
+    from app.actions.schema import ActionDefinition, ActionPack
+    from pydantic import ValidationError
+
+    # Strings should not coerce to int or bool in strict mode
+    with pytest.raises(ValidationError):
+        ActionDefinition.model_validate(definition(timeout_seconds="30"))
+
+    with pytest.raises(ValidationError):
+        ActionDefinition.model_validate(definition(enabled="false"))
+
+    with pytest.raises(ValidationError):
+        ActionPack.model_validate({
+            "pack_id": "core",
+            "label": "core",
+            "schema_version": "1",
+            "actions": []
+        })

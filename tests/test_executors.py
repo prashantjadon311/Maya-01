@@ -1,0 +1,553 @@
+"""Tests for PH-040 Safe Executors (Process, File, XDG, Browser)."""
+
+import os
+from pathlib import Path
+import pytest
+from pydantic import ValidationError
+
+from app.actions.schema import ActionRequest
+from app.core.config import FileRootConfig
+from app.executors.base import ProcessArgs, FileReadArgs, FileWriteArgs, XdgOpenArgs
+from app.executors.files import FileExecutor
+from app.executors.process import ProcessExecutor
+from app.executors.xdg import XdgExecutor
+from app.policy.engine import PolicyEngine, PolicyEvaluation, PolicyDecision, PreapprovalRule
+from app.policy.risk import RiskLevel
+
+
+# ---------------------------------------------------------------------------
+# PROCESS EXECUTOR TESTS
+# ---------------------------------------------------------------------------
+
+def test_process_args_strict_unknown_fields_and_validation():
+    # Extra fields like shell or stdin must be rejected
+    with pytest.raises(ValidationError):
+        ProcessArgs.model_validate({"argv": ["ls"], "cwd": "/work", "shell": True})
+
+    with pytest.raises(ValidationError):
+        ProcessArgs.model_validate({"argv": ["ls"], "cwd": "/work", "stdin": "payload"})
+
+    # Empty argv or whitespace only
+    with pytest.raises(ValidationError):
+        ProcessArgs.model_validate({"argv": [], "cwd": "/work"})
+
+    with pytest.raises(ValidationError):
+        ProcessArgs.model_validate({"argv": ["  "], "cwd": "/work"})
+
+    # NUL in argv
+    with pytest.raises(ValidationError):
+        ProcessArgs.model_validate({"argv": ["echo", "bad\x00arg"], "cwd": "/work"})
+
+    # Valid args
+    args = ProcessArgs.model_validate({"argv": ["echo", "hello"], "cwd": "/tmp"})
+    assert args.argv == ["echo", "hello"]
+
+
+@pytest.mark.anyio
+async def test_process_shell_metacharacters_remain_literal(tmp_path):
+    evil_file = tmp_path / "evil.txt"
+    dangerous_arg = f"; touch {evil_file}; echo hacked"
+
+    executor = ProcessExecutor()
+    req = ActionRequest(
+        id="test.proc",
+        tool="process.run",
+        arguments={"argv": ["echo", dangerous_arg], "cwd": str(tmp_path)},
+    )
+    # Preapproved context with network_allowed=True and tmp_path working root
+    rule = PreapprovalRule(
+        id="rule.echo",
+        executable="echo",
+        argv_prefix=(),
+        working_roots=(str(tmp_path),),
+        approval="preapproved",
+        timeout_seconds=10,
+        risk="low",
+        network_allowed=True,
+    )
+    context = PolicyEvaluation(
+        decision=PolicyDecision.ALLOW_PREAPPROVED,
+        trusted_risk=RiskLevel.LOW,
+        matched_preapproval_rule=rule,
+        resolved_executable=Path("/bin/echo"),
+    )
+
+    result = await executor.execute(req, context=context)
+    assert result.success
+    # The shell metacharacters must have been passed literally to echo, NOT evaluated by a shell
+    assert not evil_file.exists()
+    assert dangerous_arg in result.output
+
+
+@pytest.mark.anyio
+async def test_process_timeout_kills_process(tmp_path):
+    executor = ProcessExecutor()
+    req = ActionRequest(
+        id="test.sleep",
+        tool="process.run",
+        arguments={"argv": ["sleep", "10"], "cwd": str(tmp_path)},
+    )
+    rule = PreapprovalRule(
+        id="rule.sleep",
+        executable="sleep",
+        argv_prefix=(),
+        working_roots=(str(tmp_path),),
+        approval="preapproved",
+        timeout_seconds=1,  # Short 1-second timeout
+        risk="low",
+        network_allowed=True,
+    )
+    context = PolicyEvaluation(
+        decision=PolicyDecision.ALLOW_PREAPPROVED,
+        trusted_risk=RiskLevel.LOW,
+        matched_preapproval_rule=rule,
+        resolved_executable=Path("/bin/sleep"),
+    )
+
+    result = await executor.execute(req, context=context)
+    assert not result.success
+    assert "timed out" in result.error
+
+
+@pytest.mark.anyio
+async def test_process_bounded_output(tmp_path):
+    executor = ProcessExecutor()
+    # Script outputting 2 MB of text
+    py_script = "import sys; sys.stdout.write('A' * 2_000_000)"
+    req = ActionRequest(
+        id="test.output",
+        tool="process.run",
+        arguments={"argv": ["python3", "-c", py_script], "cwd": str(tmp_path)},
+    )
+    rule = PreapprovalRule(
+        id="rule.py",
+        executable="python3",
+        argv_prefix=("-c",),
+        working_roots=(str(tmp_path),),
+        approval="preapproved",
+        timeout_seconds=10,
+        risk="medium",
+        network_allowed=True,
+    )
+    context = PolicyEvaluation(
+        decision=PolicyDecision.ALLOW_PREAPPROVED,
+        trusted_risk=RiskLevel.MEDIUM,
+        matched_preapproval_rule=rule,
+        resolved_executable=Path("/usr/bin/python3"),
+    )
+
+    result = await executor.execute(req, context=context)
+    assert result.success
+    # Output must be capped at MAX_PROCESS_OUTPUT_BYTES (1 MiB)
+    assert len(result.output) <= 1_048_576
+
+
+@pytest.mark.anyio
+async def test_process_stdin_unavailable(tmp_path):
+    executor = ProcessExecutor()
+    # Process trying to read from stdin must receive EOF immediately
+    script = "import sys; data = sys.stdin.read(); print(f'read:{len(data)}')"
+    req = ActionRequest(
+        id="test.stdin",
+        tool="process.run",
+        arguments={"argv": ["python3", "-c", script], "cwd": str(tmp_path)},
+    )
+    rule = PreapprovalRule(
+        id="rule.stdin",
+        executable="python3",
+        argv_prefix=("-c",),
+        working_roots=(str(tmp_path),),
+        approval="preapproved",
+        timeout_seconds=5,
+        risk="medium",
+        network_allowed=True,
+    )
+    context = PolicyEvaluation(
+        decision=PolicyDecision.ALLOW_PREAPPROVED,
+        trusted_risk=RiskLevel.MEDIUM,
+        matched_preapproval_rule=rule,
+        resolved_executable=Path("/usr/bin/python3"),
+    )
+
+    result = await executor.execute(req, context=context)
+    assert result.success
+    assert "read:0" in result.output
+
+
+@pytest.mark.anyio
+async def test_process_malformed_and_escaping_cwd_denied(tmp_path):
+    executor = ProcessExecutor()
+    nonexistent = tmp_path / "nonexistent"
+
+    req = ActionRequest(
+        id="test.cwd",
+        tool="process.run",
+        arguments={"argv": ["echo", "test"], "cwd": str(nonexistent)},
+    )
+    rule = PreapprovalRule(
+        id="rule.echo",
+        executable="echo",
+        argv_prefix=(),
+        working_roots=(str(tmp_path),),
+        approval="preapproved",
+        timeout_seconds=5,
+        risk="low",
+        network_allowed=True,
+    )
+    context = PolicyEvaluation(
+        decision=PolicyDecision.ALLOW_PREAPPROVED,
+        trusted_risk=RiskLevel.LOW,
+        matched_preapproval_rule=rule,
+        resolved_executable=Path("/bin/echo"),
+    )
+
+    result = await executor.execute(req, context=context)
+    assert not result.success
+    assert "cwd is not an existing directory" in result.error
+
+    # Symlink cwd escape
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    inside = tmp_path / "work"
+    inside.mkdir()
+    sym_escape = inside / "link_to_outside"
+    sym_escape.symlink_to(outside)
+
+    req2 = ActionRequest(
+        id="test.escape",
+        tool="process.run",
+        arguments={"argv": ["echo", "test"], "cwd": str(sym_escape)},
+    )
+    rule2 = PreapprovalRule(
+        id="rule.echo2",
+        executable="echo",
+        argv_prefix=(),
+        working_roots=(str(inside),),  # Only inside allowed
+        approval="preapproved",
+        timeout_seconds=5,
+        risk="low",
+        network_allowed=True,
+    )
+    context2 = PolicyEvaluation(
+        decision=PolicyDecision.ALLOW_PREAPPROVED,
+        trusted_risk=RiskLevel.LOW,
+        matched_preapproval_rule=rule2,
+        resolved_executable=Path("/bin/echo"),
+    )
+
+    result2 = await executor.execute(req2, context=context2)
+    assert not result2.success
+    assert "outside allowed working roots" in result2.error
+
+
+@pytest.mark.anyio
+async def test_process_controlled_env_and_dangerous_rejected(tmp_path):
+    executor = ProcessExecutor()
+    rule = PreapprovalRule(
+        id="rule.echo",
+        executable="echo",
+        argv_prefix=(),
+        working_roots=(str(tmp_path),),
+        approval="preapproved",
+        timeout_seconds=5,
+        risk="low",
+        env_allowlist=("SAFE_VAR",),
+        network_allowed=True,
+    )
+    context = PolicyEvaluation(
+        decision=PolicyDecision.ALLOW_PREAPPROVED,
+        trusted_risk=RiskLevel.LOW,
+        matched_preapproval_rule=rule,
+        resolved_executable=Path("/bin/echo"),
+    )
+
+    # Dangerous variable rejected
+    req_dangerous = ActionRequest(
+        id="test.danger",
+        tool="process.run",
+        arguments={"argv": ["echo", "hi"], "cwd": str(tmp_path), "env": {"LD_PRELOAD": "/tmp/evil.so"}},
+    )
+    res_danger = await executor.execute(req_dangerous, context=context)
+    assert not res_danger.success
+    assert "Dangerous environment variable" in res_danger.error
+
+    # Unallowed variable rejected
+    req_unallowed = ActionRequest(
+        id="test.unallowed",
+        tool="process.run",
+        arguments={"argv": ["echo", "hi"], "cwd": str(tmp_path), "env": {"OTHER_VAR": "val"}},
+    )
+    res_unallowed = await executor.execute(req_unallowed, context=context)
+    assert not res_unallowed.success
+    assert "not permitted by rule allowlist" in res_unallowed.error
+
+    # Allowed variable passed
+    req_allowed = ActionRequest(
+        id="test.allowed",
+        tool="process.run",
+        arguments={"argv": ["echo", "hi"], "cwd": str(tmp_path), "env": {"SAFE_VAR": "hello_safe"}},
+    )
+    res_allowed = await executor.execute(req_allowed, context=context)
+    assert res_allowed.success
+
+
+@pytest.mark.anyio
+async def test_process_path_hijack_cannot_change_preapproved_executable(tmp_path, monkeypatch):
+    # Create fake git executable in hijack directory
+    hijack_dir = tmp_path / "hijack_bin"
+    hijack_dir.mkdir()
+    fake_git = hijack_dir / "git"
+    fake_git.write_text("#!/bin/sh\necho HIJACKED\n", encoding="utf-8")
+    fake_git.chmod(0o755)
+
+    # Prepend hijack_dir to ambient os.environ["PATH"]
+    original_path = os.environ.get("PATH", "")
+    monkeypatch.setenv("PATH", f"{hijack_dir}:{original_path}")
+
+    # Policy evaluation must NOT resolve to hijack_dir
+    engine = PolicyEngine(
+        preapproved_rules=[
+            PreapprovalRule(
+                id="rule.git",
+                executable="git",
+                argv_prefix=("--version",),
+                working_roots=(str(tmp_path),),
+                approval="preapproved",
+                timeout_seconds=5,
+                risk="low",
+                network_allowed=True,
+            )
+        ]
+    )
+    req = ActionRequest(
+        id="test.git",
+        tool="process.run",
+        arguments={"argv": ["git", "--version"], "cwd": str(tmp_path)},
+    )
+    eval_res = engine.evaluate_detailed(req)
+    assert eval_res.decision == PolicyDecision.ALLOW_PREAPPROVED
+    assert eval_res.resolved_executable is not None
+    # Must resolve to trusted system path (/usr/bin/git), not hijack_dir
+    assert str(eval_res.resolved_executable) != str(fake_git)
+    assert eval_res.resolved_executable.is_relative_to(Path("/usr/bin")) or eval_res.resolved_executable.is_relative_to(Path("/bin"))
+
+    # Execute process and confirm HIJACKED was not executed
+    executor = ProcessExecutor()
+    result = await executor.execute(req, context=eval_res)
+    assert result.success
+    assert "HIJACKED" not in result.output
+    assert "git version" in result.output
+
+
+@pytest.mark.anyio
+async def test_process_no_fake_network_allowed_enforcement(tmp_path):
+    executor = ProcessExecutor()
+    rule = PreapprovalRule(
+        id="rule.echo",
+        executable="echo",
+        argv_prefix=(),
+        working_roots=(str(tmp_path),),
+        approval="preapproved",
+        timeout_seconds=5,
+        risk="low",
+        network_allowed=False,  # network_allowed=False requires actual isolation backend
+    )
+    context = PolicyEvaluation(
+        decision=PolicyDecision.ALLOW_PREAPPROVED,
+        trusted_risk=RiskLevel.LOW,
+        matched_preapproval_rule=rule,
+        resolved_executable=Path("/bin/echo"),
+    )
+
+    req = ActionRequest(
+        id="test.echo",
+        tool="process.run",
+        arguments={"argv": ["echo", "test"], "cwd": str(tmp_path)},
+    )
+    result = await executor.execute(req, context=context)
+    # Must fail closed with clear error
+    assert not result.success
+    assert "Network isolation unavailable" in result.error
+
+
+# ---------------------------------------------------------------------------
+# FILE EXECUTOR TESTS
+# ---------------------------------------------------------------------------
+
+@pytest.mark.anyio
+async def test_file_traversal_denied(tmp_path):
+    work_dir = tmp_path / "work"
+    work_dir.mkdir()
+    secret_file = tmp_path / "secret.txt"
+    secret_file.write_text("classified", encoding="utf-8")
+
+    executor = FileExecutor(
+        allowed_roots=[FileRootConfig(path=str(work_dir), read=True, write=True, delete=False)]
+    )
+
+    # Traversal attempt
+    req = ActionRequest(
+        id="test.read",
+        tool="file.read",
+        arguments={"path": str(work_dir / ".." / "secret.txt")},
+    )
+    result = await executor.execute(req)
+    assert not result.success
+    assert "outside configured allowed file roots" in result.error
+
+
+@pytest.mark.anyio
+async def test_file_symlink_escape_denied(tmp_path):
+    work_dir = tmp_path / "work"
+    work_dir.mkdir()
+    secret_file = tmp_path / "secret.txt"
+    secret_file.write_text("classified", encoding="utf-8")
+
+    symlink_file = work_dir / "symlink_secret"
+    symlink_file.symlink_to(secret_file)
+
+    executor = FileExecutor(
+        allowed_roots=[FileRootConfig(path=str(work_dir), read=True, write=True, delete=False)]
+    )
+
+    # Attempt to read through symlink resolving outside
+    req = ActionRequest(
+        id="test.read",
+        tool="file.read",
+        arguments={"path": str(symlink_file)},
+    )
+    result = await executor.execute(req)
+    assert not result.success
+    assert "outside configured allowed file roots" in result.error
+
+
+@pytest.mark.anyio
+async def test_file_capability_enforcement(tmp_path):
+    work_dir = tmp_path / "work"
+    work_dir.mkdir()
+    test_file = work_dir / "test.txt"
+    test_file.write_text("sample content", encoding="utf-8")
+
+    # Root with READ only
+    read_only_exec = FileExecutor(
+        allowed_roots=[FileRootConfig(path=str(work_dir), read=True, write=False, delete=False)]
+    )
+
+    read_res = await read_only_exec.execute(
+        ActionRequest(id="test.read", tool="file.read", arguments={"path": str(test_file)})
+    )
+    assert read_res.success
+    assert read_res.output == "sample content"
+
+    write_res = await read_only_exec.execute(
+        ActionRequest(
+            id="test.write",
+            tool="file.write",
+            arguments={"path": str(work_dir / "new.txt"), "content": "hello"},
+        )
+    )
+    assert not write_res.success
+    assert "does not grant 'write' capability" in write_res.error
+
+    delete_res = await read_only_exec.execute(
+        ActionRequest(
+            id="test.delete",
+            tool="file.delete",
+            arguments={"path": str(test_file)},
+        )
+    )
+    assert not delete_res.success
+    assert "does not grant 'delete' capability" in delete_res.error
+
+
+@pytest.mark.anyio
+async def test_file_atomic_write_success(tmp_path):
+    work_dir = tmp_path / "work"
+    work_dir.mkdir()
+    target_file = work_dir / "atomic.txt"
+
+    executor = FileExecutor(
+        allowed_roots=[FileRootConfig(path=str(work_dir), read=True, write=True, delete=False)]
+    )
+
+    req = ActionRequest(
+        id="test.write",
+        tool="file.write",
+        arguments={"path": str(target_file), "content": "atomic payload"},
+    )
+    res = await executor.execute(req)
+    assert res.success
+    assert target_file.read_text(encoding="utf-8") == "atomic payload"
+
+
+@pytest.mark.anyio
+async def test_file_write_through_symlink_rejected(tmp_path):
+    work_dir = tmp_path / "work"
+    work_dir.mkdir()
+    real_file = work_dir / "real.txt"
+    real_file.write_text("original content", encoding="utf-8")
+
+    symlink_target = work_dir / "symlink.txt"
+    symlink_target.symlink_to(real_file)
+
+    executor = FileExecutor(
+        allowed_roots=[FileRootConfig(path=str(work_dir), read=True, write=True, delete=False)]
+    )
+
+    req = ActionRequest(
+        id="test.write",
+        tool="file.write",
+        arguments={"path": str(symlink_target), "content": "overwritten"},
+    )
+    res = await executor.execute(req)
+    assert not res.success
+    assert "Writing through a symlink is strictly forbidden" in res.error
+    # Original file content must be preserved intact
+    assert real_file.read_text(encoding="utf-8") == "original content"
+
+
+@pytest.mark.anyio
+async def test_file_delete_does_not_auto_execute(tmp_path):
+    work_dir = tmp_path / "work"
+    work_dir.mkdir()
+    target = work_dir / "victim.txt"
+    target.write_text("important", encoding="utf-8")
+
+    # Even if root configuration permits delete
+    executor = FileExecutor(
+        allowed_roots=[FileRootConfig(path=str(work_dir), read=True, write=True, delete=True)]
+    )
+
+    req = ActionRequest(
+        id="test.delete",
+        tool="file.delete",
+        arguments={"path": str(target)},
+    )
+    res = await executor.execute(req)
+    # Must fail closed in PH-040 because PH-050 human approval is not active
+    assert not res.success
+    assert "requires explicit interactive user approval (PH-050)" in res.error
+    assert target.exists()
+
+
+# ---------------------------------------------------------------------------
+# XDG EXECUTOR TESTS
+# ---------------------------------------------------------------------------
+
+@pytest.mark.anyio
+async def test_xdg_cannot_bypass_browser_url_policy():
+    executor = XdgExecutor()
+
+    # Argument validation rejects HTTP/HTTPS
+    with pytest.raises(ValidationError, match="xdg-open cannot open HTTP/HTTPS URLs"):
+        XdgOpenArgs(target="https://google.com")
+
+    # Even if bypassing pydantic constructor directly in request
+    req = ActionRequest(
+        id="test.xdg",
+        tool="app.open",
+        arguments={"target": "http://malicious.com"},
+    )
+    res = await executor.execute(req)
+    assert not res.success
+    assert "browser URLs must pass browser policy" in res.error

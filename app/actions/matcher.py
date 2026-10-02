@@ -2,11 +2,12 @@
 
 import re
 import unicodedata
-from typing import Any
+from typing import Any, Mapping
 
 # Allowed slot identifier: [A-Za-z_][A-Za-z0-9_]*
 SLOT_ID_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 SLOT_PLACEHOLDER_PATTERN = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
+MAX_PHRASE_CHARS = 512
 
 
 def normalize_text(text: str) -> str:
@@ -22,7 +23,7 @@ def parse_phrase_template(phrase: str) -> tuple[re.Pattern[str], list[str]]:
 
     Raises ValueError on malformed templates:
     - Empty or whitespace-only phrases
-    - Phrases exceeding 512 characters
+    - Phrases exceeding 512 characters before or after normalization
     - Unclosed or stray braces
     - Invalid slot identifiers
     - Adjacent ambiguous slots (e.g. {x}{y})
@@ -31,11 +32,15 @@ def parse_phrase_template(phrase: str) -> tuple[re.Pattern[str], list[str]]:
     if not isinstance(phrase, str):
         raise ValueError(f"Phrase template must be a string, got {type(phrase)}")
 
-    if len(phrase) > 512:
-        raise ValueError(f"Phrase exceeds maximum length of 512 characters ({len(phrase)} chars)")
+    if len(phrase) > MAX_PHRASE_CHARS:
+        raise ValueError(f"Phrase exceeds maximum length of {MAX_PHRASE_CHARS} characters ({len(phrase)} chars)")
 
     normalized = unicodedata.normalize("NFKC", phrase)
     normalized = re.sub(r"\s+", " ", normalized).strip()
+    if len(normalized) > MAX_PHRASE_CHARS:
+        raise ValueError(
+            f"Normalized phrase exceeds maximum length of {MAX_PHRASE_CHARS} characters ({len(normalized)} chars)"
+        )
     if not normalized:
         raise ValueError("Phrase template must not be empty or whitespace only")
 
@@ -110,17 +115,18 @@ def extract_argument_slots(arguments: Any) -> set[str]:
     return slots
 
 
-def substitute_arguments(arguments: Any, captured_slots: dict[str, str]) -> Any:
+def substitute_arguments(arguments: Any, captured_slots: Mapping[str, str]) -> Any:
     """
     Safely replace explicit {slot} placeholders in arguments using captured_slots.
     Preserves data types and original case. Does not use eval, str.format, or format_map.
+    Fails closed by raising ValueError if a referenced slot is missing from captured_slots.
     """
     if isinstance(arguments, str):
         def repl(match: re.Match[str]) -> str:
             slot_name = match.group(1)
             if slot_name in captured_slots:
                 return str(captured_slots[slot_name])
-            return match.group(0)
+            raise ValueError(f"Missing required captured slot '{slot_name}' for argument substitution")
 
         return SLOT_PLACEHOLDER_PATTERN.sub(repl, arguments)
 

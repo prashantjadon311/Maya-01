@@ -60,8 +60,8 @@
 
 ## 5. RSS Delta
 - Baseline empty daemon: initial = 13.742 MiB, active = 16.457 MiB.
-- Daemon with registry and matcher loaded: 28.227 MiB.
-- Resident memory remains well below the 300 MiB cgroup budget ceiling.
+- Daemon with registry/matcher modules imported: 28.227 MiB.
+- Resident memory remains well below the 300 MiB cgroup budget ceiling (final memory stress gate remains PH-160).
 
 ## 6. Deferred PH-040 Security Requirements
 - **Action Dispatcher:** PH-040 must consume `RegistryMatch` exclusively through trusted deterministic execution pathways. `ActionRequest.id` matching a registered action ID must never bypass policy engine evaluation.
