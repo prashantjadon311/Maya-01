@@ -183,3 +183,22 @@ def test_ISSUE_J_app_state_mutability():
     
     with pytest.raises(ValidationError):
         state.update("status", "INVALID")
+def test_ISSUE_L_canonical_json_types():
+    from app.actions.schema import ActionRequest, ActionResult
+    from pydantic import ValidationError
+    import pytest
+    import math
+
+    with pytest.raises(ValidationError):
+        ActionRequest(id="1", tool="test", arguments={"data": b"bytes"})
+    
+    with pytest.raises(ValidationError):
+        ActionRequest(id="1", tool="test", arguments={"data": math.nan})
+    
+    with pytest.raises(ValidationError):
+        ActionRequest(id="1", tool="test", arguments={"data": math.inf})
+    
+    with pytest.raises(ValidationError):
+        ActionRequest(id="1", tool="test", arguments={"data": {"nested": set([1,2])}})    
+    # Valid
+    ActionRequest(id="1", tool="test", arguments={"data": {"nested": [1, 2, 3.14, "str", True, None]}})

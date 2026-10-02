@@ -2,7 +2,30 @@
 
 import json
 from typing import Any, Literal
-from pydantic import BaseModel, ConfigDict, Field
+import math
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+
+
+def validate_canonical_json(val: Any) -> Any:
+    if val is None:
+        return val
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, (int, float)):
+        if isinstance(val, float) and (math.isnan(val) or math.isinf(val)):
+            raise ValueError("NaN and Infinity are not allowed in canonical JSON")
+        return val
+    if isinstance(val, str):
+        return val
+    if isinstance(val, list):
+        return [validate_canonical_json(item) for item in val]
+    if isinstance(val, dict):
+        for k in val.keys():
+            if not isinstance(k, str):
+                raise ValueError(f"Dictionary keys must be strings, got {type(k)}")
+        return {k: validate_canonical_json(v) for k, v in val.items()}
+    raise ValueError(f"Type {type(val)} is not allowed in canonical JSON")
 
 
 class ActionRequest(BaseModel):
@@ -37,6 +60,10 @@ class ActionRequest(BaseModel):
         """Deterministic UTF-8 encoded bytes of the canonical JSON representation."""
         return self.to_canonical_json().encode("utf-8")
 
+    @model_validator(mode="after")
+    def validate_json_args(self) -> "ActionRequest":
+        validate_canonical_json(self.arguments)
+        return self
 
 class ActionResult(BaseModel):
     """Result of an action execution."""
@@ -46,8 +73,6 @@ class ActionResult(BaseModel):
     success: bool
     output: str = ""
     error: str | None = None
-
-
 class ActionDefinition(BaseModel):
     """Definition of an action loaded from an action pack."""
 
@@ -61,8 +86,6 @@ class ActionDefinition(BaseModel):
     approval: Literal["preapproved", "ask_user", "always_ask", "deny"] = "preapproved"
     risk: Literal["low", "medium", "high", "critical"] = "low"
     timeout_seconds: int = 30
-
-
 class ActionPack(BaseModel):
     """Versioned action pack containing multiple action definitions."""
 

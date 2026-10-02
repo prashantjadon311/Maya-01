@@ -89,3 +89,17 @@
 - GREEN RESULT: Pass.
 - RESIDUAL RISK: None.
 
+
+## ISSUE L: CANONICAL JSON TYPES FOR ACTION ARGUMENTS
+- SEVERITY: IMPORTANT
+- CONFIRMED: YES
+- RECOMMENDED SOLUTION: Enforce strictly recursive canonical JSON types. Ensure `float` is not NaN or Infinity.
+- SOLUTION DECISION: ACCEPT_RECOMMENDED
+- SELECTED SOLUTION: Added `validate_canonical_json` recursion in `app/actions/schema.py` triggered by `ActionRequest`'s `@model_validator`. Rejected `NaN` and `Infinity`, and ensured dict keys are strings. 
+- RATIONALE: It prevents bypasses of policy hashing that relies on `json.dumps` by ensuring only structurally pure JSON is loaded.
+- RED TEST: `test_ISSUE_L_canonical_json_types` added.
+- RED RESULT: Configuration successfully parsed `bytes`, `NaN`, and `Infinity` into arguments.
+- IMPLEMENTATION: Updated `app/actions/schema.py`.
+- GREEN RESULT: Pass.
+- RESIDUAL RISK: None.
+
