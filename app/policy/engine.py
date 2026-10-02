@@ -4,29 +4,23 @@ from enum import Enum
 from pathlib import Path
 import os
 from typing import Any, Literal
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.actions.schema import ActionRequest
 from app.core.config import FileRootConfig
 
 class PreapprovalRule(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    id: str | None = None
-    tool: str | None = None
-    executable: str | None = None
-    argv_prefix: list[str] | None = None
-    working_roots: list[str] | None = None
-    risk: Literal["low", "medium", "high", "critical"] | None = None
-    approval: Literal["preapproved", "ask_user", "always_ask", "deny"] = "preapproved"
+    model_config = ConfigDict(
+        extra="forbid",
+        frozen=True,
+    )
 
-    @model_validator(mode="after")
-    def validate_process_run(self) -> "PreapprovalRule":
-        if self.tool == "process.run" and self.approval == "preapproved":
-            if self.executable is None:
-                raise ValueError("process.run preapproval requires an executable")
-            if self.argv_prefix is None:
-                raise ValueError("process.run preapproval requires an argv_prefix")
-        return self
+    id: str = Field(min_length=1)
+    executable: str = Field(min_length=1)
+    argv_prefix: tuple[str, ...]
+    working_roots: tuple[str, ...] = Field(min_length=1)
+    approval: Literal["preapproved"]
+    timeout_seconds: int = Field(gt=0)
 
 
 class PolicyDecision(str, Enum):
@@ -152,44 +146,32 @@ class PolicyEngine:
 
         # 5. Check structured preapproval rules
         for rule in self.preapproved_rules:
-            if rule.tool and rule.tool != action.tool:
+            # All preapproval rules are currently constrained to process.run by schema/contract
+            if action.tool != "process.run":
                 continue
 
-            # Process execution rule matching
-            if action.tool == "process.run":
-                argv = action.arguments.get("argv", [])
-                executable = argv[0] if argv else action.arguments.get("executable", "")
+            argv = action.arguments.get("argv", [])
+            executable = argv[0] if argv else action.arguments.get("executable", "")
 
-                if rule.executable and rule.executable != executable:
-                    continue
+            if rule.executable != executable:
+                continue
 
-                # If rule requires argv prefix, check command args
-                if rule.argv_prefix is not None:
-                    command_args = argv[1:] if len(argv) > 1 else []
-                    if command_args[:len(rule.argv_prefix)] != rule.argv_prefix:
-                        continue
+            command_args = argv[1:] if len(argv) > 1 else []
+            if command_args[:len(rule.argv_prefix)] != list(rule.argv_prefix):
+                continue
 
-                # Check working root containment if specified by rule
-                if rule.working_roots:
-                    action_cwd = action.arguments.get("cwd") or action.workspace
-                    if not action_cwd:
-                        continue
-                    cwd_path = Path(os.path.normpath(Path(action_cwd).expanduser()))
-                    in_work_root = any(
-                        cwd_path == Path(os.path.normpath(Path(r).expanduser())) or Path(os.path.normpath(Path(r).expanduser())) in cwd_path.parents
-                        for r in rule.working_roots
-                    )
-                    if not in_work_root:
-                        continue
+            action_cwd = action.arguments.get("cwd") or action.workspace
+            if not action_cwd:
+                continue
+            cwd_path = Path(os.path.normpath(Path(action_cwd).expanduser()))
+            in_work_root = any(
+                cwd_path == Path(os.path.normpath(Path(r).expanduser())) or Path(os.path.normpath(Path(r).expanduser())) in cwd_path.parents
+                for r in rule.working_roots
+            )
+            if not in_work_root:
+                continue
 
-            if rule.approval == "deny":
-                return PolicyDecision.DENY
-            if rule.approval in ("ask_user", "always_ask"):
-                return PolicyDecision.ASK_USER
-            if rule.approval == "preapproved":
-                if rule.risk in ("high", "critical"):
-                    continue
-                return PolicyDecision.ALLOW_PREAPPROVED
+            return PolicyDecision.ALLOW_PREAPPROVED
 
         # Default fallback for valid actions requiring user confirmation
         return PolicyDecision.ASK_USER
