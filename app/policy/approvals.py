@@ -37,6 +37,7 @@ class ApprovalRequest(BaseModel):
     tool: str
     created_at: float
     expires_at: float
+    action_snapshot: str
     reason: str = ""
     request_id: str = ""
     workspace: str | None = None
@@ -51,6 +52,7 @@ class ApprovalRequest(BaseModel):
             tool=action.tool,
             created_at=now,
             expires_at=now + expires_in,
+            action_snapshot=action.to_canonical_json(),
             reason=action.reason,
             request_id=action.request_id,
             workspace=action.workspace,
@@ -65,11 +67,41 @@ class ApprovalRequest(BaseModel):
         return v.lower()
 
     @model_validator(mode="after")
-    def validate_expiry(self) -> "ApprovalRequest":
+    def validate_snapshot(self) -> "ApprovalRequest":
         if math.isnan(self.created_at) or math.isinf(self.created_at):
             raise ValueError("created_at must be a finite number")
         if math.isnan(self.expires_at) or math.isinf(self.expires_at):
             raise ValueError("expires_at must be a finite number")
         if self.expires_at <= self.created_at:
             raise ValueError("expires_at must be strictly greater than created_at")
+            
+        import json
+        from app.actions.schema import ActionRequest
+        
+        try:
+            req = ActionRequest.model_validate_json(self.action_snapshot)
+        except Exception as e:
+            raise ValueError(f"Invalid snapshot: {e}")
+            
+        canonical_str = req.to_canonical_json()
+        if canonical_str != self.action_snapshot:
+            raise ValueError("Snapshot is not canonically serialized")
+            
+        expected_digest = hashlib.sha256(canonical_str.encode("utf-8")).hexdigest()
+        if expected_digest != self.action_hash:
+            raise ValueError("Hash does not match snapshot")
+            
+        if self.action_id != req.id:
+            raise ValueError("Mismatched action_id")
+        if self.tool != req.tool:
+            raise ValueError("Mismatched tool")
+        if self.reason != req.reason:
+            raise ValueError("Mismatched reason")
+        if self.request_id != req.request_id:
+            raise ValueError("Mismatched request_id")
+        if self.workspace != req.workspace:
+            raise ValueError("Mismatched workspace")
+        if self.agent_id != req.agent_id:
+            raise ValueError("Mismatched agent_id")
+            
         return self

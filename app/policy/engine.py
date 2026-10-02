@@ -3,8 +3,8 @@
 from enum import Enum
 from pathlib import Path
 import os
-from typing import Any
-from pydantic import BaseModel, ConfigDict
+from typing import Any, Literal
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from app.actions.schema import ActionRequest
 from app.core.config import FileRootConfig
@@ -16,8 +16,17 @@ class PreapprovalRule(BaseModel):
     executable: str | None = None
     argv_prefix: list[str] | None = None
     working_roots: list[str] | None = None
-    risk: str | None = None
-    approval: str | None = None
+    risk: Literal["low", "medium", "high", "critical"] | None = None
+    approval: Literal["preapproved", "ask_user", "always_ask", "deny"] = "preapproved"
+
+    @model_validator(mode="after")
+    def validate_process_run(self) -> "PreapprovalRule":
+        if self.tool == "process.run" and self.approval == "preapproved":
+            if self.executable is None:
+                raise ValueError("process.run preapproval requires an executable")
+            if self.argv_prefix is None:
+                raise ValueError("process.run preapproval requires an argv_prefix")
+        return self
 
 
 class PolicyDecision(str, Enum):
@@ -68,10 +77,7 @@ class PolicyEngine:
         parsed_rules = []
         for r in (preapproved_rules or []):
             if isinstance(r, dict):
-                try:
-                    parsed_rules.append(PreapprovalRule.model_validate(r))
-                except Exception:
-                    pass # ignore invalid rules
+                parsed_rules.append(PreapprovalRule.model_validate(r))
             else:
                 parsed_rules.append(r)
         self.preapproved_rules = parsed_rules
@@ -87,13 +93,19 @@ class PolicyEngine:
         if action.tool == "process.run":
             argv = action.arguments.get("argv", [])
             executable = argv[0] if argv else action.arguments.get("executable", "")
-
-            # sudo / privileged command always resolves to ASK_USER (never ALLOW_PREAPPROVED, not DENY)
-            privileged = {"sudo", "su", "doas", "pkexec", "apt", "systemctl", "dpkg", "dnf", "yum"}
-            if executable in privileged:
-                return PolicyDecision.ASK_USER
-            if executable == "env" and len(argv) > 1 and argv[1] in privileged:
-                return PolicyDecision.ASK_USER
+            
+            if executable:
+                exec_basename = os.path.basename(executable)
+                privileged = {"sudo", "su", "doas", "pkexec", "apt", "systemctl", "dpkg", "dnf", "yum"}
+                if exec_basename in privileged:
+                    return PolicyDecision.ASK_USER
+                
+                if exec_basename == "env":
+                    for arg in argv[1:]:
+                        if not arg.startswith("-") and "=" not in arg:
+                            if os.path.basename(arg) in privileged:
+                                return PolicyDecision.ASK_USER
+                            break
 
         # 3. File actions policy check
         if action.tool.startswith("file."):
@@ -126,6 +138,8 @@ class PolicyEngine:
                 else:
                     root_path = Path(os.path.normpath(Path(root_config).expanduser()))
                     if target_path == root_path or root_path in target_path.parents:
+                        if action.tool != "file.read":
+                            continue
                         in_allowed_root = True
                         break
 
@@ -138,10 +152,6 @@ class PolicyEngine:
 
         # 5. Check structured preapproval rules
         for rule in self.preapproved_rules:
-            # Rule cannot preapprove high/critical risk
-            if rule.risk in ("high", "critical"):
-                continue
-
             if rule.tool and rule.tool != action.tool:
                 continue
 
@@ -154,7 +164,7 @@ class PolicyEngine:
                     continue
 
                 # If rule requires argv prefix, check command args
-                if rule.argv_prefix:
+                if rule.argv_prefix is not None:
                     command_args = argv[1:] if len(argv) > 1 else []
                     if command_args[:len(rule.argv_prefix)] != rule.argv_prefix:
                         continue
@@ -172,6 +182,13 @@ class PolicyEngine:
                     if not in_work_root:
                         continue
 
+            if rule.approval == "deny":
+                return PolicyDecision.DENY
+            if rule.approval in ("ask_user", "always_ask"):
+                return PolicyDecision.ASK_USER
+            if rule.approval == "preapproved":
+                if rule.risk in ("high", "critical"):
+                    continue
                 return PolicyDecision.ALLOW_PREAPPROVED
 
         # Default fallback for valid actions requiring user confirmation

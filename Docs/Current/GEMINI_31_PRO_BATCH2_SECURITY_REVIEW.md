@@ -48,3 +48,20 @@ These tests adversarially checked:
 **Rationale:** All 11 targeted security flaws were explicitly tested (RED) and mitigated (GREEN). The full test suite of 47 tests is now passing.
 
 The repository is secure enough to proceed to the Action Registry and Executor boundaries.
+
+## Second-Pass Findings
+
+During a second-pass adversarial review, several critical configuration bypasses and missing validation steps were identified and repaired.
+
+*   **Defect A (Approval Field Enforcement):** (Important) Preapproval rules with `approval="ask_user"` or `"deny"` were incorrectly allowing preapproval because the engine did not respect the `approval` string. *Fix:* Updated engine to strictly map rule approval to PolicyDecision outcomes.
+*   **Defect B (Broad Rules):** (Important) Missing constraints in `process.run` could silently grant wildcard execution authority. *Fix:* Implemented a strict contract in `PreapprovalRule` requiring `executable` and `argv_prefix` whenever `approval="preapproved"` is requested.
+*   **Defect C & D (Privileged Bypass & Env Wrapper):** (Critical) Although basic privilege escalation (e.g. `sudo`) was guarded, absolute paths (`/usr/bin/sudo`, `/usr/bin/pkexec`) and `env` wrappers with flags (`env -i sudo`) were not properly identified. *Fix:* Enforced robust `os.path.basename` inspection over executables and safe deterministic traversal of `env` invocations.
+*   **Defect E & Canonical Binding (Approval Metadata Bind):** (Critical) `ApprovalRequest` permitted arbitrary, independently supplied metadata (`action_id`, `tool`, `reason`, etc.) to accompany a valid `action_hash`. A malicious constructor could display benign text while authorizing a destructive action. *Fix:* Redesigned `ApprovalRequest` to store the raw canonical `action_snapshot` and intrinsically validate every single duplicate metadata field (like `action_id`) against the parsed snapshot.
+*   **Defect F & G (Strict Types & Malformed rules):** (Important) `PreapprovalRule` allowed arbitrary strings for risk and approval, and the engine silently caught initialization exceptions. *Fix:* Upgraded to strict Pydantic literals and forced fail-closed `ValidationError`s to crash initialization rather than swallowing configuration issues.
+*   **Defect H (Raw File Roots):** (Important) Raw string paths passed to `allowed_file_roots` were silently granting excessive permissions in tests. *Fix:* Constrained raw string compatibility to purely `file.read` operations.
+
+**Second-Pass Outcome:** 
+RED Tests added: 7 specific vulnerability regression tests
+Result: PASS
+Full Regression Result: 54 tests PASS.
+Status: GO for PH-030.

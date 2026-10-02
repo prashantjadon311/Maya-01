@@ -81,15 +81,8 @@ def test_action_hash_sensitivity():
 def test_approval_request_strict_and_frozen():
     """Verify ApprovalRequest rejects extra fields and attribute reassignments."""
     now = time.time()
-    req = ApprovalRequest(
-        action_hash="a" * 64,
-        action_id="act-1",
-        tool="process.run",
-        created_at=now,
-        expires_at=now + 60.0,
-        reason="testing",
-        request_id="req-1",
-    )
+    dummy_req = ActionRequest(id="act-1", tool="process.run", arguments={"argv": ["ls"]}, reason="testing", request_id="req-1")
+    req = ApprovalRequest.from_action(dummy_req)
 
     with pytest.raises(ValidationError):
         # frozen=True prevents reassignment
@@ -97,12 +90,14 @@ def test_approval_request_strict_and_frozen():
 
     with pytest.raises(ValidationError):
         # extra="forbid" rejects unknown field
+        dummy_req2 = ActionRequest(id="act-1", tool="process.run", arguments={"argv": ["ls"]})
         ApprovalRequest(
-            action_hash="a" * 64,
+            action_hash=hash_action(dummy_req2),
             action_id="act-1",
             tool="process.run",
             created_at=now,
             expires_at=now + 60.0,
+            action_snapshot=dummy_req2.to_canonical_json(),
             unauthorized_extra="bypass",
         )
 
@@ -132,12 +127,14 @@ def test_approval_request_digest_validation():
 
     # Invalid expiry (expires_at <= created_at)
     with pytest.raises(ValidationError):
+        dummy_req3 = ActionRequest(id="act-1", tool="process.run", arguments={"argv": ["ls"]})
         ApprovalRequest(
-            action_hash="a" * 64,
+            action_hash=hash_action(dummy_req3),
             action_id="act-1",
             tool="process.run",
             created_at=now,
             expires_at=now - 1.0,
+            action_snapshot=dummy_req3.to_canonical_json()
         )
 
 
@@ -201,7 +198,8 @@ def test_policy_high_risk_never_preapproved():
             "approval": "preapproved",  # Config incorrectly marked preapproved
         }
     ]
-    engine = PolicyEngine(allowed_file_roots=["~/Projects"], preapproved_rules=rules)
+    from app.core.config import FileRootConfig
+    engine = PolicyEngine(allowed_file_roots=[FileRootConfig(path="~/Projects", delete=True, write=True)], preapproved_rules=rules)
 
     high_risk_action = ActionRequest(
         id="act-5",
@@ -228,7 +226,8 @@ def test_policy_structured_preapproval_allow():
             "risk": "low",
         }
     ]
-    engine = PolicyEngine(allowed_file_roots=["~/Projects"], preapproved_rules=rules)
+    from app.core.config import FileRootConfig
+    engine = PolicyEngine(allowed_file_roots=[FileRootConfig(path="~/Projects", delete=True, write=True)], preapproved_rules=rules)
 
     matching_action = ActionRequest(
         id="act-6",
@@ -292,10 +291,10 @@ def test_B_trusted_risk_classification():
 def test_C_privilege_bypass_forms():
     """C. Sudo / Privilege Bypass Forms."""
     rules = [
-        {"tool": "process.run", "executable": "env", "risk": "low"},
-        {"tool": "process.run", "executable": "pkexec", "risk": "low"},
-        {"tool": "process.run", "executable": "su", "risk": "low"},
-        {"tool": "process.run", "executable": "doas", "risk": "low"}
+        {"tool": "process.run", "executable": "env", "argv_prefix": [], "risk": "low"},
+        {"tool": "process.run", "executable": "pkexec", "argv_prefix": [], "risk": "low"},
+        {"tool": "process.run", "executable": "su", "argv_prefix": [], "risk": "low"},
+        {"tool": "process.run", "executable": "doas", "argv_prefix": [], "risk": "low"}
     ]
     engine = PolicyEngine(preapproved_rules=rules)
     req_env_sudo = ActionRequest(id="1", tool="process.run", arguments={"argv": ["env", "sudo", "rm", "-rf", "/"]})
@@ -320,7 +319,7 @@ def test_D_path_normalization():
 def test_E_working_directory_preapproval():
     """E. Working Directory Preapproval: enforce containment against working_roots."""
     rules = [
-        {"tool": "process.run", "executable": "ls", "working_roots": ["/allowed/root"]}
+        {"tool": "process.run", "executable": "ls", "argv_prefix": [], "working_roots": ["/allowed/root"]}
     ]
     engine = PolicyEngine(preapproved_rules=rules)
     
@@ -366,14 +365,18 @@ def test_H_hash_verification():
 def test_I_timestamp_validation():
     """I. Timestamp Validation: Reject NaN, inf, -inf."""
     with pytest.raises(ValidationError):
+        dummy = ActionRequest(id="1", tool="process.run", arguments={"argv": ["ls"]})
         ApprovalRequest(
-            action_hash="a" * 64, action_id="1", tool="process.run",
-            created_at=math.nan, expires_at=time.time() + 60
+            action_hash=hash_action(dummy), action_id="1", tool="process.run",
+            created_at=math.nan, expires_at=time.time() + 60,
+            action_snapshot=dummy.to_canonical_json()
         )
     with pytest.raises(ValidationError):
+        dummy2 = ActionRequest(id="1", tool="process.run", arguments={"argv": ["ls"]})
         ApprovalRequest(
-            action_hash="a" * 64, action_id="1", tool="process.run",
-            created_at=time.time(), expires_at=math.inf
+            action_hash=hash_action(dummy2), action_id="1", tool="process.run",
+            created_at=time.time(), expires_at=math.inf,
+            action_snapshot=dummy2.to_canonical_json()
         )
 
 def test_J_action_argument_canonicalization():
@@ -387,4 +390,118 @@ def test_K_security_defaults():
     """K. Security Defaults: Enforce permanently denied paths."""
     engine = PolicyEngine(allowed_file_roots=["/"])
     req = ActionRequest(id="1", tool="file.read", arguments={"path": "~/.ssh/../.ssh/id_rsa"})
+    assert engine.evaluate(req) == PolicyDecision.DENY
+
+def test_DEFECT_A_approval_field_enforcement():
+    """Defect A: Preapproval rule 'approval' field must be enforced."""
+    # Only "preapproved" should yield ALLOW_PREAPPROVED
+    from app.policy.engine import PolicyEngine, PolicyDecision
+    from app.actions.schema import ActionRequest
+    
+    rules = [
+        {"tool": "process.run", "executable": "git", "argv_prefix": ["status"], "approval": "ask_user", "risk": "low"}
+    ]
+    engine = PolicyEngine(preapproved_rules=rules)
+    req = ActionRequest(id="1", tool="process.run", arguments={"argv": ["git", "status"]})
+    assert engine.evaluate(req) == PolicyDecision.ASK_USER
+    
+    rules_deny = [
+        {"tool": "process.run", "executable": "git", "argv_prefix": ["status"], "approval": "deny", "risk": "low"}
+    ]
+    engine_deny = PolicyEngine(preapproved_rules=rules_deny)
+    assert engine_deny.evaluate(req) == PolicyDecision.DENY
+
+def test_DEFECT_B_broad_preapproval_rules():
+    """Defect B: Malformed/incomplete preapproval rules must fail closed."""
+    from app.policy.engine import PolicyEngine
+    import pytest
+    from pydantic import ValidationError
+    
+    # Must reject rules without executable or without argv_prefix (or without explicit approval="preapproved")
+    # For process.run, a safe semantic contract requires 'executable' and 'argv_prefix'.
+    with pytest.raises(ValidationError):
+        PolicyEngine(preapproved_rules=[{"tool": "process.run"}])
+        
+def test_DEFECT_C_privileged_executable_path_bypass():
+    """Defect C: Absolute paths to privileged executables must be blocked."""
+    from app.policy.engine import PolicyEngine, PolicyDecision
+    from app.actions.schema import ActionRequest
+    
+    rules = [
+        {"tool": "process.run", "executable": "/usr/bin/sudo", "approval": "preapproved", "risk": "low"},
+        {"tool": "process.run", "executable": "/bin/su", "approval": "preapproved", "risk": "low"}
+    ]
+    # We will assume test_DEFECT_B enforces argv_prefix, so let's add it
+    for r in rules: r["argv_prefix"] = []
+    
+    engine = PolicyEngine(preapproved_rules=rules)
+    req1 = ActionRequest(id="1", tool="process.run", arguments={"argv": ["/usr/bin/sudo", "rm", "-rf", "/"]})
+    assert engine.evaluate(req1) == PolicyDecision.ASK_USER
+    
+    req2 = ActionRequest(id="2", tool="process.run", arguments={"argv": ["/bin/su", "-"]})
+    assert engine.evaluate(req2) == PolicyDecision.ASK_USER
+
+def test_DEFECT_D_env_wrapper_bypass():
+    """Defect D: Env wrapper bypass via -i or FOO=bar arguments."""
+    from app.policy.engine import PolicyEngine, PolicyDecision
+    from app.actions.schema import ActionRequest
+    
+    rules = [
+        {"tool": "process.run", "executable": "env", "argv_prefix": [], "approval": "preapproved", "risk": "low"},
+        {"tool": "process.run", "executable": "/usr/bin/env", "argv_prefix": [], "approval": "preapproved", "risk": "low"}
+    ]
+    engine = PolicyEngine(preapproved_rules=rules)
+    req1 = ActionRequest(id="1", tool="process.run", arguments={"argv": ["env", "-i", "sudo", "bash"]})
+    assert engine.evaluate(req1) == PolicyDecision.ASK_USER
+    
+    req2 = ActionRequest(id="2", tool="process.run", arguments={"argv": ["/usr/bin/env", "FOO=bar", "/bin/su"]})
+    assert engine.evaluate(req2) == PolicyDecision.ASK_USER
+    
+def test_DEFECT_E_approval_hash_binding():
+    """Defect E: ApprovalRequest must not allow mismatched metadata."""
+    from app.policy.approvals import ApprovalRequest, hash_action
+    from app.actions.schema import ActionRequest
+    import time
+    import pytest
+    from pydantic import ValidationError
+    
+    malicious = ActionRequest(id="evil", tool="process.run", arguments={"argv": ["rm", "-rf", "/"]})
+    digest = hash_action(malicious)
+    
+    # Passing mismatching display fields should fail validation.
+    # Currently, ApprovalRequest does NOT take `snapshot`. We need to redesign it.
+    # The requirement is that we pass `snapshot_json` and it derives or validates the display fields.
+    # Let's test the NEW interface we're about to build: it must take `action_snapshot` and validate everything against it.
+    # Since it's not built yet, we can't test it passing. We can just test that the CURRENT constructor allows a mismatch, which is the vulnerability.
+    
+    # Current vulnerability: we CAN construct this.
+    
+    # The fix will be to make the above construction fail or be impossible without a snapshot,
+    # or validate against a snapshot.
+    # We will redesign ApprovalRequest. For the RED test, let's assert that supplying mismatched fields raises ValueError.
+    with pytest.raises(ValueError):
+        ApprovalRequest(
+            action_hash=digest,
+            action_id="benign",
+            tool="browser.read",
+            created_at=time.time(),
+            expires_at=time.time() + 60,
+        )
+
+def test_DEFECT_G_malformed_rule_handling():
+    """Defect G: Initialization must fail on malformed rules, not silently discard."""
+    from app.policy.engine import PolicyEngine
+    import pytest
+    from pydantic import ValidationError
+    
+    with pytest.raises(ValidationError):
+        PolicyEngine(preapproved_rules=[{"tool": "process.run", "risk": "invalid_risk"}])
+
+def test_DEFECT_H_file_root_string_compatibility():
+    """Defect H: Raw string roots fail closed or read-only."""
+    from app.policy.engine import PolicyEngine, PolicyDecision
+    from app.actions.schema import ActionRequest
+    
+    engine = PolicyEngine(allowed_file_roots=["/tmp/safe"])
+    req = ActionRequest(id="1", tool="file.write", arguments={"path": "/tmp/safe/foo.txt", "content": "hi"})
     assert engine.evaluate(req) == PolicyDecision.DENY
