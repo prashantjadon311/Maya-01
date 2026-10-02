@@ -1,7 +1,7 @@
 """Project H Core AppState."""
 
 from typing import Any, Literal
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictBool
 
 
 class AppState(BaseModel):
@@ -9,11 +9,11 @@ class AppState(BaseModel):
 
     model_config = ConfigDict(extra="forbid", validate_assignment=True)
 
-    status: Literal["DISABLED", "IDLE", "EXECUTING", "AWAITING_APPROVAL", "ERROR"] = "DISABLED"
-    always_listen: bool = False
-    voice_output: bool = False
+    status: Literal["DISABLED", "READY_WAKE", "WAKE_DETECTED", "RECORDING", "TRANSCRIBING", "ROUTING", "THINKING", "AWAITING_APPROVAL", "EXECUTING", "SPEAKING", "ERROR"] = "DISABLED"
+    always_listen: StrictBool = False
+    voice_output: StrictBool = False
     active_task_id: str | None = None
-    pending_approval: bool = False
+    pending_approval: StrictBool = False
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     def get_state(self) -> dict[str, Any]:
@@ -22,7 +22,6 @@ class AppState(BaseModel):
 
     def update(self, key: str, value: Any) -> None:
         """Update a state attribute."""
-        if hasattr(self, key):
-            setattr(self, key, value)
-        else:
-            self.metadata[key] = value
+        if key not in type(self).model_fields:
+            raise KeyError(key)
+        setattr(self, key, value)

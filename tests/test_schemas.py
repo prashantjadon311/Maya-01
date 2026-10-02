@@ -147,6 +147,24 @@ def test_action_pack_schema_valid():
     assert pack.actions[0].executor == "process"
 
 
+def test_pack_duplicate_action_ids_rejected():
+    action = ActionDefinition(id="app.open", executor="process")
+    with pytest.raises(ValidationError, match="Duplicate action ID"):
+        ActionPack(pack_id="core", label="Core", actions=[action, action])
+
+
+def test_pack_label_nonempty_and_trimmed():
+    with pytest.raises(ValidationError):
+        ActionPack(pack_id="core", label=" \t ")
+    assert ActionPack(pack_id="core", label=" Core ").label == "Core"
+
+
+@pytest.mark.parametrize("value", [b"bytes", {1, 2}, (1, 2), float("nan"), float("inf"), {1: "bad key"}])
+def test_definition_arguments_require_recursive_json(value):
+    with pytest.raises(ValidationError):
+        ActionDefinition(id="app.open", executor="process", arguments={"nested": [value]})
+
+
 def test_action_pack_unknown_field_rejected():
     pack_data = {
         "schema_version": 1,
@@ -175,14 +193,43 @@ def test_ISSUE_J_app_state_mutability():
     state = AppState()
     assert state.status == "DISABLED"
 
-    state.status = "IDLE"
-    assert state.status == "IDLE"
+    state.status = "READY_WAKE"
+    assert state.status == "READY_WAKE"
 
     with pytest.raises(ValidationError):
         state.status = "HACKED"
     
     with pytest.raises(ValidationError):
         state.update("status", "INVALID")
+
+
+@pytest.mark.parametrize("status", ["DISABLED", "READY_WAKE", "WAKE_DETECTED", "RECORDING", "TRANSCRIBING", "ROUTING", "THINKING", "AWAITING_APPROVAL", "EXECUTING", "SPEAKING", "ERROR"])
+def test_architecture_states(status):
+    state = AppState()
+    state.update("status", status)
+    assert state.status == status
+
+
+def test_state_rejects_idle():
+    state = AppState()
+    with pytest.raises(ValidationError):
+        state.status = "IDLE"
+
+
+def test_state_rejects_unknown_updates():
+    state = AppState()
+    for key in ["unknown", "get_state", "model_config"]:
+        with pytest.raises(KeyError):
+            state.update(key, True)
+    assert state.metadata == {}
+
+
+def test_state_rejects_coerced_boolean():
+    state = AppState()
+    for value in ["true", "false", "invalid", 1]:
+        with pytest.raises(ValidationError):
+            state.update("always_listen", value)
+    assert state.metadata == {}
 def test_ISSUE_L_canonical_json_types():
     from app.actions.schema import ActionRequest, ActionResult
     from pydantic import ValidationError

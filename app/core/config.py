@@ -3,7 +3,7 @@
 from pathlib import Path
 import tomllib
 from typing import Any, Literal
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class AssistantConfig(BaseModel):
@@ -14,6 +14,14 @@ class AssistantConfig(BaseModel):
     language: str = "auto"
     start_on_login: bool = True
 
+    @field_validator("display_name", "wake_phrase")
+    @classmethod
+    def validate_identity(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Assistant identity must not be empty")
+        return value
+
 
 class VoiceConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -23,9 +31,9 @@ class VoiceConfig(BaseModel):
     push_to_talk_hotkey: str = "Ctrl+Space"
     wake_engine: str = "openwakeword"
     wake_model: str = "~/.config/project-h/wake/assistant_name.tflite"
-    wake_threshold: float = 0.55
+    wake_threshold: float = Field(default=0.55, ge=0.0, le=1.0)
     vad_enabled: bool = True
-    max_command_seconds: int = 30
+    max_command_seconds: int = Field(default=30, gt=0)
     retain_command_audio: bool = False
 
 
@@ -54,7 +62,7 @@ class AIConfig(BaseModel):
 class DashboardConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    host: str = "127.0.0.1"
+    host: Literal["127.0.0.1"] = "127.0.0.1"
     port: int = Field(default=8765, ge=1, le=65535)
     open_browser: bool = True
 
@@ -62,19 +70,19 @@ class DashboardConfig(BaseModel):
 class AgentsConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    max_active: int = 1
-    max_steps: int = 30
-    max_api_calls_per_task: int = 20
-    default_timeout_minutes: int = 30
+    max_active: int = Field(default=1, gt=0)
+    max_steps: int = Field(default=30, gt=0)
+    max_api_calls_per_task: int = Field(default=20, gt=0)
+    default_timeout_minutes: int = Field(default=30, gt=0)
 
 
 class ResourcesConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    memory_high_mb: int = Field(default=240, ge=50, le=2048)
-    memory_max_mb: int = Field(default=300, ge=50, le=2048)
+    memory_high_mb: int = Field(default=240, gt=0)
+    memory_max_mb: int = Field(default=300, gt=0)
     max_event_queue: int = Field(default=256, ge=1)
-    max_audio_command_seconds: int = Field(default=30, ge=1, le=300)
+    max_audio_command_seconds: int = Field(default=30, gt=0)
 
     @model_validator(mode="after")
     def validate_memory_limits(self) -> "ResourcesConfig":
@@ -100,7 +108,7 @@ class BrowserDomainConfig(BaseModel):
 
     pattern: str = Field(min_length=1)
     enabled: bool = True
-    capabilities: list[Literal["open", "read", "click", "type", "submit", "evaluate", "javascript", "cookies", "local_storage", "downloads", "camera", "microphone"]] = Field(default_factory=list)
+    capabilities: list[Literal["open", "read", "click", "type", "submit", "download", "upload", "clipboard"]] = Field(default_factory=list)
     adapter: str | None = None
 
 

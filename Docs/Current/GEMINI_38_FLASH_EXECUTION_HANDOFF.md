@@ -1,8 +1,10 @@
-# Gemini 3.8 Flash High — Execution Handoff V3
+# Project H — Execution Handoff (historical batch definitions retained)
 
-## 1. Context for Flash Execution
-You are implementing Project H V2. The architecture has been rigorously audited and frozen by Gemini 3.1 Pro High. 
-The task ledger in `Docs/TASKS.md` is your single source of truth. Do not invent new tasks or redefine interfaces.
+## 1. Current execution context
+Codex is recovering Project H V2. Read authority documents in the order in
+`Docs/SKILL.md`; `Docs/TASKS.md` records progress, not product authority.
+The historical reviews below are not evidence that current main passes CI.
+Foundation repair and successful remote CI are required before PH-030.
 
 ## 2. Dependency Order and Batch Table
 
@@ -105,7 +107,7 @@ The task ledger in `Docs/TASKS.md` is your single source of truth. Do not invent
 **Exact Interfaces Consumed:** `ActionRequest`.
 
 **TDD Contract:**
-- **RED TESTS:** `tests/test_policy.py` (test sudo denies, test out of root denies, test approval digest generation and verification).
+- **RED TESTS:** `tests/test_policy.py` (sudo requires ASK_USER, out of root denies, approval digest generation and verification).
 - **VERIFY RED:** `pytest tests/test_policy.py`
 - **GREEN:** `app/policy/engine.py`, `app/policy/approvals.py`.
 - **VERIFY GREEN:** `pytest tests/test_policy.py`
@@ -156,20 +158,17 @@ The task ledger in `Docs/TASKS.md` is your single source of truth. Do not invent
 - **VERIFY GREEN:** `pytest tests/test_executors.py`
 - **FULL REGRESSION:** `pytest`
 
-## 4. NEXT EXACT PROMPT — GEMINI 3.8 FLASH HIGH
-```text
-TASK MODE: PROJECT H V2 — FLASH IMPLEMENTATION / BATCH 1A ONLY
+## 4. Next execution — Codex
 
-MODEL ROLE:
-You are Gemini 3.8 Flash High acting as the implementation engineer.
+First finish foundation repair and verify successful remote CI for current main.
+Only then implement PH-030: validated JSON action packs, global unique IDs,
+transactional last-known-good reload, normalized deterministic phrase/slot
+matching with explicit ambiguity, bounded file sizes, and composite references
+with cycle rejection. Return registry matches and trusted definitions separately
+from model ActionRequest IDs. No execution, AI calls, permission decisions or
+approval grants belong in the registry.
 
-Gemini 3.1 Pro High has audited the architecture and prepared the handoff.
-Your job is to execute ONLY Batch 1A from the CURRENT corrected handoff:
-Docs/Current/GEMINI_38_FLASH_EXECUTION_HANDOFF.md
-
-Read Docs/Current/GEMINI_38_FLASH_EXECUTION_HANDOFF.md Batch 1A definition.
-Follow the exact TDD Contract (RED -> VERIFY RED -> GREEN -> VERIFY GREEN).
-Create the exact files, add pytest/anyio/psutil to pyproject.toml, and create the .gitignore and config fixtures as strictly specified.
-Run the full regression test and update your Antigravity task artifact.
-Output a result packet when done, then STOP. Do not begin Batch 1B.
-```
+Run targeted/full tests, clean editable install and outside-cwd imports; measure
+harness RSS; obtain independent review; commit/push main and verify remote CI.
+The current run must stop before PH-040. Its dispatcher, executor and trusted
+registry security boundary require a new explicit task prompt.

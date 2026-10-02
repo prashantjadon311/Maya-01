@@ -3,7 +3,7 @@
 import json
 from typing import Any, Literal
 import math
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 
@@ -87,6 +87,11 @@ class ActionDefinition(BaseModel):
     risk: Literal["low", "medium", "high", "critical"] = "low"
     timeout_seconds: int = Field(default=30, gt=0)
 
+    @field_validator("arguments", mode="before")
+    @classmethod
+    def validate_json_args(cls, value: Any) -> Any:
+        return validate_canonical_json(value)
+
 class ActionPack(BaseModel):
     """Versioned action pack containing multiple action definitions."""
 
@@ -96,3 +101,18 @@ class ActionPack(BaseModel):
     pack_id: str = Field(pattern=r"^[a-z0-9_]+$")
     label: str
     actions: list[ActionDefinition] = Field(default_factory=list)
+
+    @field_validator("label")
+    @classmethod
+    def validate_label(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Pack label must not be empty")
+        return value
+
+    @model_validator(mode="after")
+    def validate_unique_ids(self) -> "ActionPack":
+        ids = [action.id for action in self.actions]
+        if len(ids) != len(set(ids)):
+            raise ValueError("Duplicate action ID within pack")
+        return self

@@ -5,6 +5,60 @@ from pydantic import ValidationError
 from app.core.config import Config, load_config, parse_config_toml
 
 
+@pytest.mark.parametrize("host", ["0.0.0.0", "localhost", "::1"])
+def test_dashboard_is_ipv4_loopback_only(host):
+    from app.core.config import DashboardConfig
+    assert DashboardConfig(host="127.0.0.1").host == "127.0.0.1"
+    with pytest.raises(ValidationError):
+        DashboardConfig(host=host)
+
+
+@pytest.mark.parametrize("capability", ["download", "upload", "clipboard"])
+def test_canonical_browser_capabilities_accepted(capability):
+    from app.core.config import BrowserDomainConfig
+    assert BrowserDomainConfig(pattern="https://example.com/*", capabilities=[capability]).capabilities == [capability]
+
+
+@pytest.mark.parametrize("capability", ["evaluate", "javascript", "cookies", "local_storage", "downloads", "camera", "microphone"])
+def test_noncanonical_browser_capabilities_rejected(capability):
+    from app.core.config import BrowserDomainConfig
+    with pytest.raises(ValidationError):
+        BrowserDomainConfig(pattern="https://example.com/*", capabilities=[capability])
+
+
+@pytest.mark.parametrize("field", ["display_name", "wake_phrase"])
+def test_assistant_identity_is_nonempty_and_trimmed(field):
+    from app.core.config import AssistantConfig
+    data = {"display_name": "Maya", "wake_phrase": "Maya"}
+    with pytest.raises(ValidationError):
+        AssistantConfig(**(data | {field: " \t "}))
+    assert getattr(AssistantConfig(**(data | {field: " Maya "})), field) == "Maya"
+
+
+@pytest.mark.parametrize("field,value", [("wake_threshold", -0.1), ("wake_threshold", 1.1), ("wake_threshold", float("nan")), ("max_command_seconds", 0), ("max_command_seconds", -1)])
+def test_voice_bounds(field, value):
+    from app.core.config import VoiceConfig
+    with pytest.raises(ValidationError):
+        VoiceConfig(**{field: value})
+
+
+@pytest.mark.parametrize("field", ["max_active", "max_steps", "max_api_calls_per_task", "default_timeout_minutes"])
+@pytest.mark.parametrize("value", [0, -1])
+def test_positive_agent_budgets(field, value):
+    from app.core.config import AgentsConfig
+    with pytest.raises(ValidationError):
+        AgentsConfig(**{field: value})
+
+
+def test_resource_bounds_follow_product_contract():
+    from app.core.config import ResourcesConfig
+    cfg = ResourcesConfig(memory_high_mb=1, memory_max_mb=2, max_audio_command_seconds=301)
+    assert cfg.memory_high_mb == 1
+    for field in ["memory_high_mb", "memory_max_mb", "max_event_queue", "max_audio_command_seconds"]:
+        with pytest.raises(ValidationError):
+            ResourcesConfig(**{field: 0})
+
+
 def test_load_valid_fixture():
     fixture_path = Path(__file__).parent / "fixtures" / "config.example.toml"
     cfg = load_config(fixture_path)
@@ -107,7 +161,7 @@ def test_ISSUE_K_config_model_constraints():
 
     # Resources bounds
     with pytest.raises(ValidationError):
-        ResourcesConfig(memory_high_mb=10, memory_max_mb=20) # Below 50
+        ResourcesConfig(memory_high_mb=0, memory_max_mb=20)
     with pytest.raises(ValidationError):
         ResourcesConfig(max_event_queue=-5)
     with pytest.raises(ValidationError):

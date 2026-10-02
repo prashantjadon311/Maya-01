@@ -9,14 +9,19 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.actions.schema import ActionRequest
+from app.policy.risk import RiskLevel
 
 _SHA256_HEX_PATTERN = re.compile(r"^[0-9a-fA-F]{64}$")
+
+
+def hash_canonical_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
 
 
 def hash_action(action: ActionRequest) -> str:
     """Calculate deterministic SHA-256 lowercase hex digest for an ActionRequest."""
     canonical_bytes = action.to_canonical_bytes()
-    return hashlib.sha256(canonical_bytes).hexdigest()
+    return hash_canonical_bytes(canonical_bytes)
 
 
 def verify_action(action: ActionRequest, expected_digest: str) -> bool:
@@ -38,13 +43,14 @@ class ApprovalRequest(BaseModel):
     created_at: float
     expires_at: float
     action_snapshot: str
+    risk_level: RiskLevel
     reason: str = ""
     request_id: str = ""
     workspace: str | None = None
     agent_id: str | None = None
 
     @classmethod
-    def from_action(cls, action: ActionRequest, expires_in: float = 300.0) -> "ApprovalRequest":
+    def from_action(cls, action: ActionRequest, *, risk_level: RiskLevel, expires_in: float = 300.0) -> "ApprovalRequest":
         now = time.time()
         return cls(
             action_hash=hash_action(action),
@@ -53,6 +59,7 @@ class ApprovalRequest(BaseModel):
             created_at=now,
             expires_at=now + expires_in,
             action_snapshot=action.to_canonical_json(),
+            risk_level=risk_level,
             reason=action.reason,
             request_id=action.request_id,
             workspace=action.workspace,
@@ -75,9 +82,6 @@ class ApprovalRequest(BaseModel):
         if self.expires_at <= self.created_at:
             raise ValueError("expires_at must be strictly greater than created_at")
             
-        import json
-        from app.actions.schema import ActionRequest
-        
         try:
             req = ActionRequest.model_validate_json(self.action_snapshot)
         except Exception as e:
@@ -87,8 +91,8 @@ class ApprovalRequest(BaseModel):
         if canonical_str != self.action_snapshot:
             raise ValueError("Snapshot is not canonically serialized")
             
-        expected_digest = hashlib.sha256(canonical_str.encode("utf-8")).hexdigest()
-        if expected_digest != self.action_hash:
+        expected_digest = hash_canonical_bytes(canonical_str.encode("utf-8"))
+        if not hmac.compare_digest(expected_digest, self.action_hash):
             raise ValueError("Hash does not match snapshot")
             
         if self.action_id != req.id:

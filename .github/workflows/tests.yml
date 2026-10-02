@@ -9,16 +9,22 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.14"]
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v7
       with:
-        python-version: "3.11"
+        python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e ".[dev]"
+        python -m pip install -e ".[dev]"
+    - name: Verify installed imports outside checkout
+      working-directory: ${{ runner.temp }}
+      run: python -I -c "import app; import app.actions.schema; import app.core.config; import app.policy.engine"
     - name: Run tests
       run: |
         pytest -v

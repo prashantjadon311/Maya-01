@@ -194,7 +194,10 @@ Separate from phrase actions:
       "argv_prefix": ["status"],
       "working_roots": ["~/Projects"],
       "approval": "preapproved",
-      "timeout_seconds": 20
+      "timeout_seconds": 20,
+      "risk": "low",
+      "env_allowlist": [],
+      "network_allowed": false
     },
     {
       "id": "pytest",
@@ -202,13 +205,26 @@ Separate from phrase actions:
       "argv_prefix": [],
       "working_roots": ["~/Projects"],
       "approval": "preapproved",
-      "timeout_seconds": 600
+      "timeout_seconds": 600,
+      "risk": "medium",
+      "env_allowlist": [],
+      "network_allowed": false
     }
   ]
 }
 ```
 
 ## 7. JSON design rules
+
+Developer rules require explicit `id`, `executable`, `argv_prefix`, nonempty
+`working_roots`, `approval="preapproved"`, positive integer `timeout_seconds`,
+and `risk` (`low` or `medium`). `env_allowlist` defaults to an empty tuple and
+`network_allowed` defaults to false. High/critical risk and invariant dangerous
+executables cannot be preapproved. PH-040 must enforce timeout, environment and
+network constraints and recheck the real cwd immediately before execution.
+
+Trusted approval risk comes from `PolicyEngine.assess_risk`, never directly from
+the model's advisory `risk_hint`. Hints can raise, but cannot lower, risk.
 
 - UTF-8.
 - reject unknown top-level/action fields;

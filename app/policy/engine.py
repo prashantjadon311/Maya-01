@@ -4,17 +4,13 @@ from enum import Enum
 from pathlib import Path
 import os
 from typing import Any, Literal
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator, model_validator
 
 from app.actions.schema import ActionRequest
 from app.core.config import FileRootConfig
 
-NEVER_PREAPPROVE_EXECUTABLES = frozenset({
-    "sudo", "su", "doas", "pkexec", "env",
-    "sh", "bash", "dash", "zsh", "fish",
-    "apt", "apt-get", "dpkg", "dnf", "yum", "rpm", "snap", "flatpak",
-    "systemctl", "service"
-})
+from app.policy.paths import canonical_path
+from app.policy.risk import RiskLevel, assess_risk, NEVER_PREAPPROVE_EXECUTABLES
 
 class PreapprovalRule(BaseModel):
     model_config = ConfigDict(
@@ -27,11 +23,27 @@ class PreapprovalRule(BaseModel):
     argv_prefix: tuple[str, ...]
     working_roots: tuple[str, ...] = Field(min_length=1)
     approval: Literal["preapproved"]
-    timeout_seconds: int = Field(gt=0)
+    timeout_seconds: int = Field(gt=0, strict=True)
+    risk: Literal["low", "medium"]
+    env_allowlist: tuple[str, ...] = ()
+    network_allowed: StrictBool = False
+
+    @field_validator("id", "executable")
+    @classmethod
+    def validate_nonempty(cls, value: str) -> str:
+        if not value.strip() or "\x00" in value:
+            raise ValueError("Value must be nonempty and contain no NUL")
+        return value
+
+    @field_validator("working_roots")
+    @classmethod
+    def validate_roots(cls, values: tuple[str, ...]) -> tuple[str, ...]:
+        for value in values:
+            canonical_path(value)
+        return values
 
     @model_validator(mode="after")
     def validate_executable(self) -> "PreapprovalRule":
-        import os
         if os.path.basename(self.executable) in NEVER_PREAPPROVE_EXECUTABLES:
             raise ValueError(f"Executable {self.executable} cannot be preapproved")
         return self
@@ -102,9 +114,12 @@ class PolicyEngine:
         all_denied = set(DEFAULT_SENSITIVE_PATHS).union(custom_paths)
         
         self.permanently_denied_paths = [
-            str(Path(os.path.normpath(Path(p).expanduser())).resolve())
+            str(canonical_path(p))
             for p in all_denied
         ]
+
+    def assess_risk(self, action: ActionRequest) -> RiskLevel:
+        return assess_risk(action)
 
     def evaluate(self, action: ActionRequest) -> PolicyDecision:
         """Evaluate action against configured policy rules and security invariants."""
@@ -118,7 +133,14 @@ class PolicyEngine:
             if not isinstance(argv, list) or not argv:
                 return PolicyDecision.DENY
             for arg in argv:
-                if not isinstance(arg, str) or not arg.strip():
+                if not isinstance(arg, str) or not arg.strip() or "\x00" in arg:
+                    return PolicyDecision.DENY
+
+            action_cwd = action.arguments.get("cwd", action.workspace)
+            if "cwd" in action.arguments or action_cwd is not None:
+                try:
+                    canonical_path(action_cwd)
+                except (ValueError, OSError, RuntimeError):
                     return PolicyDecision.DENY
 
             executable = argv[0]
@@ -129,10 +151,10 @@ class PolicyEngine:
         # 3. File actions policy check
         if action.tool.startswith("file."):
             path_str = action.arguments.get("path")
-            if not path_str:
+            try:
+                target_path = canonical_path(path_str)
+            except (ValueError, OSError, RuntimeError):
                 return PolicyDecision.DENY
-
-            target_path = Path(os.path.normpath(Path(path_str).expanduser())).resolve()
 
             # Check permanently denied sensitive locations
             for denied_str in self.permanently_denied_paths:
@@ -148,7 +170,10 @@ class PolicyEngine:
             # Check allowed roots containment
             in_allowed_root = False
             for root_config in self.allowed_file_roots:
-                root_path = Path(os.path.normpath(Path(root_config.path).expanduser())).resolve()
+                try:
+                    root_path = canonical_path(root_config.path)
+                except (ValueError, OSError, RuntimeError):
+                    return PolicyDecision.DENY
                 if target_path == root_path or root_path in target_path.parents:
                     if action.tool == "file.read" and not root_config.read:
                         continue
@@ -166,7 +191,7 @@ class PolicyEngine:
                 return PolicyDecision.DENY
 
         # 4. High-risk operations are NEVER silently pre-approved in V1
-        if action.risk_hint in ("high", "critical") or action.tool == "file.delete":
+        if self.assess_risk(action) in (RiskLevel.HIGH, RiskLevel.CRITICAL):
             return PolicyDecision.ASK_USER
 
         # 5. Check structured preapproval rules
@@ -189,14 +214,14 @@ class PolicyEngine:
             if command_args[:len(rule.argv_prefix)] != list(rule.argv_prefix):
                 continue
 
-            action_cwd = action.arguments.get("cwd") or action.workspace
+            action_cwd = action.arguments.get("cwd", action.workspace)
             if not action_cwd:
                 continue
-            cwd_path = Path(os.path.normpath(Path(action_cwd).expanduser()))
-            in_work_root = any(
-                cwd_path == Path(os.path.normpath(Path(r).expanduser())) or Path(os.path.normpath(Path(r).expanduser())) in cwd_path.parents
-                for r in rule.working_roots
-            )
+            try:
+                cwd_path = canonical_path(action_cwd)
+                in_work_root = any(cwd_path.is_relative_to(canonical_path(r)) for r in rule.working_roots)
+            except (ValueError, OSError, RuntimeError):
+                return PolicyDecision.DENY
             if not in_work_root:
                 continue
 
