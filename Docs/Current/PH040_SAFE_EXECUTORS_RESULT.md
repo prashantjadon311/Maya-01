@@ -1,90 +1,53 @@
-# PH-040 Safe Executors and Action Dispatcher Result
+# PH-040 Safe Executors, Action Dispatcher, and Security Closure Result
 
 ## 1. Summary & Status
-- **Base SHA:** `9205eaeb38e0d535d9e3aabb231b75b0e1d52afd`
-- **Branch SHA:** `5522afca7b3e16c09518d641edb4d64262a6936e`
-- **PR:** #1 (https://github.com/prashantjadon311/Maya-01/pull/1)
-- **Status:** PH040_IMPLEMENTED_CI_GREEN_AWAITING_SECURITY_REVIEW
-- **Next Exact Action:** Independent PH-040 security/code review before merge
+- **Base Main SHA:** `82735686f2441190bf6b961bc6e5bd015001ab19` (main after premature PR #1 merge)
+- **Branch SHA:** `030a8256b848e220fb99978188df937f831cdd33`
+- **PR:** #2 (https://github.com/prashantjadon311/Maya-01/pull/2)
+- **Status:** PH040_SECURITY_FIX_CI_GREEN_AWAITING_INDEPENDENT_REVIEW
+- **Next Exact Action:** Independent PH-040 security/code review of repair PR before merge
 
-## 2. Modified & Created Files
-- `app/actions/schema.py`: Added `strict=True` to `ActionDefinition` and `ActionPack` Pydantic models.
-- `app/actions/matcher.py`: Added post-normalization phrase length check; strict substitution failing closed on missing slots.
-- `app/actions/registry.py`: Deeply immutable `RegistryMatch` and `RegistryAmbiguity`; freshness-bound `snapshot_version`; non-overwriting phrase matches by `(action_id, slot_values)`; duplicate JSON key rejection hook; bounded chunked file reading; transactional LKG; total phrases ceiling (`MAX_TOTAL_PHRASES = 4096`); composite disabled child rejection.
-- `app/policy/engine.py`: Added `PolicyEvaluation` data structure, `evaluate_detailed()` returning matched rule and resolved executable, `resolve_trusted_executable()` preventing ambient PATH hijacking.
-- `app/core/dispatcher.py`: Central `ActionDispatcher` enforcing schema -> materialization -> policy -> definition floor -> executor constraints pipeline. Supports separated `dispatch_request` and `dispatch_match` routes, composite step isolation, and metadata audit sink.
-- `app/executors/base.py`: Base protocol and strict argument models (`ProcessArgs`, `FileReadArgs`, `FileListArgs`, `FileWriteArgs`, `FileDeleteArgs`, `XdgOpenArgs`).
-- `app/executors/process.py`: Subprocess executor enforcing argv-only (`shell=False`), controlled cwd with pre-spawn containment revalidation, minimal controlled env, bounded output capture, kill escalation on timeout, and fail-closed network isolation.
-- `app/executors/files.py`: Contained file executor enforcing canonicalization, sensitive path rejection, root containment, capability checks, atomic write with fsync, symlink protection, and non-execution of delete.
-- `app/executors/xdg.py`: XDG executor for local files and apps; strictly forbids HTTP/HTTPS URLs to prevent bypassing browser domain policy.
-- `app/browser/protocol.py`: Protocol stub for browser bridge in PH-040. Browser tool executions without bridge fail closed.
-- `tests/test_registry.py`: 10 new regression tests for PH-030 post-review repairs.
-- `tests/test_executors.py`: 16 comprehensive executor security tests.
-- `tests/test_dispatcher.py`: 13 dispatcher and policy contract tests.
-- `.github/workflows/tests.yml`: Updated outside-checkout import verification to include all PH-040 modules across Python 3.11 and 3.14.
-- `Docs/TASKS.md`: Updated checklist and checkpoint.
-- `Docs/Current/PH030_ACTION_REGISTRY_RESULT.md`: Corrected RSS wording.
+## 2. Security Closure Repairs Applied
+- **Process Executor Allowlist Hardening:**
+  - `ProcessExecutor` now treats an empty `env_allowlist = ()` as rejecting all caller-supplied environment variables.
+  - Hard denial for dangerous variables (`LD_PRELOAD`, `PYTHONPATH`, etc.) remains enforced.
+  - Defense-in-depth context requirement: `ProcessExecutor` fails closed if called without a valid `ALLOW_PREAPPROVED` `PolicyEvaluation` context containing matched rule and resolved executable.
+  - Stream reader tasks cancelled during timeout escalation are explicitly awaited with `asyncio.gather(..., return_exceptions=True)` to prevent unhandled pending task warnings.
+  - Explicit `NetworkIsolationBackend` capability abstraction introduced. Offline preapproval rules fail closed when no isolation backend is present.
+- **Trusted Executable Resolution:**
+  - `resolve_trusted_executable()` enforces strict V1 resolution against configured system directories (`/usr/bin`, `/bin`, `/usr/local/bin`, `/usr/lib`, `/lib`).
+  - Absolute paths outside trusted system roots (e.g. `/home/user/bin/git`, `/tmp/malicious_git`) and relative paths with slashes (`./git`, `bin/git`) are rejected.
+  - Resolved executables must exist, be regular files, be executable, and canonicalize within trusted system roots.
+- **XDG Executor Security:**
+  - Removed `shutil.which("xdg-open")` fallback completely. Resolution uses `resolve_trusted_executable("xdg-open")` exclusively.
+  - Frozen `xdg-open` to local filesystem targets only; all URI schemes (e.g. `http:`, `https:`, `ftp:`, `mailto:`, `ssh:`, `javascript:`, `data:`, `file:`) are rejected.
+  - Target paths are canonicalized, checked for sensitive locations/credentials, and required to pass configured file read root policy before invocation.
+- **Preapproval Rule Risk Floor:**
+  - `PolicyEngine.evaluate_detailed()` computes `effective_trusted_risk = max(structural_risk, matched_rule_risk)`.
+  - Matched preapproval rule risk can only raise effective trusted risk, never lower structural risk.
+- **File Executor & Dispatcher Hardening:**
+  - `_map_executor_to_tool()` requires explicit valid operations (`read`, `write`, `list`, `delete`). Invalid operations (e.g. `wat`, empty string, missing field) return `None` and fail closed.
+  - `file.read` uses `os.open` with `O_RDONLY` and `O_NOFOLLOW` (descriptor-bound I/O and `fstat` validation).
+  - `file.list` verifies target directory is not a symlink and inspects entries using `follow_symlinks=False` semantics without following child symlinks.
+  - `file.write` checks symlinks before and after atomic `os.replace` temp file creation.
+- **Composite Snapshot-Bound Execution:**
+  - Carries originating `snapshot_version` throughout composite execution.
+  - Verifies `expected_snapshot_version == registry.snapshot_version` before executing each child step. If the registry reloads mid-composite, execution aborts cleanly as stale.
+- **Audit Fallback Deque:**
+  - `ActionDispatcher` maintains a bounded in-memory `recent_audits` deque (`maxlen=256`).
+  - Emits metadata-only events for all decisions (`DENY`, `ASK_USER`, success, failure). If external `audit_sink` is `None` or throws an exception, the internal audit event is retained.
 
-## 3. Exact Policy & Approval Semantics
-- **PolicyEngine Integration:** `evaluate_detailed()` produces `PolicyEvaluation` with decision, structural risk, matched `PreapprovalRule`, and resolved binary path.
-- **Definition Approval/Risk Floor:** Stricter-wins semantics:
-  - Definition `deny` overrides lower policy decisions.
-  - Definition `always_ask` or `ask_user` overrides policy `ALLOW_PREAPPROVED`.
-  - Definition `preapproved` does not grant execution alone; requires `ALLOW_PREAPPROVED` from PolicyEngine.
-  - Definition risk only raises effective risk. High/critical effective risk always requires approval.
-  - Model-supplied `ActionRequest.id` matching a registered action ID grants zero extra trust.
-- **ApprovalRequest Rule:**
-  - `ApprovalRequest` represents an action awaiting human approval, NOT an authorization grant.
-  - A manually created `ApprovalRequest` cannot authorize execution.
-  - In PH-040, `ASK_USER` actions never execute and return an approval-required state.
+## 3. Test Suite & Verification Results
+- **Targeted Tests (`tests/test_executors.py` & `tests/test_dispatcher.py`):** 41 passed.
+- **Full Test Suite (`pytest -v`):** 378 passed in 2.87s.
+- **Git Diff Hygiene (`git diff --check`):** Clean (no whitespace errors).
+- **Installed Import Check:** Verified outside checkout (`python -I`).
 
-## 4. Executor Constraints & Security Invariants
-- **Process Executor:**
-  - Only `asyncio.create_subprocess_exec` (no shell).
-  - No ambient PATH trust for preapproved executables: resolved against fixed trusted system paths.
-  - Controlled cwd revalidated immediately before spawn.
-  - Minimal controlled environment; dangerous vars (`LD_PRELOAD`, etc.) forbidden; variables restricted to rule allowlist.
-  - Bounded stdout/stderr streaming (1 MiB ceiling).
-  - Escalation on timeout: terminate -> wait -> kill -> reap (no zombies).
-  - `network_allowed=False` fails closed because no isolation backend is present in PH-040.
-- **File Executor:**
-  - Full canonicalization and root containment checked immediately before I/O.
-  - Sensitive paths (`/etc`, `/root`, `~/.ssh`, `~/.gnupg`, etc.) and `.env` credentials permanently blocked.
-  - Read capped at 10 MiB; directory listing capped at 1024 entries.
-  - Atomic write via temporary file in same parent directory + `os.fsync` + pre-replace TOCTOU revalidation.
-  - Target path symlinks strictly rejected on write.
-  - `file.delete` does not auto-execute.
-- **XDG Executor:**
-  - Rejects HTTP/HTTPS schemes so browser URLs cannot bypass browser domain policy.
-  - Executes local apps/files via argv without shell.
-- **Browser Bridge:**
-  - Protocol stub only. Any browser request without a connected native messaging bridge fails closed.
-- **Composite Execution:**
-  - Sequentially dispatches child actions through central dispatcher.
-  - Every child passes policy independently. Parent approval never authorizes child.
-  - Bounded recursion depth (<= 5) and steps (<= 32).
-  - Stops immediately on any child denial, approval requirement, or execution error.
-  - Disabled child actions rejected during candidate registry validation and re-checked at runtime.
-
-## 5. Audit Metadata Emission
-- Injected `audit_sink` callback emits metadata events:
-  `timestamp`, `request_id`, `actor`, `tool`, `policy_decision`, `target`, `result_code`, `duration`, `error`.
-- Never logs sensitive file contents, credentials, API keys, or raw prompts.
-
-## 6. Test Suite & Verification Results
-- `tests/test_registry.py` & `tests/test_schemas.py`: 106 passed.
-- `tests/test_policy.py` & `tests/test_policy_contract.py`: 189 passed.
-- `tests/test_executors.py` & `tests/test_dispatcher.py`: 29 passed.
-- **Full test suite (`pytest -v`):** 366 passed in 3.13s.
-- **Installed outside-checkout verification (`python -I`):** PASSED.
-- **Git diff check (`git diff --check`):** Clean (no whitespace errors).
-
-## 7. Resident Memory (RSS)
-- Initial empty Python process: 13.836 MiB.
-- Active process with daemon and all PH-040 modules imported: 37.348 MiB.
+## 4. Resident Memory (RSS)
+- Active process baseline with daemon and all PH-040 modules: 37.348 MiB.
 - Well within memory budget (final memory stress gate remains PH-160).
 
-## 8. Deferred Requirements
+## 5. Deferred Requirements
 - **PH-050:** Interactive human approval UI popup and `ApprovalBroker`.
 - **PH-110:** Firefox WebExtension and authenticated Unix socket native messaging bridge.
 - **PH-130:** SQLite audit trail persistence.

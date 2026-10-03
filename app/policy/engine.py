@@ -17,7 +17,10 @@ TRUSTED_EXEC_DIRS: tuple[Path, ...] = (
     Path("/usr/bin"),
     Path("/bin"),
     Path("/usr/local/bin"),
+    Path("/usr/lib"),
+    Path("/lib"),
 )
+
 
 
 def resolve_trusted_executable(
@@ -26,29 +29,40 @@ def resolve_trusted_executable(
 ) -> Path | None:
     """Resolve an executable securely without consulting ambient os.environ['PATH'].
 
-    - If executable_str is an absolute path, verify it is resolved.
+    - If executable_str is an absolute path, verify it exists, is executable,
+      and canonicalizes within one of trusted_dirs.
     - If executable_str is a basename without slashes, search trusted_dirs only.
     - Relative paths with slashes (e.g. './foo', 'bin/foo') are never resolved.
     """
     if not isinstance(executable_str, str) or not executable_str.strip() or "\x00" in executable_str:
         return None
 
+    trusted_roots = tuple(d.resolve() for d in trusted_dirs)
+
     p = Path(executable_str)
     if p.is_absolute():
         try:
-            resolved = p.resolve(strict=False)
-            return resolved
+            if not p.exists() or not p.is_file() or not os.access(p, os.X_OK):
+                return None
+            resolved = p.resolve(strict=True)
+            in_trusted = any(resolved == root or root in resolved.parents for root in trusted_roots)
+            if in_trusted:
+                return resolved
+            return None
         except (OSError, RuntimeError):
             return None
     elif "/" not in executable_str and "\\" not in executable_str:
         for d in trusted_dirs:
-            candidate = (d / executable_str).resolve(strict=False)
+            candidate = d / executable_str
             try:
                 if candidate.exists() and candidate.is_file() and os.access(candidate, os.X_OK):
-                    return candidate
+                    resolved = candidate.resolve(strict=True)
+                    if any(resolved == root or root in resolved.parents for root in trusted_roots):
+                        return resolved
             except (OSError, RuntimeError):
                 continue
     return None
+
 
 
 @dataclass(frozen=True)
@@ -280,12 +294,19 @@ class PolicyEngine:
             if resolved_exe is None:
                 continue
 
+            rule_risk = RiskLevel(rule.risk.upper())
+            levels = list(RiskLevel)
+            pol_idx = levels.index(risk)
+            rule_idx = levels.index(rule_risk)
+            effective_trusted_risk = levels[max(pol_idx, rule_idx)]
+
             return PolicyEvaluation(
                 decision=PolicyDecision.ALLOW_PREAPPROVED,
-                trusted_risk=risk,
+                trusted_risk=effective_trusted_risk,
                 matched_preapproval_rule=rule,
                 resolved_executable=resolved_exe,
             )
+
 
         # Default fallback for valid actions requiring user confirmation
         return PolicyEvaluation(decision=PolicyDecision.ASK_USER, trusted_risk=risk)

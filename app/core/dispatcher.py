@@ -10,6 +10,7 @@ Provides clearly separated pathways for:
 - Deterministic RegistryMatch resolution
 """
 
+import collections
 from collections.abc import Callable
 from pathlib import Path
 import time
@@ -49,9 +50,10 @@ class ActionDispatcher:
         self.registry = registry
         self.process_executor = process_executor
         self.file_executor = file_executor
-        self.xdg_executor = xdg_executor
+        self.xdg_executor = xdg_executor or XdgExecutor(allowed_file_roots=policy_engine.allowed_file_roots)
         self.browser_bridge = browser_bridge
         self.audit_sink = audit_sink
+        self.recent_audits: collections.deque[AuditEvent] = collections.deque(maxlen=256)
 
     def _emit_audit(
         self,
@@ -61,10 +63,7 @@ class ActionDispatcher:
         error: str | None,
         duration: float,
     ) -> None:
-        """Emit lightweight audit metadata. Never logs secrets or full file contents."""
-        if self.audit_sink is None:
-            return
-
+        """Emit lightweight audit metadata into internal deque and external sink if configured."""
         target = ""
         if request.tool == "process.run":
             argv = request.arguments.get("argv", [])
@@ -87,11 +86,16 @@ class ActionDispatcher:
             "duration": round(duration, 6),
             "error": error,
         }
-        try:
-            self.audit_sink(event)
-        except Exception:
-            # Audit sink failure must not crash execution
-            pass
+
+        # Always append to bounded internal audit deque
+        self.recent_audits.append(event)
+
+        if self.audit_sink is not None:
+            try:
+                self.audit_sink(event)
+            except Exception:
+                # Audit sink failure must not crash execution
+                pass
 
     async def dispatch_request(self, request: ActionRequest) -> ActionResult:
         """
@@ -128,7 +132,7 @@ class ActionDispatcher:
 
         # 3. Composite action routing
         if defn.executor == "composite":
-            return await self._dispatch_composite(defn, match.captured_slots)
+            return await self._dispatch_composite(defn, match.captured_slots, snapshot_version=match.snapshot_version)
 
         # 4. Strict slot substitution
         try:
@@ -158,10 +162,10 @@ class ActionDispatcher:
         elif executor == "xdg_open":
             return "app.open"
         elif executor == "file":
-            op = arguments.get("operation", "read")
+            op = arguments.get("operation")
             if op in {"read", "write", "list", "delete"}:
                 return f"file.{op}"
-            return "file.read"
+            return None
         elif executor == "browser":
             op = arguments.get("operation", "open")
             return f"browser.{op}"
@@ -273,6 +277,7 @@ class ActionDispatcher:
         self,
         defn: ActionDefinition,
         captured_slots: Mapping[str, str],
+        snapshot_version: int,
         depth: int = 0,
     ) -> ActionResult:
         """
@@ -297,6 +302,13 @@ class ActionDispatcher:
 
         outputs = []
         for step_idx, child_id in enumerate(steps):
+            # Verify snapshot version before each child lookup/execution
+            if self.registry.snapshot_version != snapshot_version:
+                return ActionResult(
+                    success=False,
+                    error=f"Composite aborted: registry snapshot version changed from {snapshot_version} to active snapshot {self.registry.snapshot_version}",
+                )
+
             # 1. Fetch current trusted child definition
             child_defn = self.registry.get_definition(child_id)
             if child_defn is None:
@@ -314,7 +326,9 @@ class ActionDispatcher:
 
             # 3. If child is composite, recurse with incremented depth
             if child_defn.executor == "composite":
-                child_res = await self._dispatch_composite(child_defn, captured_slots, depth=depth + 1)
+                child_res = await self._dispatch_composite(
+                    child_defn, captured_slots, snapshot_version=snapshot_version, depth=depth + 1
+                )
             else:
                 # 4. Strict slot substitution
                 try:
