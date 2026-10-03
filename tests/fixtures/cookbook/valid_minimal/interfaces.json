@@ -1,0 +1,22 @@
+{
+  "interfaces": [
+    {
+      "name": "dispatch_action",
+      "owning_phase": "PH050",
+      "file": "app/core/dispatcher.py",
+      "signature": "async def dispatch_action(req: ActionRequest) -> ActionResult",
+      "inputs": [{"name": "req", "type": "ActionRequest"}],
+      "output": "ActionResult",
+      "preconditions": ["valid request"],
+      "postconditions": ["executed or denied"],
+      "is_security_boundary": true,
+      "security_test_id": "TEST-MIN-001",
+      "bounds": "Max request payload 64KB",
+      "timeout_seconds": 5.0,
+      "cancellation": "Propagates cancellation",
+      "idempotent": false,
+      "audit_code": "SEC-ACT-001",
+      "errors": ["ActionExecutionError"]
+    }
+  ]
+}

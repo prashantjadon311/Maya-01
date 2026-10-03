@@ -1,0 +1,12 @@
+{
+  "files": [
+    {
+      "path": "app/core/dispatcher.py",
+      "owner_phase": "PH050",
+      "secondary_modifiers": [],
+      "purpose": "Action dispatching",
+      "allowed_contents": ["dispatcher logic"],
+      "forbidden_contents": ["direct OS execution"]
+    }
+  ]
+}

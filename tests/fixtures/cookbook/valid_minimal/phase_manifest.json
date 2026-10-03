@@ -1,0 +1,19 @@
+{
+  "phases": [
+    {
+      "phase_id": "PH050",
+      "title": "Interactive Approval Broker",
+      "status": "PLANNED",
+      "required_reads": ["Docs/SKILL.md"],
+      "files_created": ["app/policy/broker.py"],
+      "files_modified": ["app/core/dispatcher.py"],
+      "files_forbidden_to_modify": ["app/policy/evaluator.py"],
+      "dependencies": [],
+      "required_capsules": ["CAP-001"],
+      "tests": ["TEST-MIN-001"],
+      "acceptance_criteria": ["Passes test_min_001"],
+      "output_interfaces": ["dispatch_action"],
+      "stop_conditions": ["Broker deadlock"]
+    }
+  ]
+}
