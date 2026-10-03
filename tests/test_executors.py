@@ -1,9 +1,11 @@
 """Tests for PH-040 Safe Executors (Process, File, XDG, Browser)."""
 
+import json
 import os
 from pathlib import Path
 import pytest
 from pydantic import ValidationError
+
 
 from app.actions.schema import ActionRequest
 from app.core.config import FileRootConfig
@@ -551,3 +553,202 @@ async def test_xdg_cannot_bypass_browser_url_policy():
     res = await executor.execute(req)
     assert not res.success
     assert "browser URLs must pass browser policy" in res.error
+
+
+# ---------------------------------------------------------------------------
+# PH-040 POST-MERGE SECURITY CLOSURE TESTS
+# ---------------------------------------------------------------------------
+
+@pytest.mark.anyio
+async def test_empty_env_allowlist_rejects_custom_env(tmp_path):
+    executor = ProcessExecutor()
+    rule = PreapprovalRule(
+        id="rule.echo",
+        executable="echo",
+        argv_prefix=(),
+        working_roots=(str(tmp_path),),
+        approval="preapproved",
+        timeout_seconds=5,
+        risk="low",
+        env_allowlist=(),  # EMPTY allowlist
+        network_allowed=True,
+    )
+    context = PolicyEvaluation(
+        decision=PolicyDecision.ALLOW_PREAPPROVED,
+        trusted_risk=RiskLevel.LOW,
+        matched_preapproval_rule=rule,
+        resolved_executable=Path("/bin/echo"),
+    )
+
+    # Empty env in request -> VALID
+    req_valid = ActionRequest(
+        id="test.empty_env",
+        tool="process.run",
+        arguments={"argv": ["echo", "hi"], "cwd": str(tmp_path), "env": {}},
+    )
+    res_valid = await executor.execute(req_valid, context=context)
+    assert res_valid.success
+
+    # Custom env in request with empty allowlist -> REJECTED
+    req_invalid = ActionRequest(
+        id="test.custom_env",
+        tool="process.run",
+        arguments={"argv": ["echo", "hi"], "cwd": str(tmp_path), "env": {"CUSTOM_VAR": "value"}},
+    )
+    res_invalid = await executor.execute(req_invalid, context=context)
+    assert not res_invalid.success
+    assert "not permitted by rule allowlist" in res_invalid.error
+
+
+@pytest.mark.anyio
+async def test_process_executor_requires_valid_allow_context(tmp_path):
+    executor = ProcessExecutor()
+    req = ActionRequest(
+        id="test.proc",
+        tool="process.run",
+        arguments={"argv": ["echo", "hi"], "cwd": str(tmp_path)},
+    )
+
+    # Missing context -> FAILS CLOSED
+    res_no_ctx = await executor.execute(req, context=None)
+    assert not res_no_ctx.success
+
+    # ASK_USER context -> FAILS CLOSED
+    ask_ctx = PolicyEvaluation(
+        decision=PolicyDecision.ASK_USER,
+        trusted_risk=RiskLevel.HIGH,
+    )
+    res_ask_ctx = await executor.execute(req, context=ask_ctx)
+    assert not res_ask_ctx.success
+
+
+def test_resolve_trusted_executable_strict_v1():
+    from app.policy.engine import resolve_trusted_executable, TRUSTED_EXEC_DIRS
+
+    # Basename in trusted dir -> resolved
+    resolved_git = resolve_trusted_executable("git")
+    assert resolved_git is not None
+    assert any(resolved_git.is_relative_to(d) for d in TRUSTED_EXEC_DIRS)
+
+    # Absolute executable outside trusted dirs -> REJECTED
+    assert resolve_trusted_executable("/home/user/bin/git") is None
+    assert resolve_trusted_executable("/tmp/malicious_git") is None
+
+    # Relative path with slashes -> REJECTED
+    assert resolve_trusted_executable("./git") is None
+    assert resolve_trusted_executable("bin/git") is None
+
+
+@pytest.mark.anyio
+async def test_xdg_no_ambient_shutil_which_fallback(tmp_path, monkeypatch):
+    hijack_dir = tmp_path / "hijack_bin"
+    hijack_dir.mkdir()
+    fake_xdg = hijack_dir / "xdg-open"
+    fake_xdg.write_text("#!/bin/sh\necho MALICIOUS\n", encoding="utf-8")
+    fake_xdg.chmod(0o755)
+
+    monkeypatch.setenv("PATH", str(hijack_dir))
+
+    def mock_resolve(exe, trusted_dirs=None):
+        if exe == "xdg-open":
+            return None
+        from app.policy.engine import resolve_trusted_executable as orig_resolve
+        return orig_resolve(exe, trusted_dirs) if trusted_dirs else orig_resolve(exe)
+
+    monkeypatch.setattr("app.executors.xdg.resolve_trusted_executable", mock_resolve)
+
+    target_file = tmp_path / "test.txt"
+    target_file.write_text("hello", encoding="utf-8")
+
+    executor = XdgExecutor(allowed_file_roots=[FileRootConfig(path=str(tmp_path), read=True)])
+    req = ActionRequest(
+        id="test.xdg",
+        tool="app.open",
+        arguments={"target": str(target_file)},
+    )
+
+    res = await executor.execute(req)
+    assert not res.success
+    assert "xdg-open binary not available in trusted system locations" in res.error
+
+
+@pytest.mark.anyio
+async def test_xdg_target_schemes_and_root_security(tmp_path):
+    target_file = tmp_path / "test.txt"
+    target_file.write_text("hello", encoding="utf-8")
+
+    executor = XdgExecutor(allowed_file_roots=[FileRootConfig(path=str(tmp_path), read=True)])
+
+    forbidden_targets = [
+        "http://example.com",
+        "https://example.com",
+        "ftp://example.com/file",
+        "mailto:user@example.com",
+        "ssh://user@host",
+        "javascript:alert(1)",
+        "data:text/html,hello",
+        f"file://{target_file}",
+    ]
+
+    for target in forbidden_targets:
+        req = ActionRequest(
+            id="test.xdg_scheme",
+            tool="app.open",
+            arguments={"target": target},
+        )
+        res = await executor.execute(req)
+        assert not res.success, f"Target '{target}' should have been rejected"
+
+    outside_file = tmp_path.parent / "outside_file.txt"
+    req_outside = ActionRequest(
+        id="test.xdg_outside",
+        tool="app.open",
+        arguments={"target": str(outside_file)},
+    )
+    res_outside = await executor.execute(req_outside)
+    assert not res_outside.success
+
+
+@pytest.mark.anyio
+async def test_file_read_symlink_swap_denied(tmp_path):
+    work_dir = tmp_path / "work"
+    work_dir.mkdir()
+    secret_dir = tmp_path / "secret"
+    secret_dir.mkdir()
+    secret_file = secret_dir / "secret.txt"
+    secret_file.write_text("SUPER_SECRET", encoding="utf-8")
+
+    sym_file = work_dir / "link.txt"
+    sym_file.symlink_to(secret_file)
+
+    executor = FileExecutor(allowed_roots=[FileRootConfig(path=str(work_dir), read=True)])
+    req = ActionRequest(
+        id="test.read_sym",
+        tool="file.read",
+        arguments={"path": str(sym_file)},
+    )
+    res = await executor.execute(req)
+    assert not res.success
+
+
+@pytest.mark.anyio
+async def test_file_list_child_symlink_not_followed(tmp_path):
+    work_dir = tmp_path / "work"
+    work_dir.mkdir()
+    outside_dir = tmp_path / "outside"
+    outside_dir.mkdir()
+
+    sym_link = work_dir / "link_to_outside"
+    sym_link.symlink_to(outside_dir)
+
+    executor = FileExecutor(allowed_roots=[FileRootConfig(path=str(work_dir), read=True)])
+    req = ActionRequest(
+        id="test.list",
+        tool="file.list",
+        arguments={"path": str(work_dir)},
+    )
+    res = await executor.execute(req)
+    assert res.success
+    entries = json.loads(res.output)
+    sym_entry = next(e for e in entries if e["name"] == "link_to_outside")
+    assert sym_entry["is_dir"] is False

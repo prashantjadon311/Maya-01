@@ -1,20 +1,25 @@
 """Project H XDG / Application Executor.
 
-Provides controlled app/file opening via xdg-open. Strictly forbids URL schemes
-like http:// and https:// which must pass browser domain policy via BrowserBridge.
+Provides controlled app/file opening via xdg-open for local filesystem targets only.
+Strictly forbids URI schemes to prevent bypassing browser domain security policy.
 """
 
 import asyncio
+from pathlib import Path
 from typing import Any
-import shutil
 
 from app.actions.schema import ActionRequest, ActionResult
+from app.core.config import FileRootConfig
 from app.executors.base import BaseExecutor, XdgOpenArgs
-from app.policy.engine import resolve_trusted_executable
+from app.policy.engine import DEFAULT_SENSITIVE_PATHS, resolve_trusted_executable
+from app.policy.paths import canonical_path
 
 
 class XdgExecutor(BaseExecutor):
     """Executes local application/file opening via xdg-open without shell."""
+
+    def __init__(self, allowed_file_roots: list[FileRootConfig] | None = None) -> None:
+        self.allowed_file_roots = list(allowed_file_roots or [])
 
     async def execute(self, action: ActionRequest, context: Any = None) -> ActionResult:
         """Execute an app.open action request."""
@@ -24,35 +29,63 @@ class XdgExecutor(BaseExecutor):
         except Exception as exc:
             return ActionResult(success=False, error=f"Invalid app.open arguments: {exc}")
 
-        # 2. Re-verify URL exclusion: HTTP/HTTPS URLs must not bypass browser policy
-        target_lower = args.target.lower()
-        if target_lower.startswith("http://") or target_lower.startswith("https://"):
+        target_str = args.target.strip()
+
+        # 2. Reject URI schemes: xdg-open is restricted to local filesystem targets
+        if ":" in target_str:
             return ActionResult(
                 success=False,
-                error="xdg-open cannot open HTTP/HTTPS URLs; browser URLs must pass browser policy via BrowserBridge",
+                error=f"xdg-open is restricted to local filesystem targets; URI scheme in target '{target_str}' is rejected",
             )
 
-        # 3. Resolve xdg-open binary securely
-        xdg_bin = resolve_trusted_executable("xdg-open")
-        if xdg_bin is None:
-            # Fallback check using shutil.which if not in standard /usr/bin or /bin
-            found = shutil.which("xdg-open")
-            if found:
-                resolved = resolve_trusted_executable(found)
-                if resolved:
-                    xdg_bin = resolved
+        # 3. Canonicalize and verify local filesystem path
+        try:
+            target_path = canonical_path(target_str)
+        except Exception as exc:
+            return ActionResult(success=False, error=f"Invalid local file target for xdg-open: {exc}")
 
+        if not target_path.exists():
+            return ActionResult(success=False, error=f"Target file does not exist: {target_path}")
+
+        # Check sensitive paths
+        for denied_str in DEFAULT_SENSITIVE_PATHS:
+            try:
+                denied_path = canonical_path(denied_str)
+                if target_path == denied_path or denied_path in target_path.parents:
+                    return ActionResult(success=False, error=f"Access to sensitive path '{target_path}' is denied")
+            except Exception:
+                continue
+
+        if target_path.name == ".env" or target_path.name.startswith(".env."):
+            return ActionResult(success=False, error="Access to credential files (.env) is denied")
+
+        # Root containment check
+        in_allowed_root = False
+        for root in self.allowed_file_roots:
+            try:
+                root_path = canonical_path(root.path)
+                if (target_path == root_path or root_path in target_path.parents) and root.read:
+                    in_allowed_root = True
+                    break
+            except Exception:
+                continue
+
+        if not in_allowed_root:
+            return ActionResult(success=False, error=f"Target path '{target_path}' is outside allowed read roots")
+
+        # 4. Resolve xdg-open binary securely (NO ambient shutil.which fallback)
+        xdg_bin = resolve_trusted_executable("xdg-open")
         if xdg_bin is None:
             return ActionResult(
                 success=False,
                 error="xdg-open binary not available in trusted system locations",
             )
 
-        # 4. Execute xdg-open with argv only (shell=False)
+        # 5. Execute xdg-open with argv only (shell=False)
         try:
             proc = await asyncio.create_subprocess_exec(
                 str(xdg_bin),
-                args.target,
+                str(target_path),
                 stdin=asyncio.subprocess.DEVNULL,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
@@ -61,7 +94,7 @@ class XdgExecutor(BaseExecutor):
             if proc.returncode != 0:
                 err_text = stderr_data.decode("utf-8", errors="replace")
                 return ActionResult(success=False, error=f"xdg-open exited with code {proc.returncode}: {err_text}")
-            return ActionResult(success=True, output=f"Opened '{args.target}' via xdg-open")
+            return ActionResult(success=True, output=f"Opened '{target_path}' via xdg-open")
         except asyncio.TimeoutError:
             try:
                 proc.kill()

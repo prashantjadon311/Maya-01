@@ -550,3 +550,186 @@ async def test_audit_emission_metadata_only(tmp_path):
     # Verify no file contents or arbitrary inputs logged
     assert "arguments" not in ev
     assert "output" not in ev
+
+
+# ---------------------------------------------------------------------------
+# PH-040 POST-MERGE SECURITY CLOSURE TESTS FOR DISPATCHER
+# ---------------------------------------------------------------------------
+
+@pytest.mark.anyio
+async def test_invalid_file_operation_fails_closed(tmp_path):
+    write_test_pack(
+        tmp_path,
+        "core",
+        [
+            {
+                "id": "file.wat",
+                "phrases": ["do wat"],
+                "executor": "file",
+                "arguments": {"operation": "wat", "path": str(tmp_path / "test.txt")},
+                "approval": "preapproved",
+                "risk": "low",
+            }
+        ],
+    )
+    reg = ActionRegistry(tmp_path)
+    assert reg.reload()
+
+    engine = PolicyEngine()
+    dispatcher = ActionDispatcher(policy_engine=engine, registry=reg)
+
+    match = reg.resolve("do wat")
+    assert match is not None
+    res = await dispatcher.dispatch_match(match)
+    assert not res.success
+    assert "Unsupported executor" in res.error
+
+
+@pytest.mark.anyio
+async def test_composite_aborts_after_registry_snapshot_changes(tmp_path):
+    write_test_pack(
+        tmp_path,
+        "core",
+        [
+            {
+                "id": "app.step1",
+                "phrases": ["do step1"],
+                "executor": "process",
+                "arguments": {"argv": ["echo", "step1"], "cwd": str(tmp_path)},
+                "approval": "preapproved",
+                "risk": "low",
+            },
+            {
+                "id": "app.step2",
+                "phrases": ["do step2"],
+                "executor": "process",
+                "arguments": {"argv": ["echo", "step2"], "cwd": str(tmp_path)},
+                "approval": "preapproved",
+                "risk": "low",
+            },
+            {
+                "id": "app.comp",
+                "phrases": ["run comp"],
+                "executor": "composite",
+                "arguments": {"steps": ["app.step1", "app.step2"]},
+                "approval": "preapproved",
+                "risk": "low",
+            },
+        ],
+    )
+
+    reg = ActionRegistry(tmp_path)
+    assert reg.reload()
+    snap1 = reg.snapshot_version
+
+    rule1 = PreapprovalRule(
+        id="r1", executable="echo", argv_prefix=(), working_roots=(str(tmp_path),), approval="preapproved", timeout_seconds=5, risk="low", network_allowed=True
+    )
+    engine = PolicyEngine(preapproved_rules=[rule1])
+
+    # Custom spy process executor that reloads registry during step1
+    class MidExecutionReloadExecutor(BaseExecutor):
+        async def execute(self, action, context=None):
+            if action.id == "app.step1":
+                write_test_pack(
+                    tmp_path,
+                    "pack2",
+                    [
+                        {
+                            "id": "app.extra",
+                            "phrases": ["extra"],
+                            "executor": "process",
+                            "arguments": {"argv": ["echo", "x"], "cwd": str(tmp_path)},
+                            "approval": "preapproved",
+                            "risk": "low",
+                        }
+                    ],
+                )
+                reg.reload()
+                assert reg.snapshot_version != snap1
+                return ActionResult(success=True, output="step1 ok")
+            return ActionResult(success=True, output="step2 ok")
+
+    dispatcher = ActionDispatcher(policy_engine=engine, registry=reg, process_executor=MidExecutionReloadExecutor())
+    match = reg.resolve("run comp")
+    assert match is not None
+    assert match.snapshot_version == snap1
+
+    res = await dispatcher.dispatch_match(match)
+    assert not res.success
+    assert "snapshot" in res.error.lower()
+
+
+
+
+@pytest.mark.anyio
+async def test_audit_event_exists_with_no_external_sink(tmp_path):
+    engine = PolicyEngine()
+    reg = ActionRegistry(tmp_path)
+    assert reg.reload()
+
+    dispatcher = ActionDispatcher(policy_engine=engine, registry=reg, audit_sink=None)
+
+    req = ActionRequest(
+        id="test.audit",
+        tool="process.run",
+        arguments={"argv": ["echo", "hi"], "cwd": str(tmp_path)},
+    )
+    await dispatcher.dispatch_request(req)
+
+    # In-memory audit deque must contain the audit event
+    assert len(dispatcher.recent_audits) == 1
+    ev = dispatcher.recent_audits[0]
+    assert ev["tool"] == "process.run"
+    assert ev["policy_decision"] == PolicyDecision.ASK_USER.value
+
+
+@pytest.mark.anyio
+async def test_external_audit_sink_failure_does_not_lose_internal_event(tmp_path):
+    engine = PolicyEngine()
+    reg = ActionRegistry(tmp_path)
+    assert reg.reload()
+
+    def bad_sink(event):
+        raise RuntimeError("Sink exploded!")
+
+    dispatcher = ActionDispatcher(policy_engine=engine, registry=reg, audit_sink=bad_sink)
+
+    req = ActionRequest(
+        id="test.audit",
+        tool="process.run",
+        arguments={"argv": ["echo", "hi"], "cwd": str(tmp_path)},
+    )
+    # Execution must not crash despite sink exception
+    await dispatcher.dispatch_request(req)
+
+    # Event must still exist in internal deque
+    assert len(dispatcher.recent_audits) == 1
+    assert dispatcher.recent_audits[0]["tool"] == "process.run"
+
+
+def test_rule_risk_raises_trusted_risk(tmp_path):
+    rule_low = PreapprovalRule(
+        id="r.echo.low",
+        executable="echo",
+        argv_prefix=(),
+        working_roots=(str(tmp_path),),
+        approval="preapproved",
+        timeout_seconds=5,
+        risk="low",  # Rule risk is LOW
+        network_allowed=True,
+    )
+    engine = PolicyEngine(preapproved_rules=[rule_low])
+
+    req = ActionRequest(
+        id="test.echo",
+        tool="process.run",
+        arguments={"argv": ["echo", "hi"], "cwd": str(tmp_path)},
+    )
+    # Structural risk of process.run is MEDIUM
+    assert engine.assess_risk(req) == RiskLevel.MEDIUM
+
+    # Rule risk is LOW, but structural risk is MEDIUM -> trusted risk remains MEDIUM (cannot lower structural risk)
+    eval_result = engine.evaluate_detailed(req)
+    assert eval_result.decision == PolicyDecision.ALLOW_PREAPPROVED
+    assert eval_result.trusted_risk == RiskLevel.MEDIUM

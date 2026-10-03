@@ -96,7 +96,7 @@ class FileExecutor(BaseExecutor):
         return ActionResult(success=False, error=f"Unsupported file tool: {action.tool}")
 
     async def execute_read(self, action: ActionRequest) -> ActionResult:
-        """Execute file.read operation within root containment and size limits."""
+        """Execute file.read operation using descriptor-bound open with O_NOFOLLOW."""
         try:
             args = FileReadArgs.model_validate(action.arguments)
         except Exception as exc:
@@ -107,18 +107,26 @@ class FileExecutor(BaseExecutor):
             return ActionResult(success=False, error=error)
         assert target is not None
 
-        if not target.is_file():
-            return ActionResult(success=False, error=f"File not found or not a regular file: {target}")
+        flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+        try:
+            fd = os.open(str(target), flags)
+        except OSError as exc:
+            return ActionResult(success=False, error=f"Failed to open file safely (symlink or access error): {exc}")
 
         try:
-            st = target.stat()
+            st = os.fstat(fd)
+            import stat
+            if not stat.S_ISREG(st.st_mode):
+                os.close(fd)
+                return ActionResult(success=False, error=f"File not found or not a regular file: {target}")
             if st.st_size > args.max_bytes:
+                os.close(fd)
                 return ActionResult(
                     success=False,
                     error=f"File size ({st.st_size} bytes) exceeds max limit ({args.max_bytes} bytes)",
                 )
 
-            with open(target, "rb") as f:
+            with os.fdopen(fd, "rb") as f:
                 data = f.read(args.max_bytes + 1)
             if len(data) > args.max_bytes:
                 return ActionResult(success=False, error=f"File content exceeds max limit ({args.max_bytes} bytes)")
@@ -129,7 +137,7 @@ class FileExecutor(BaseExecutor):
             return ActionResult(success=False, error=f"Failed to read file: {exc}")
 
     async def execute_list(self, action: ActionRequest) -> ActionResult:
-        """Execute file.list operation within root containment and entry limits."""
+        """Execute file.list operation without following child symlinks."""
         try:
             args = FileListArgs.model_validate(action.arguments)
         except Exception as exc:
@@ -140,6 +148,8 @@ class FileExecutor(BaseExecutor):
             return ActionResult(success=False, error=error)
         assert target is not None
 
+        if target.is_symlink():
+            return ActionResult(success=False, error="Target is a symlink: directory listing through symlinks is denied")
         if not target.is_dir():
             return ActionResult(success=False, error=f"Target is not an existing directory: {target}")
 
@@ -148,14 +158,24 @@ class FileExecutor(BaseExecutor):
             for idx, entry in enumerate(sorted(target.iterdir(), key=lambda p: p.name)):
                 if idx >= args.max_entries:
                     break
+                is_sym = entry.is_symlink()
+                is_dir = False if is_sym else entry.is_dir(follow_symlinks=False)
+                is_file = False if is_sym else entry.is_file(follow_symlinks=False)
+                entry_size = None
+                if is_file:
+                    try:
+                        entry_size = entry.lstat().st_size
+                    except OSError:
+                        pass
                 entries.append({
                     "name": entry.name,
-                    "is_dir": entry.is_dir(),
-                    "size": entry.stat().st_size if entry.is_file() else None,
+                    "is_dir": is_dir,
+                    "size": entry_size,
                 })
             return ActionResult(success=True, output=json.dumps(entries))
         except Exception as exc:
             return ActionResult(success=False, error=f"Failed to list directory: {exc}")
+
 
     async def execute_write(self, action: ActionRequest) -> ActionResult:
         """Execute atomic file.write operation with fsync and symlink protection."""
