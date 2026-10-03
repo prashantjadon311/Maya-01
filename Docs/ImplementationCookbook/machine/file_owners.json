@@ -298,7 +298,9 @@
     {
       "path": "extension/firefox/background.js",
       "owner_phase": "PH110",
-      "secondary_modifiers": [],
+      "secondary_modifiers": [
+        "PH120"
+      ],
       "purpose": "Extension background service worker connecting native messaging pipe to content scripts",
       "allowed_contents": [
         "browser.runtime.connectNative",
@@ -574,6 +576,355 @@
       ],
       "forbidden_contents": [
         "live API network calls"
+      ]
+    },
+    {
+      "path": "app/browser/protocol.py",
+      "owner_phase": "PH040",
+      "secondary_modifiers": [
+        "PH110"
+      ],
+      "purpose": "BrowserBridge protocol definition and runtime_checkable interface",
+      "allowed_contents": [
+        "BrowserBridge protocol definition",
+        "execute signature"
+      ],
+      "forbidden_contents": [
+        "direct socket connections",
+        "subprocess spawns"
+      ]
+    },
+    {
+      "path": "tests/test_approval_broker.py",
+      "owner_phase": "PH050",
+      "secondary_modifiers": [],
+      "purpose": "Unit and security test suite for ApprovalBroker and grant validation",
+      "allowed_contents": [
+        "ApprovalBroker unit/security tests",
+        "timeout assertions",
+        "mock popup"
+      ],
+      "forbidden_contents": [
+        "production code",
+        "network calls"
+      ]
+    },
+    {
+      "path": "tests/fakes/fake_popup.py",
+      "owner_phase": "PH050",
+      "secondary_modifiers": [],
+      "purpose": "Test fake simulating interactive native approval popup",
+      "allowed_contents": [
+        "FakePopup class",
+        "canned responses (APPROVE/DENY/TIMEOUT)"
+      ],
+      "forbidden_contents": [
+        "real GUI windows",
+        "subprocess execution"
+      ]
+    },
+    {
+      "path": "tests/test_nvidia_provider.py",
+      "owner_phase": "PH060",
+      "secondary_modifiers": [],
+      "purpose": "Unit and security test suite for NvidiaProvider and AsyncOpenAI streaming",
+      "allowed_contents": [
+        "NvidiaProvider tests",
+        "mock AsyncOpenAI client",
+        "tool call validation"
+      ],
+      "forbidden_contents": [
+        "real network requests to external API endpoints"
+      ]
+    },
+    {
+      "path": "tests/fakes/fake_nvidia.py",
+      "owner_phase": "PH060",
+      "secondary_modifiers": [],
+      "purpose": "Test fake simulating OpenAI-compatible streaming API responses",
+      "allowed_contents": [
+        "FakeOpenAIClient",
+        "chunk streaming",
+        "canned tool calls"
+      ],
+      "forbidden_contents": [
+        "real network calls"
+      ]
+    },
+    {
+      "path": "tests/test_command_router.py",
+      "owner_phase": "PH070",
+      "secondary_modifiers": [],
+      "purpose": "Unit tests for CommandRouter 4-tier routing and classification",
+      "allowed_contents": [
+        "CommandRouter tests",
+        "exact phrase matching",
+        "tier precedence checks"
+      ],
+      "forbidden_contents": [
+        "subprocess executions",
+        "live LLM calls"
+      ]
+    },
+    {
+      "path": "tests/test_agent_runtime.py",
+      "owner_phase": "PH070",
+      "secondary_modifiers": [],
+      "purpose": "Integration and bounds test suite for AgentRuntime step loop",
+      "allowed_contents": [
+        "AgentRuntime tests",
+        "step limits",
+        "tool execution assertions"
+      ],
+      "forbidden_contents": [
+        "unbounded loops",
+        "direct OS access bypassing ActionDispatcher"
+      ]
+    },
+    {
+      "path": "tests/test_voice_wake.py",
+      "owner_phase": "PH080",
+      "secondary_modifiers": [],
+      "purpose": "Unit and privacy test suite for AudioSource and WakeDetector",
+      "allowed_contents": [
+        "AudioSource tests",
+        "ring buffer bounds",
+        "mock openWakeWord",
+        "privacy asserts"
+      ],
+      "forbidden_contents": [
+        "network requests",
+        "disk audio persistence"
+      ]
+    },
+    {
+      "path": "tests/fakes/fake_voice.py",
+      "owner_phase": "PH080",
+      "secondary_modifiers": [],
+      "purpose": "Test fake simulating audio streams and wake word detections",
+      "allowed_contents": [
+        "FakeAudioSource",
+        "synthetic PCM frames"
+      ],
+      "forbidden_contents": [
+        "real soundcard capture",
+        "microphone access"
+      ]
+    },
+    {
+      "path": "tests/test_stt_adapter.py",
+      "owner_phase": "PH090",
+      "secondary_modifiers": [],
+      "purpose": "Unit and security test suite for NVIDIA STT adapter and buffer release",
+      "allowed_contents": [
+        "STTAdapter tests",
+        "ephemeral buffer release assertions",
+        "error handling"
+      ],
+      "forbidden_contents": [
+        "pre-wake audio transmission",
+        "persistent audio files"
+      ]
+    },
+    {
+      "path": "tests/fakes/fake_stt.py",
+      "owner_phase": "PH090",
+      "secondary_modifiers": [],
+      "purpose": "Test fake simulating remote STT transcription responses",
+      "allowed_contents": [
+        "FakeSTTAdapter",
+        "canned transcriptions",
+        "simulated network errors"
+      ],
+      "forbidden_contents": [
+        "live network calls"
+      ]
+    },
+    {
+      "path": "tests/test_tray.py",
+      "owner_phase": "PH100",
+      "secondary_modifiers": [],
+      "purpose": "Unit tests for StatusNotifierItem tray and state transitions",
+      "allowed_contents": [
+        "StatusNotifierTray tests",
+        "property export assertions",
+        "signal emission"
+      ],
+      "forbidden_contents": [
+        "heavyweight X11/Wayland window creation"
+      ]
+    },
+    {
+      "path": "tests/fakes/fake_dbus.py",
+      "owner_phase": "PH100",
+      "secondary_modifiers": [],
+      "purpose": "Test fake simulating D-Bus connection and StatusNotifierWatcher",
+      "allowed_contents": [
+        "FakeDBusBus",
+        "mock object registration",
+        "signal capture"
+      ],
+      "forbidden_contents": [
+        "real system bus operations"
+      ]
+    },
+    {
+      "path": "tests/test_browser_bridge.py",
+      "owner_phase": "PH110",
+      "secondary_modifiers": [],
+      "purpose": "Unit and security test suite for Firefox Native Message bridge",
+      "allowed_contents": [
+        "NativeMessageBridge tests",
+        "1MB framing limit",
+        "tab origin security tests"
+      ],
+      "forbidden_contents": [
+        "live browser process spawning"
+      ]
+    },
+    {
+      "path": "tests/fakes/fake_browser.py",
+      "owner_phase": "PH110",
+      "secondary_modifiers": [],
+      "purpose": "Test fake simulating browser extension native messaging pipe",
+      "allowed_contents": [
+        "FakeExtensionPipe",
+        "canned DOM responses",
+        "origin headers"
+      ],
+      "forbidden_contents": [
+        "live network/browser calls"
+      ]
+    },
+    {
+      "path": "tests/test_site_adapters.py",
+      "owner_phase": "PH120",
+      "secondary_modifiers": [],
+      "purpose": "Unit tests for semantic site adapters and selector degradation",
+      "allowed_contents": [
+        "Site adapter DOM parsing tests",
+        "ADAPTER_OUTDATED assertions"
+      ],
+      "forbidden_contents": [
+        "live web scraping",
+        "network calls"
+      ]
+    },
+    {
+      "path": "tests/test_dashboard_api.py",
+      "owner_phase": "PH130",
+      "secondary_modifiers": [],
+      "purpose": "Unit and security test suite for FastAPI dashboard and SQLite storage",
+      "allowed_contents": [
+        "FastAPI TestClient requests",
+        "same-origin tests",
+        "CRUD validation"
+      ],
+      "forbidden_contents": [
+        "non-localhost network binding"
+      ]
+    },
+    {
+      "path": "tests/test_dashboard_frontend.py",
+      "owner_phase": "PH140",
+      "secondary_modifiers": [],
+      "purpose": "Unit tests for static web assets, CSS compliance, and JS event handlers",
+      "allowed_contents": [
+        "HTML/CSS structure tests",
+        "accessibility/reduced-motion assertions"
+      ],
+      "forbidden_contents": [
+        "external CDN dependencies",
+        "Node build pipelines"
+      ]
+    },
+    {
+      "path": "tests/test_developer_workflows.py",
+      "owner_phase": "PH150",
+      "secondary_modifiers": [],
+      "purpose": "Integration tests for git status, diff, test execution, and code edit tools",
+      "allowed_contents": [
+        "DeveloperToolExecutor tests",
+        "temp git repo isolation",
+        "policy gates"
+      ],
+      "forbidden_contents": [
+        "production repository modifications",
+        "auto-commit without policy"
+      ]
+    },
+    {
+      "path": "tests/test_resource_hardening.py",
+      "owner_phase": "PH160",
+      "secondary_modifiers": [],
+      "purpose": "Stress and memory boundary test suite for cgroup compliance",
+      "allowed_contents": [
+        "Bounded structure tests",
+        "memory monitoring assertions",
+        "stress runs"
+      ],
+      "forbidden_contents": [
+        "modifying cgroup limits",
+        "raising MemoryMax"
+      ]
+    },
+    {
+      "path": "packaging/install.sh",
+      "owner_phase": "PH170",
+      "secondary_modifiers": [],
+      "purpose": "User installation script for Maya daemon and browser manifests",
+      "allowed_contents": [
+        "systemctl --user commands",
+        "manifest symlinks",
+        "permission checks"
+      ],
+      "forbidden_contents": [
+        "sudo/root execution",
+        "system-wide directory modifications"
+      ]
+    },
+    {
+      "path": "packaging/uninstall.sh",
+      "owner_phase": "PH170",
+      "secondary_modifiers": [],
+      "purpose": "Clean uninstallation script for Maya user service and artifacts",
+      "allowed_contents": [
+        "systemctl --user stop/disable",
+        "manifest removal",
+        "user state cleanup"
+      ],
+      "forbidden_contents": [
+        "sudo/root execution",
+        "deleting arbitrary user files"
+      ]
+    },
+    {
+      "path": "tests/test_packaging.py",
+      "owner_phase": "PH170",
+      "secondary_modifiers": [],
+      "purpose": "Packaging and installation verification test suite",
+      "allowed_contents": [
+        "Manifest syntax validation",
+        "service file parsing",
+        "permission checks"
+      ],
+      "forbidden_contents": [
+        "executing system-wide modifications"
+      ]
+    },
+    {
+      "path": "Docs/Current/PH180_FINAL_ACCEPTANCE_REPORT.md",
+      "owner_phase": "PH180",
+      "secondary_modifiers": [],
+      "purpose": "Final V1 acceptance and verification report",
+      "allowed_contents": [
+        "Verification results",
+        "requirement mapping table",
+        "test run outputs"
+      ],
+      "forbidden_contents": [
+        "unverified claims",
+        "modifying production requirements"
       ]
     }
   ]

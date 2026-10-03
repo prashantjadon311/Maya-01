@@ -154,3 +154,25 @@ def test_validator_rejects_frozen_with_nonzero_counters():
     issues = validate_cookbook(model)
     codes = [i.code for i in issues]
     assert "FROZEN_WITH_OPEN_ISSUES" in codes or "UNMAPPED_REQUIREMENT" in codes
+
+
+def test_validator_catches_phase_created_file_unowned():
+    valid_dir = FIXTURES_ROOT / "valid_minimal"
+    model = load_cookbook(valid_dir)
+    model.phase_manifest.phases[0].files_created.append("unowned/future/file.py")
+    issues = validate_cookbook(model)
+    codes = [i.code for i in issues]
+    assert "UNOWNED_FILE" in codes
+
+
+def test_validator_catches_phase_modified_file_unauthorized():
+    valid_dir = FIXTURES_ROOT / "valid_minimal"
+    model = load_cookbook(valid_dir)
+    # PH050 modifies app/core/dispatcher.py, remove PH050 from secondary_modifiers
+    for f in model.file_owners.files:
+        if f.path == "app/core/dispatcher.py":
+            f.secondary_modifiers = []
+    issues = validate_cookbook(model)
+    codes = [i.code for i in issues]
+    assert "UNAUTHORIZED_MODIFIER" in codes
+

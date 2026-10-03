@@ -181,7 +181,85 @@ def validate_cookbook(model: CookbookModel) -> list[ValidationIssue]:
                 )
             )
 
-    # 5. Dependencies and cycle detection
+    # 5. Phase manifest validation
+    file_owner_map = {f.path: f for f in model.file_owners.files}
+    iface_owner_map = {i.name: i.owning_phase for i in model.interfaces.interfaces}
+
+    for phase in model.phase_manifest.phases:
+        pid = phase.phase_id
+        # Check files_created
+        for fc in phase.files_created:
+            if fc not in file_owner_map:
+                issues.append(
+                    ValidationIssue(
+                        code="UNOWNED_FILE",
+                        path=f"phases/{pid}/files_created/{fc}",
+                        message=f"File {fc} created by {pid} is not registered in file_owners.json",
+                        severity="critical",
+                    )
+                )
+            elif file_owner_map[fc].owner_phase != pid:
+                issues.append(
+                    ValidationIssue(
+                        code="FILE_OWNER_MISMATCH",
+                        path=f"phases/{pid}/files_created/{fc}",
+                        message=f"File {fc} created by {pid} is owned by {file_owner_map[fc].owner_phase}",
+                        severity="critical",
+                    )
+                )
+        # Check files_modified
+        for fm in phase.files_modified:
+            if fm not in file_owner_map:
+                issues.append(
+                    ValidationIssue(
+                        code="UNOWNED_FILE",
+                        path=f"phases/{pid}/files_modified/{fm}",
+                        message=f"File {fm} modified by {pid} is not registered in file_owners.json",
+                        severity="critical",
+                    )
+                )
+            elif pid not in file_owner_map[fm].secondary_modifiers:
+                issues.append(
+                    ValidationIssue(
+                        code="UNAUTHORIZED_MODIFIER",
+                        path=f"phases/{pid}/files_modified/{fm}",
+                        message=f"Phase {pid} modifies {fm} without being declared in secondary_modifiers",
+                        severity="critical",
+                    )
+                )
+        # Check tests
+        for t in phase.tests:
+            if t not in test_ids:
+                issues.append(
+                    ValidationIssue(
+                        code="UNKNOWN_PHASE_TEST",
+                        path=f"phases/{pid}/tests/{t}",
+                        message=f"Test {t} in phase {pid} not found in tests.json",
+                        severity="critical",
+                    )
+                )
+        # Check output interfaces
+        for out_iface in phase.output_interfaces:
+            if out_iface not in iface_owner_map:
+                issues.append(
+                    ValidationIssue(
+                        code="UNKNOWN_OUTPUT_INTERFACE",
+                        path=f"phases/{pid}/output_interfaces/{out_iface}",
+                        message=f"Output interface {out_iface} in phase {pid} not found in interfaces.json",
+                        severity="critical",
+                    )
+                )
+            elif iface_owner_map[out_iface] != pid:
+                issues.append(
+                    ValidationIssue(
+                        code="INTERFACE_OWNER_MISMATCH",
+                        path=f"phases/{pid}/output_interfaces/{out_iface}",
+                        message=f"Output interface {out_iface} in phase {pid} owned by {iface_owner_map[out_iface]}",
+                        severity="critical",
+                    )
+                )
+
+    # 6. Dependencies and cycle detection
     edge_dicts = []
     for edge in model.dependencies.edges:
         u = edge.from_ if hasattr(edge, "from_") else (edge.get("from") or edge.get("from_"))

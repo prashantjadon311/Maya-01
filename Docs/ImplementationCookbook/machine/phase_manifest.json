@@ -42,8 +42,7 @@
       "output_interfaces": [
         "ApprovalBroker.request_approval",
         "ApprovalBroker.verify_grant",
-        "ApprovalBroker.consume_grant",
-        "ApprovalBroker.reset"
+        "ApprovalBroker.consume_grant"
       ],
       "stop_conditions": [
         "Popup backend requires root permissions",
@@ -88,10 +87,8 @@
         "Automated test suite runs completely offline without burning quota"
       ],
       "output_interfaces": [
-        "NvidiaProvider.create_client",
         "NvidiaProvider.complete",
-        "NvidiaProvider.stream_chat",
-        "NvidiaProvider.aclose"
+        "NvidiaProvider.stream_chat"
       ],
       "stop_conditions": [
         "OpenAI SDK requires incompatible dependencies",
@@ -140,8 +137,7 @@
       ],
       "output_interfaces": [
         "CommandRouter.route",
-        "AgentRuntime.run_task",
-        "AgentRuntime.cancel_task"
+        "AgentRuntime.run_task"
       ],
       "stop_conditions": [
         "Agent loop deadlocks on approval",
@@ -190,9 +186,8 @@
         "Recording terminates via VAD silence or timeout"
       ],
       "output_interfaces": [
-        "AudioSource.read_frames",
         "WakeDetector.process_chunk",
-        "CommandRecorder.record_command"
+        "AudioSource.read_frames"
       ],
       "stop_conditions": [
         "openWakeWord RSS exceeds 100MB",
@@ -235,8 +230,7 @@
         "STT failure fails closed with zero downstream action execution"
       ],
       "output_interfaces": [
-        "STTAdapter.transcribe",
-        "STTAdapter.release_buffer"
+        "STTAdapter.transcribe"
       ],
       "stop_conditions": [
         "STT adapter retains audio in memory post-call",
@@ -280,9 +274,7 @@
         "Resident memory delta < 10 MiB; no GUI window created"
       ],
       "output_interfaces": [
-        "StatusNotifierTray.register",
-        "StatusNotifierTray.update_state",
-        "StatusNotifierTray.unregister"
+        "StatusNotifierTray.update_state"
       ],
       "stop_conditions": [
         "Qt/GTK window required for tray",
@@ -334,9 +326,7 @@
         "Password fields and credentials strictly excluded from DOM extraction"
       ],
       "output_interfaces": [
-        "NativeMessageBridge.send_command",
-        "NativeMessageBridge.receive_message",
-        "NativeMessageBridge.verify_domain_permission"
+        "NativeMessageBridge.send_command"
       ],
       "stop_conditions": [
         "CDP/Puppeteer proposed over Native Messaging",
@@ -382,8 +372,7 @@
         "Zero arbitrary JavaScript eval() or remote script execution"
       ],
       "output_interfaces": [
-        "GoogleAdapter.extract",
-        "BaseAdapter.handle_outdated_dom"
+        "GoogleAdapter.extract"
       ],
       "stop_conditions": [
         "Arbitrary eval() used for scraping",
@@ -430,9 +419,7 @@
         "SQLite layer in WAL mode with connection pooling"
       ],
       "output_interfaces": [
-        "create_dashboard_app",
-        "SQLiteStorage.record_audit_event",
-        "SQLiteStorage.get_audit_events"
+        "create_dashboard_app"
       ],
       "stop_conditions": [
         "Server binds to 0.0.0.0",
@@ -472,9 +459,7 @@
         "Animations pause automatically when browser tab is hidden",
         "Zero Node.js runtime, npm packages, or frontend build steps"
       ],
-      "output_interfaces": [
-        "MayaDashboardUI"
-      ],
+      "output_interfaces": [],
       "stop_conditions": [
         "Node/React/Vite dependencies added",
         "Remote CDN scripts referenced"
@@ -514,9 +499,7 @@
         "Auto-commit is strictly disabled by default"
       ],
       "output_interfaces": [
-        "DeveloperToolExecutor.run_workflow",
-        "DeveloperToolExecutor.git_status",
-        "DeveloperToolExecutor.run_tests"
+        "DeveloperToolExecutor.run_workflow"
       ],
       "stop_conditions": [
         "Auto-commit enabled without human confirmation",
@@ -596,10 +579,7 @@
         "Firefox native messaging host manifest registered in user profile",
         "Idempotent install and uninstall scripts provided"
       ],
-      "output_interfaces": [
-        "maya.service",
-        "install.sh"
-      ],
+      "output_interfaces": [],
       "stop_conditions": [
         "Service configured as root daemon",
         "MemoryMax omitted from unit file"
@@ -636,9 +616,7 @@
         "Deterministic local actions operate 100% when NVIDIA remote AI is unavailable",
         "Final certification report generated without critical or important gaps"
       ],
-      "output_interfaces": [
-        "test_offline_deterministic_actions_succeed"
-      ],
+      "output_interfaces": [],
       "stop_conditions": [
         "Any requirement lacks automated test evidence",
         "Offline deterministic actions fail or hang"

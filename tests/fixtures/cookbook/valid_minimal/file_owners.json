@@ -1,12 +1,21 @@
 {
   "files": [
     {
-      "path": "app/core/dispatcher.py",
+      "path": "app/policy/broker.py",
       "owner_phase": "PH050",
       "secondary_modifiers": [],
+      "purpose": "Interactive approval broker",
+      "allowed_contents": ["ApprovalBroker"],
+      "forbidden_contents": ["subprocess calls"]
+    },
+    {
+      "path": "app/core/dispatcher.py",
+      "owner_phase": "PH040",
+      "secondary_modifiers": ["PH050"],
       "purpose": "Action dispatching",
       "allowed_contents": ["dispatcher logic"],
       "forbidden_contents": ["direct OS execution"]
     }
   ]
 }
+

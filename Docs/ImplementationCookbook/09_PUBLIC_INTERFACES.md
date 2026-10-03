@@ -84,6 +84,15 @@ Every public interface across Maya phases PH-050 through PH-180 is frozen herein
 - **Preconditions:** Called strictly for post-wake command audio; max length 10.0s (320KB PCM).
 - **Cleanup:** `pcm_bytes` released from memory immediately post-transcription.
 
+
+### `AudioSource.read_frames`
+- **File:** `app/voice/audio.py`
+- **Signature:** `async def read_frames(self, num_frames: int) -> bytes`
+- **Inputs:** `num_frames: int` (> 0).
+- **Bounds:** Max ring buffer size 3 seconds (96,000 bytes). Oldest dropped on overflow.
+- **Timeout:** 1.0s. Cancellation interrupts buffer await cleanly.
+- **Audit Code:** `AUD-VOIC-READ`.
+
 ---
 
 ## 5. System Tray & Browser Native Bridge Interfaces (PH-100, PH-110, PH-120)
@@ -98,3 +107,50 @@ Every public interface across Maya phases PH-050 through PH-180 is frozen herein
 - **Signature:** `async def send_command(self, action: BrowserCommand) -> BrowserResponse`
 - **Framing:** 4-byte native endian unsigned int length prefix + UTF-8 JSON payload. Max payload 1MB.
 - **Security Gates:** Destination domain verified against daemon policy allowlist before dispatch.
+
+### `GoogleAdapter.extract`
+- **File:** `extension/firefox/adapters/google.js`
+- **Signature:** `function extract(document: Document) -> AdapterResult`
+- **Preconditions:** `window.location.origin` is `'https://www.google.com'`.
+- **Postconditions:** Returns top 5 organic search results (title, snippet, URL).
+- **Security Boundary:** Yes (`test_site_adapters_semantic_extraction`).
+- **Bounds:** Max 5 results, max 500 chars snippet per result. Timeout 2.0s.
+- **Audit Code:** `SEC-ADPT-EXTRACT`. Errors: `DOMSelectorNotFoundError`.
+
+---
+
+## 6. Dashboard & Storage Interfaces (PH-130)
+
+### `create_dashboard_app`
+- **File:** `app/api/app.py`
+- **Signature:** `def create_dashboard_app(dispatcher: ActionDispatcher, storage: SQLiteStorage) -> FastAPI`
+- **Preconditions:** `dispatcher` and `storage` initialized.
+- **Postconditions:** Returns FastAPI application bound strictly to localhost with no wildcard CORS.
+- **Security Boundary:** Yes (`test_dashboard_cors_and_localhost_binding`).
+- **Bounds:** Request body size limited to 64KB. Timeout 30.0s.
+- **Audit Code:** `SEC-API-CREATE`. Errors: `AppFactoryError`.
+
+---
+
+## 7. Developer Tool Execution Interfaces (PH-150)
+
+### `DeveloperToolExecutor.run_workflow`
+- **File:** `app/executors/developer.py`
+- **Signature:** `async def run_workflow(self, repo_path: Path, steps: list[DevStep]) -> WorkflowResult`
+- **Preconditions:** `repo_path` is verified git repository inside allowed roots; all steps pass policy.
+- **Postconditions:** Executes edit -> test -> inspect diff loop; auto-commit is NOT triggered.
+- **Security Boundary:** Yes (`test_auto_commit_disabled_by_default`).
+- **Bounds:** Max 10 steps per workflow, max diff capture 100KB. Timeout 120.0s.
+- **Audit Code:** `SEC-DEV-RUN`. Errors: `GitExecutionError`, `TestExecutionFailedError`.
+
+---
+
+## 8. Resource & Lifecycle Interfaces (PH-160)
+
+### `LifecycleManager.monitor_memory`
+- **File:** `app/core/lifecycle.py`
+- **Signature:** `def monitor_memory(self) -> MemorySnapshot`
+- **Preconditions:** cgroup v2 memory controller or `/proc/self/status` available.
+- **Postconditions:** Returns MemorySnapshot with `current_rss_mb`, `peak_rss_mb`, and `limit_mb`.
+- **Bounds:** Instantaneous procfs read. Timeout 0.1s. Idempotent: True.
+- **Audit Code:** `AUD-RES-MONITOR`. Errors: `ProcfsReadError`.

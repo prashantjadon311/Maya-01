@@ -28,7 +28,7 @@ Every file in the Maya repository (both existing PH-000..PH-040 files and future
 | `app/tray/status_notifier.py` | PH100 | — | StatusNotifierItem over D-Bus | `StatusNotifierTray`, property signals | Heavyweight GUI window creation |
 | `app/browser/native_bridge.py` | PH110 | — | Firefox Native Messaging bridge host | `NativeMessageBridge`, framing | Unrestricted DOM access |
 | `extension/firefox/manifest.json` | PH110 | — | Firefox WebExtension manifest | Manifest metadata & permissions | Broad wildcards without user prompt |
-| `extension/firefox/background.js` | PH110 | — | Background service worker for native host | Native messaging pipe connector | Remote code evaluation |
+| `extension/firefox/background.js` | PH110 | PH120 | Background service worker for native host | Native messaging pipe connector | Remote code evaluation |
 | `extension/firefox/native.js` | PH110 | — | Tab origin validation & message dispatch | `verifyTabOrigin` function | Origin mismatch execution |
 | `extension/firefox/generic.js` | PH110 | — | Generic DOM text extraction | `extractVisibleText`, password filter | Reading password inputs, cookies |
 | `extension/firefox/adapters/base.js` | PH120 | — | Base site adapter interface | `BaseAdapter`, outdated DOM handler | Silent failure, selector injection |
@@ -48,4 +48,29 @@ Every file in the Maya repository (both existing PH-000..PH-040 files and future
 | `app/core/lifecycle.py` | PH160 | — | Daemon lifecycle & memory monitoring | `LifecycleManager`, memory monitor | Raising MemoryMax limit |
 | `packaging/systemd/maya.service` | PH170 | — | User systemd unit file | systemd unit definition | Root service configuration |
 | `packaging/native-manifest/project_h_firefox.json` | PH170 | — | Native messaging host manifest | Native host binary path | Executable scripts directly |
+| `app/browser/protocol.py` | PH040 | PH110 | BrowserBridge protocol definition | `BrowserBridge` protocol definition | Direct socket connections, subprocess spawns |
+| `tests/test_approval_broker.py` | PH050 | — | ApprovalBroker unit & security test suite | Unit/security tests, timeout assertions | Production code, network calls |
+| `tests/fakes/fake_popup.py` | PH050 | — | Test fake for interactive native popup | `FakePopup` class, canned responses | Real GUI windows, subprocesses |
+| `tests/test_nvidia_provider.py` | PH060 | — | NvidiaProvider test suite | Unit/streaming tests, mock AsyncOpenAI | Real network calls |
+| `tests/fakes/fake_nvidia.py` | PH060 | — | Test fake for OpenAI-compatible endpoint | `FakeOpenAIClient`, chunk streaming | Real network calls |
+| `tests/test_command_router.py` | PH070 | — | CommandRouter test suite | Routing tier tests, exact match tests | Subprocess executions, live LLM calls |
+| `tests/test_agent_runtime.py` | PH070 | — | AgentRuntime test suite | Step limit tests, loop bound tests | Unbounded loops, direct OS access |
+| `tests/test_voice_wake.py` | PH080 | — | AudioSource and WakeDetector test suite | Ring buffer tests, mock wake detection | Network requests, audio persistence |
+| `tests/fakes/fake_voice.py` | PH080 | — | Test fake for audio streams & wake | `FakeAudioSource`, synthetic PCM frames | Real soundcard capture |
+| `tests/test_stt_adapter.py` | PH090 | — | STTAdapter test suite | Buffer release tests, STT mock tests | Pre-wake STT, audio persistence |
+| `tests/fakes/fake_stt.py` | PH090 | — | Test fake for remote STT | `FakeSTTAdapter`, canned responses | Live network calls |
+| `tests/test_tray.py` | PH100 | — | StatusNotifierTray test suite | State sync tests, property assertions | Real X11/Wayland window creation |
+| `tests/fakes/fake_dbus.py` | PH100 | — | Test fake for D-Bus connection | `FakeDBusBus`, mock registration | Real system bus operations |
+| `tests/test_browser_bridge.py` | PH110 | — | NativeMessageBridge test suite | 1MB framing tests, origin security tests | Live browser process spawning |
+| `tests/fakes/fake_browser.py` | PH110 | — | Test fake for native messaging pipe | `FakeExtensionPipe`, canned DOM responses | Live network/browser calls |
+| `tests/test_site_adapters.py` | PH120 | — | Site adapters test suite | DOM parsing tests, ADAPTER_OUTDATED tests | Live web scraping |
+| `tests/test_dashboard_api.py` | PH130 | — | FastAPI dashboard & storage test suite | TestClient requests, same-origin tests | Non-localhost network binding |
+| `tests/test_dashboard_frontend.py` | PH140 | — | Static web assets test suite | HTML/CSS tests, reduced motion tests | External CDN dependencies |
+| `tests/test_developer_workflows.py` | PH150 | — | Developer tools test suite | DeveloperToolExecutor tests, isolation tests | Auto-commit without policy |
+| `tests/test_resource_hardening.py` | PH160 | — | Cgroup & resource stress test suite | Stress runs, memory boundary tests | Modifying cgroup limits |
+| `packaging/install.sh` | PH170 | — | User installation script | systemctl user commands, symlinks | Sudo/root execution |
+| `packaging/uninstall.sh` | PH170 | — | User uninstallation script | systemctl user disable, cleanup | Sudo/root execution |
+| `tests/test_packaging.py` | PH170 | — | Packaging verification test suite | Manifest & service file syntax tests | System-wide modifications |
 | `tests/test_offline_determinism.py` | PH180 | — | Offline determinism acceptance suite | Offline test cases | Live external network calls |
+| `Docs/Current/PH180_FINAL_ACCEPTANCE_REPORT.md` | PH180 | — | Final V1 acceptance and verification report | Verification tables, test results | Unverified claims |
+
