@@ -2,62 +2,86 @@
 
 **Role:** Principal Implementation Engineer & Systems Builder  
 **Repository:** `prashantjadon311/Maya-01`  
-**Execution Charter:** Incrementally implement and verify Maya phases PH-050 through PH-180 using the frozen implementation cookbook.
+**Execution Charter:** Incrementally implement and verify Maya phases PH-050 through PH-180 in an autonomous, sequential one-shot loop using the frozen implementation cookbook.
 
 ---
 
-## EXECUTION RULES
+## EXECUTION LOOP (AUTONOMOUS ONE-SHOT)
 
-1. **ONE PHASE AT A TIME:**
-   Execute exactly one phase packet per session/turn (e.g. `PH050.md`, then `PH060.md`, etc.). Never attempt multi-phase mega-implementations.
+You must execute a continuous internal execution loop iterating through phases **PH-050 → PH-060 → PH-070 → PH-080 → PH-090 → PH-100 → PH-110 → PH-120 → PH-130 → PH-140 → PH-150 → PH-160 → PH-170 → PH-180**.
 
-2. **MINIMAL TOKEN READS (PHASE MANIFEST):**
-   Do NOT reread the entire repository history, old reviews, or unrelated documentation. Read ONLY:
+**CRITICAL:** Do NOT stop or ask for user confirmation between successful phases. Once a phase passes all tests, review gates, and checkpoint requirements, immediately and automatically continue to the next phase in the loop.
+
+For each phase `PHxxx`:
+
+1. **MINIMAL TOKEN READS (PHASE ISOLATION):**
+   Load only the minimal phase-local context:
    - `Docs/SKILL.md`
-   - `Docs/ImplementationCookbook/execution/DELTA_CHECK.md`
    - Current phase entry in `Docs/ImplementationCookbook/machine/phase_manifest.json`
    - Current phase packet: `Docs/ImplementationCookbook/phases/PHxxx.md`
-   - Exact source files listed in the manifest under `files_modified` or `files_created`.
+   - Phase-relevant entries in `Docs/ImplementationCookbook/machine/interfaces.json` and `17_REFERENCE_CODE_CAPSULES.md`
+   - The exact source files declared in `files_created` or `files_modified`.
 
-3. **STRICT PRE-PHASE DELTA-CHECK:**
-   Before touching code in any phase:
-   - Run the delta check procedure from `Docs/ImplementationCookbook/execution/DELTA_CHECK.md`.
-   - Verify previous phase commit and test baseline are green.
-   - Verify interface fingerprints.
-   - If a blocker exists: STOP immediately and report.
+2. **PRE-PHASE DELTA-CHECK:**
+   Execute the verification steps from `Docs/ImplementationCookbook/execution/DELTA_CHECK.md`:
+   - Verify working tree is clean: `git status --short`.
+   - Verify canonical interface and manifest fingerprints: `python -m tools.cookbook.fingerprint ... --expect <hash>`.
+   - Verify cookbook integrity: `PYTHONPATH=. python -m tools.cookbook.validate Docs/ImplementationCookbook`.
+   - Verify preceding test baseline is green.
 
-4. **STRICT TEST-DRIVEN DEVELOPMENT (TDD):**
-   For each task in the phase:
-   1. Write the prescribed test from Section 25/26 of `PHxxx.md`.
-   2. Run pytest; verify it FAILS with the expected missing symbol/behavior (RED).
-   3. Implement the minimal code following the exact algorithm and reference capsule.
-   4. Run the focused test; verify it PASSES (GREEN).
-   5. Run full test regression (`pytest -q`).
+3. **STRICT TEST-DRIVEN DEVELOPMENT (TDD):**
+   For each task prescribed in `phases/PHxxx.md`:
+   - Write the targeted test in `tests/test_*.py`.
+   - Run `pytest` to confirm the test fails with the expected missing symbol or behavioral assertion (RED).
+   - Implement the minimal production code adhering strictly to the architecture, types, and reference capsules.
+   - Run the targeted test to confirm it passes cleanly (GREEN).
 
-5. **FOUR REVIEW GATES BEFORE COMMIT:**
-   Before committing any phase, audit code against `Docs/ImplementationCookbook/execution/REVIEW_CHECKLIST.md`:
-   - Gate A: Architecture (placement, dependencies, composition root, lifetimes)
-   - Gate B: Security (dispatcher gateway, single-use hash grants, argv execution, secret masking)
-   - Gate C: Fresher Implementability (no loose assumptions, complete error handling)
-   - Gate D: Token Efficiency & Context Compaction
+4. **TARGETED TESTS & PYTEST EXECUTION:**
+   Run all phase-specific tests declared in `tests.json` / `phase_manifest.json` for `PHxxx`.
 
-6. **DURABLE CHECKPOINT RECORDING:**
-   After tests pass and review gates are satisfied:
-   - Record phase checkpoint conforming to `Docs/ImplementationCookbook/execution/CHECKPOINT_SCHEMA.json`.
-   - Commit changes with message: `feat(<subsystem>): implement PH-xxx <title>`.
-   - Compact context: discard internal scratch reasoning and intermediate outputs.
+5. **MANDATORY FULL REGRESSION:**
+   Execute full test suite regression:
+   `PYTHONPATH=. pytest tests/ -v`
+   All preceding and new tests must pass (100% green).
 
-7. **AUTOMATIC STOP CONDITIONS:**
-   STOP immediately and do not proceed if:
-   - Any security test fails or is bypassed.
-   - Any full regression test fails unexpectedly.
-   - Resident daemon memory exceeds `MemoryHigh=240M` or `MemoryMax=300M`.
-   - A consumed interface diverges from `Docs/ImplementationCookbook/machine/interfaces.json`.
-   - An architectural change is required outside the frozen cookbook.
+6. **FOUR-GATE PRE-COMMIT REVIEW:**
+   Audit all changes against `Docs/ImplementationCookbook/execution/REVIEW_CHECKLIST.md`:
+   - **Gate A (Architecture):** Exact file ownership, lifecycle order, no cyclic dependencies, no unauthorized imports.
+   - **Gate B (Security):** Central dispatcher enforcement, single-use atomic grant consumption, no shell execution, secret masking in audit logs.
+   - **Gate C (Fresher Implementability):** Explicit error handling, fail-closed timeouts, resource bounding.
+   - **Gate D (Token & Memory):** Clean code, no dangling debug code, memory bounds respected.
+
+7. **ATOMIC GIT COMMIT:**
+   Stage modified and created files for the phase:
+   `git commit -m "feat(<subsystem>): implement PH-xxx <title>"`
+
+8. **DURABLE CHECKPOINT CREATION:**
+   Record a valid checkpoint file matching `Docs/ImplementationCookbook/execution/CHECKPOINT_SCHEMA.json`:
+   - Record `memory_status` (`MEASURED` for PH160/PH180 and phases where measured; otherwise `NOT_MEASURED`).
+   - Record `memory_rss_mb` and `memory_measurement_method` (or `null` if unmeasured).
+   - Document any discoveries or edge-case handling in `findings`.
+
+9. **CONTEXT COMPACTION:**
+   Purge intermediate scratch artifacts, discard ephemeral tool outputs, and summarize phase completion in a single compact status line.
+
+10. **AUTOMATIC PROGRESSION:**
+    **Proceed immediately to the next phase without waiting for user input.**
 
 ---
 
-## NEXT EXACT ACTION
-Begin execution with:
+## HARD STOP CONDITIONS
+
+HALT the execution loop and alert the user ONLY if one of the following unrecoverable blockers occurs:
+1. A security assertion or adversarial test fails or cannot pass without bypassing policy.
+2. An unexpected full regression failure in existing code that cannot be resolved within phase ownership rules.
+3. Consumed interfaces diverge from canonical authority hashes in `Docs/ImplementationCookbook/machine/authority.json`.
+4. A circular dependency or unowned file modification is required.
+5. Resident daemon memory exceeds `MemoryMax=300M` during measured phases.
+6. External network/API failure on required live CI validation.
+
+---
+
+## EXECUTION START
+Begin the autonomous loop starting at:
 `PHASE: PH-050 — Interactive Approval Broker & Native Popup`
 using `Docs/ImplementationCookbook/phases/PH050.md`.

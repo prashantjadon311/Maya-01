@@ -14,10 +14,15 @@ git status --short
 # Step 2: Compare against expected previous phase commit SHA
 # (Check latest entry in .superpowers/sdd/... or phase checkpoint ledger)
 
-# Step 3: Run repository interface fingerprint check
-python -m tools.cookbook.fingerprint Docs/ImplementationCookbook/machine/interfaces.json
+# Step 3: Run repository interface fingerprint check against canonical authority
+python -m tools.cookbook.fingerprint Docs/ImplementationCookbook/machine/interfaces.json --expect d5b9c4168389560357308b1d5b42fac213138fe279b11397f65c887b5d054da9
+python -m tools.cookbook.fingerprint Docs/ImplementationCookbook/machine/requirements.json --expect 34514838096946b92258061d314c54ac285d9079f3de13886c2579bc40a157de
+python -m tools.cookbook.fingerprint Docs/ImplementationCookbook/machine/phase_manifest.json --expect e496f3b7ead4c1bd679664bce10e09e54d7d68f435188a556be6f03c7cd65747
 
-# Step 4: Run focused regression on previously completed phase
+# Step 4: Run cookbook integrity validation
+PYTHONPATH=. python -m tools.cookbook.validate Docs/ImplementationCookbook
+
+# Step 5: Run focused regression on previously completed phase
 pytest tests/ -q
 ```
 
@@ -26,7 +31,7 @@ pytest tests/ -q
 ## 2. Decision Tree
 
 1. **Clean Baseline:**
-   - If working tree is clean, test suite passes, and consumed interfaces match fingerprints:
+   - If working tree is clean, test suite passes, and consumed interfaces match authority fingerprints:
    - **PROCEED** to phase implementation micro-order.
 
 2. **Interface Drift / Incompatibility:**

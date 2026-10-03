@@ -42,7 +42,8 @@
       "secondary_modifiers": [
         "PH060",
         "PH080",
-        "PH130"
+        "PH130",
+        "PH090"
       ],
       "purpose": "Configuration schemas and TOML loading",
       "allowed_contents": [
@@ -89,7 +90,9 @@
     {
       "path": "app/executors/process.py",
       "owner_phase": "PH040",
-      "secondary_modifiers": [],
+      "secondary_modifiers": [
+        "PH050"
+      ],
       "purpose": "Safe process execution with argv allowlists and bounded buffers",
       "allowed_contents": [
         "ProcessExecutor class",
@@ -103,7 +106,9 @@
     {
       "path": "app/executors/files.py",
       "owner_phase": "PH040",
-      "secondary_modifiers": [],
+      "secondary_modifiers": [
+        "PH050"
+      ],
       "purpose": "Sandboxed file operations with canonical path validation",
       "allowed_contents": [
         "FileExecutor class",
@@ -117,7 +122,9 @@
     {
       "path": "app/executors/xdg.py",
       "owner_phase": "PH040",
-      "secondary_modifiers": [],
+      "secondary_modifiers": [
+        "PH050"
+      ],
       "purpose": "Desktop launcher using xdg-open for validated URLs and files",
       "allowed_contents": [
         "XdgExecutor class",
@@ -527,10 +534,13 @@
       ]
     },
     {
-      "path": "app/core/lifecycle.py",
-      "owner_phase": "PH160",
-      "secondary_modifiers": [],
-      "purpose": "Daemon lifecycle manager, cgroup memory monitor, and graceful shutdown coordinator",
+      "path": "app/lifecycle.py",
+      "owner_phase": "PH050",
+      "secondary_modifiers": [
+        "PH100",
+        "PH160"
+      ],
+      "purpose": "Daemon lifecycle manager, composition root, and graceful shutdown coordinator",
       "allowed_contents": [
         "LifecycleManager class",
         "monitor_memory function"
@@ -975,7 +985,9 @@
     {
       "path": "app/executors/base.py",
       "owner_phase": "PH040",
-      "secondary_modifiers": [],
+      "secondary_modifiers": [
+        "PH050"
+      ],
       "purpose": "Base abstract interface for action executors",
       "allowed_contents": [
         "BaseExecutor abstract class",
@@ -1039,6 +1051,97 @@
       ],
       "forbidden_contents": [
         "subprocess calls"
+      ]
+    },
+    {
+      "path": "pyproject.toml",
+      "owner_phase": "PH000",
+      "secondary_modifiers": [
+        "PH060",
+        "PH080",
+        "PH090",
+        "PH100",
+        "PH130"
+      ],
+      "purpose": "Python project metadata, dependencies, and build configuration",
+      "allowed_contents": [
+        "project dependencies",
+        "optional-dependencies",
+        "scripts table"
+      ],
+      "forbidden_contents": [
+        "unpinned non-standard build backends"
+      ]
+    },
+    {
+      "path": "app/ai/base.py",
+      "owner_phase": "PH060",
+      "secondary_modifiers": [],
+      "purpose": "AI provider protocol and model interaction base definitions",
+      "allowed_contents": [
+        "AIProvider Protocol",
+        "ProviderResponse",
+        "Message models"
+      ],
+      "forbidden_contents": [
+        "Nvidia SDK imports",
+        "live API network calls"
+      ]
+    },
+    {
+      "path": "app/api/routes_state.py",
+      "owner_phase": "PH130",
+      "secondary_modifiers": [],
+      "purpose": "Dashboard routes_state.py API endpoint implementation",
+      "allowed_contents": [
+        "FastAPI route handlers",
+        "Pydantic models"
+      ],
+      "forbidden_contents": [
+        "direct SQL execution bypassing storage",
+        "wildcard CORS"
+      ]
+    },
+    {
+      "path": "app/api/routes_actions.py",
+      "owner_phase": "PH130",
+      "secondary_modifiers": [],
+      "purpose": "Dashboard routes_actions.py API endpoint implementation",
+      "allowed_contents": [
+        "FastAPI route handlers",
+        "Pydantic models"
+      ],
+      "forbidden_contents": [
+        "direct SQL execution bypassing storage",
+        "wildcard CORS"
+      ]
+    },
+    {
+      "path": "app/api/routes_agents.py",
+      "owner_phase": "PH130",
+      "secondary_modifiers": [],
+      "purpose": "Dashboard routes_agents.py API endpoint implementation",
+      "allowed_contents": [
+        "FastAPI route handlers",
+        "Pydantic models"
+      ],
+      "forbidden_contents": [
+        "direct SQL execution bypassing storage",
+        "wildcard CORS"
+      ]
+    },
+    {
+      "path": "app/api/schemas.py",
+      "owner_phase": "PH130",
+      "secondary_modifiers": [],
+      "purpose": "Dashboard schemas.py API endpoint implementation",
+      "allowed_contents": [
+        "FastAPI route handlers",
+        "Pydantic models"
+      ],
+      "forbidden_contents": [
+        "direct SQL execution bypassing storage",
+        "wildcard CORS"
       ]
     }
   ]

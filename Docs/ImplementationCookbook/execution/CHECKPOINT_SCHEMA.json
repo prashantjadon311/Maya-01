@@ -14,7 +14,9 @@
     "files_modified": { "type": "array", "items": { "type": "string" } },
     "tests_passed": { "type": "integer", "minimum": 0 },
     "full_regression_passed": { "type": "boolean" },
-    "memory_rss_mb": { "type": "number", "maximum": 300.0 },
+    "memory_status": { "type": "string", "enum": ["NOT_MEASURED", "MEASURED"] },
+    "memory_rss_mb": { "type": ["number", "null"], "maximum": 300.0 },
+    "memory_measurement_method": { "type": ["string", "null"] },
     "findings": { "type": "array", "items": { "type": "string" } },
     "next_exact_action": { "type": "string" }
   },
@@ -30,7 +32,9 @@
     "files_modified",
     "tests_passed",
     "full_regression_passed",
+    "memory_status",
     "memory_rss_mb",
+    "memory_measurement_method",
     "findings",
     "next_exact_action"
   ],

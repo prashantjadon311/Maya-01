@@ -6,151 +6,173 @@ Every public interface across Maya phases PH-050 through PH-180 is frozen herein
 
 ## 1. Approval Broker & Security Interfaces (PH-050)
 
-### `ApprovalBroker.request_approval`
+### `ApprovalBroker.request_decision`
 - **File:** `app/policy/broker.py`
-- **Signature:** `async def request_approval(self, req: ActionRequest, reason: str, risk: RiskLevel) -> ApprovalGrant`
+- **Signature:** `async def request_decision(self, req: ActionRequest, reason: str, risk: RiskLevel) -> PopupDecision`
 - **Inputs:** `req: ActionRequest`, `reason: str`, `risk: RiskLevel`
-- **Preconditions:** `req` is validated Pydantic model with immutable canonical JSON payload; `risk` in `(RiskLevel.MEDIUM, RiskLevel.HIGH)`.
-- **Postconditions:** Registers in-memory `ApprovalGrant` with UUID, 60s timeout, and `action_hash = sha256(canonical_json(req))`. Spawns native popup subprocess.
-- **Resource Bounds:** Max 10 concurrent pending requests in memory.
-- **Timeout:** 60.0s. Fails closed to `ApprovalTimeoutError` (resolving strictly to `DENY`).
-- **Cancellation:** Kills popup child process and cleans up grant from memory.
-
-### `ApprovalBroker.verify_grant`
-- **File:** `app/policy/broker.py`
-- **Signature:** `def verify_grant(self, grant_id: str, action_hash: str) -> bool`
-- **Inputs:** `grant_id: str`, `action_hash: str`
-- **Algorithm:** Uses `hmac.compare_digest` to check grant existence, expiry timestamp against `time.monotonic()`, and exact SHA-256 payload match.
-- **Idempotency:** Read-only inspection; idempotent.
+- **Preconditions:** `req` is a validated Pydantic model with immutable canonical payload; `risk` in `(RiskLevel.MEDIUM, RiskLevel.HIGH)`.
+- **Postconditions:** Registers in-memory `PendingApproval` (NOT a grant) with UUID, 60s timeout, and `action_hash = sha256(canonical_bytes)`. Awaits user decision from `PopupBackend`. If user chooses `ALLOW_ONCE`, mints single-use `ApprovalGrant(source="HUMAN_ALLOW_ONCE")` and returns `PopupDecision.ALLOW_ONCE`. On denial, timeout, or error, fails closed to `PopupDecision.DENY` and mints NO grant.
+- **Resource Bounds:** Max 10 concurrent pending requests in memory. When capacity is full, fails closed / busy (never evicts an active pending approval).
+- **Timeout:** 60.0s. Fails closed on timeout to `DENY`.
+- **Cancellation:** Kills popup child process and clears pending request.
 
 ### `ApprovalBroker.consume_grant`
 - **File:** `app/policy/broker.py`
-- **Signature:** `def consume_grant(self, grant_id: str, action_hash: str) -> bool`
-- **Inputs:** `grant_id: str`, `action_hash: str`
-- **Algorithm:** Verifies grant; if valid, atomically deletes `grant_id` from memory under `asyncio.Lock`.
-- **Postconditions:** Grant cannot be replayed or reused for subsequent actions.
+- **Signature:** `async def consume_grant(self, grant_id: str, request: ActionRequest) -> bool`
+- **Inputs:** `grant_id: str`, `request: ActionRequest`
+- **Algorithm:** Inside one `asyncio.Lock`:
+  1. Look up `grant_id` in in-memory grant store.
+  2. Verify expiry (`time.monotonic() < expires_at`).
+  3. Recompute SHA-256 hash of canonical bytes of `request`.
+  4. Constant-time comparison `hmac.compare_digest(grant.action_hash, request_hash)`.
+  5. If expired, missing, or hash mismatch: pop grant (if present) and return `False`.
+  6. If valid: pop grant atomically from memory and return `True`.
+- **Security Invariant:** PENDING approvals are NEVER consumable. A consumed grant cannot be reused (second consume returns `False`).
 
 ---
 
-## 2. NVIDIA AI Provider Interfaces (PH-060)
+## 2. Post-Approval Execution Authorization (PH-050)
 
-### `NvidiaProvider.complete`
+### `ExecutionAuthorization`
+- **File:** `app/policy/broker.py` / `app/executors/base.py`
+- **Structure:**
+  ```python
+  @dataclass(frozen=True)
+  class ExecutionAuthorization:
+      source: Literal["PREAPPROVED", "HUMAN_ALLOW_ONCE"]
+      action_hash: str
+      trusted_risk: RiskLevel
+      process_constraints: ProcessExecutionConstraints | None = None
+  ```
+- **Constructor Gate:** Constructed solely by `ActionDispatcher` after policy evaluation and (if required) successful single-use `consume_grant()`.
+- **Executor Contract:** Safe executors (`ProcessExecutor`, `FileExecutor`, `XdgExecutor`) accept `ExecutionAuthorization` as trusted execution context. Human approval never bypasses hard execution constraints (forbidden paths, traversal protection, timeouts, bounded output, argv schema).
+
+---
+
+## 3. NVIDIA AI Provider Interfaces (PH-060)
+
+### `AIProvider` Protocol
+- **File:** `app/ai/base.py`
+- **Definition:**
+  ```python
+  class AIProvider(Protocol):
+      async def complete(self, messages: list[ChatMessage], tools: list[ToolDefinition] | None = None) -> ChatResponse: ...
+      async def stream_chat(self, messages: list[ChatMessage], tools: list[ToolDefinition] | None = None) -> AsyncIterator[ChatChunk]: ...
+      async def aclose(self) -> None: ...
+  ```
+
+### `NvidiaProvider.complete` & `stream_chat`
 - **File:** `app/ai/nvidia.py`
 - **Signature:** `async def complete(self, messages: list[ChatMessage], tools: list[ToolDefinition] | None = None) -> ChatResponse`
-- **Target URL:** `https://integrate.api.nvidia.com/v1`
-- **Parameters:** `model = "nvidia/nemotron-3-ultra-550b-a55b"`, `max_retries = 0`, `timeout = 30.0`.
-- **Preconditions:** `messages` bounded to max 32 items (~128KB total context).
-- **Postconditions:** Strips internal model reasoning traces; returns sanitized content and structured tool calls.
-
-### `NvidiaProvider.stream_chat`
-- **File:** `app/ai/nvidia.py`
-- **Signature:** `async def stream_chat(self, messages: list[ChatMessage], tools: list[ToolDefinition] | None = None) -> AsyncIterator[ChatChunk]`
-- **Postconditions:** Yields SSE delta chunks. Bounded chunk buffer (4KB max per chunk).
+- **Streaming Signature:** `async def stream_chat(self, messages: list[ChatMessage], tools: list[ToolDefinition] | None = None) -> AsyncIterator[ChatChunk]`
+- **Configuration:** Sourced from `config.ai` (model=`"nvidia/nemotron-3-ultra-550b-a55b"`, `max_retries = 0`, explicit timeout).
+- **Reasoning Tag Filter:** Stateful reasoning parser across chunk boundaries (`<think>...</think>`); handles split tags (e.g. `"<thi"` + `"nk>secret"` + `"</think>"`) without leaking private thoughts.
+- **Resource Cleanup:** `async def aclose(self) -> None` closes the underlying `AsyncOpenAI` client session.
 
 ---
 
-## 3. Command Router & Agent Runtime Interfaces (PH-070)
+## 4. Command Router & Agent Interfaces (PH-070)
 
 ### `CommandRouter.route`
 - **File:** `app/core/command_router.py`
 - **Signature:** `async def route(self, command_text: str, source: str) -> CommandRoutingDecision`
-- **Classification Order:**
-  1. `ActionRegistry.find_exact_match(command_text)` -> If found, return `ExactMatchDecision` (Zero AI calls).
-  2. Built-in system command matcher (e.g. open app, list files).
-  3. Structured regex parser for deterministic slot commands.
-  4. AI reasoning / tool selection via `NvidiaProvider`.
-- **Bounds:** Input trimmed; maximum 1024 characters.
+- **Precedence Order:**
+  1. `registry.resolve(command_text)`: If `isinstance(outcome, RegistryMatch)`, immediately return `EXACT_MATCH` and dispatch via `dispatcher.dispatch_match(outcome)`. Zero AI calls.
+  2. Built-ins / System Commands (`BUILTIN`).
+  3. Structured Tool Intent (`STRUCTURED`).
+  4. External AI reasoning proposal (`AI_REASONING`): model output parsed as `ActionRequest` and dispatched via `dispatcher.dispatch_request(request)`.
+- **Provenance Rule:** `RegistryMatch` is NEVER converted to an `ActionRequest`.
 
 ### `AgentRuntime.run_task`
 - **File:** `app/agents/runtime.py`
-- **Signature:** `async def run_task(self, objective: str, workspace_root: Path) -> AgentTaskResult`
-- **Bounds:** Max 15 execution steps, max 20 external AI API calls, max 64KB transcript buffer.
-- **Security Boundary:** All tool proposals executed by the agent must pass through `ActionDispatcher.dispatch_action_request`.
+- **Signature:** `async def run_task(self, task: AgentTask) -> AgentTaskResult`
+- **Bounds:** Max steps (`task.max_steps <= 30`), max API budget (`task.max_budget_calls <= 50`).
+- **Verification Gate:** Requires explicit verification by `AgentVerifier` before declaring a task successfully completed. A coding task cannot finish solely because the model says "done".
 
 ---
 
-## 4. Voice & Speech Interfaces (PH-080, PH-090)
+## 5. Voice Pipeline & Audio Capture Interfaces (PH-080)
 
 ### `WakeDetector.process_chunk`
 - **File:** `app/voice/wake.py`
 - **Signature:** `def process_chunk(self, pcm_chunk: bytes) -> float`
-- **Engine:** openWakeWord (1 CPU thread).
-- **Inputs:** Exactly 1280 bytes of 16kHz 16-bit mono PCM (80ms frame).
-- **Security Invariant:** Zero network sockets or IPC calls invoked.
-
-### `STTAdapter.transcribe`
-- **File:** `app/voice/stt.py`
-- **Signature:** `async def transcribe(self, pcm_bytes: bytes, language: str = 'hi-IN') -> str`
-- **Preconditions:** Called strictly for post-wake command audio; max length 10.0s (320KB PCM).
-- **Cleanup:** `pcm_bytes` released from memory immediately post-transcription.
-
+- **Preconditions:** 1280-byte 16kHz 16-bit mono PCM chunks.
+- **Enforcement:** Runs local openWakeWord model in a single dedicated thread. Zero network calls.
 
 ### `AudioSource.read_frames`
 - **File:** `app/voice/audio.py`
 - **Signature:** `async def read_frames(self, num_frames: int) -> bytes`
-- **Inputs:** `num_frames: int` (> 0).
-- **Bounds:** Max ring buffer size 3 seconds (96,000 bytes). Oldest dropped on overflow.
-- **Timeout:** 1.0s. Cancellation interrupts buffer await cleanly.
-- **Audit Code:** `AUD-VOIC-READ`.
+- **Concurrency & Privacy:** Bridge between audio callback thread and asyncio event loop uses `asyncio.Queue(maxsize=16)`. Pre-wake audio ring buffer is wake-detector-only and is **NEVER prepended** to command audio sent to cloud STT.
 
 ---
 
-## 5. System Tray & Browser Native Bridge Interfaces (PH-100, PH-110, PH-120)
+## 6. STT Adapter & Provenance Interfaces (PH-090)
+
+### `STTAdapter.transcribe`
+- **File:** `app/voice/stt.py`
+- **Signature:** `async def transcribe(self, segment: CommandAudioSegment) -> str`
+- **Provenance:** Consumes internal trusted `CommandAudioSegment` created post-wake by `CommandRecorder`.
+- **Service Protocol:** Connects to authoritative NVIDIA Riva gRPC service (`grpc.nvcf.nvidia.com:443`) or local Riva NIM container (port 9000).
+- **Memory Release:** Releases internal buffers and BytesIO references in `finally`. The coordinator releases `CommandAudioSegment` immediately post-transcription.
+
+---
+
+## 7. System Tray Subsystem (PH-100)
 
 ### `StatusNotifierTray.update_state`
 - **File:** `app/tray/status_notifier.py`
-- **Signature:** `def update_state(self, new_state: SystemState) -> None`
-- **Protocol:** Freedesktop StatusNotifierItem via session D-Bus.
+- **Signature:** `def update_state(self, new_state: str) -> None`
+- **Decoupled Architecture:** Receives injected asynchronous shutdown callback; does not take concrete `LifecycleManager` dependency.
+- **IPC Protocol:** D-Bus `org.kde.StatusNotifierItem` specification using `dbus-fast`.
+
+---
+
+## 8. Browser Native Protocol Interfaces (PH-110, PH-120)
 
 ### `NativeMessageBridge.send_command`
 - **File:** `app/browser/native_bridge.py`
 - **Signature:** `async def send_command(self, action: BrowserCommand) -> BrowserResponse`
-- **Framing:** 4-byte native endian unsigned int length prefix + UTF-8 JSON payload. Max payload 1MB.
-- **Security Gates:** Destination domain verified against daemon policy allowlist before dispatch.
-
-### `GoogleAdapter.extract`
-- **File:** `extension/firefox/adapters/google.js`
-- **Signature:** `function extract(document: Document) -> AdapterResult`
-- **Preconditions:** `window.location.origin` is `'https://www.google.com'`.
-- **Postconditions:** Returns top 5 organic search results (title, snippet, URL).
-- **Security Boundary:** Yes (`test_site_adapters_semantic_extraction`).
-- **Bounds:** Max 5 results, max 500 chars snippet per result. Timeout 2.0s.
-- **Audit Code:** `SEC-ADPT-EXTRACT`. Errors: `DOMSelectorNotFoundError`.
+- **IPC:** Resident daemon connects over user-owned UDS under `XDG_RUNTIME_DIR` (mode `0600`) with `SO_PEERCRED` UID verification. Transient native host communicates with Firefox via standard 4-byte framed JSON.
+- **4-Fold Security Check:**
+  1. Daemon domain allowlist check.
+  2. Domain capability check.
+  3. Firefox extension host permission check.
+  4. Immediate current-origin recheck before DOM action.
+  5. Password and sensitive input extraction hard-blocked.
 
 ---
 
-## 6. Dashboard & Storage Interfaces (PH-130)
+## 9. Dashboard Backend Interfaces (PH-130)
 
 ### `create_dashboard_app`
 - **File:** `app/api/app.py`
 - **Signature:** `def create_dashboard_app(dispatcher: ActionDispatcher, storage: SQLiteStorage) -> FastAPI`
-- **Preconditions:** `dispatcher` and `storage` initialized.
-- **Postconditions:** Returns FastAPI application bound strictly to localhost with no wildcard CORS.
-- **Security Boundary:** Yes (`test_dashboard_cors_and_localhost_binding`).
-- **Bounds:** Request body size limited to 64KB. Timeout 30.0s.
-- **Audit Code:** `SEC-API-CREATE`. Errors: `AppFactoryError`.
+- **Endpoints:** Sourced across dedicated route modules:
+  - `app/api/routes_state.py` (SSE state stream, status)
+  - `app/api/routes_config.py` (validated config CRUD)
+  - `app/api/routes_actions.py` (deterministic action list / reload)
+  - `app/api/routes_audit.py` (paginated audit log queries)
+  - `app/api/routes_agents.py` (agent task control)
+- **Database Concurrency:** Single connection + dedicated serialized worker thread + SQLite WAL mode. In-memory fallback if disk storage degrades.
 
 ---
 
-## 7. Developer Tool Execution Interfaces (PH-150)
+## 10. Developer Tooling Interfaces (PH-150)
 
-### `DeveloperToolExecutor.run_workflow`
+### `DeveloperToolExecutor.run_workflow` & `DeveloperWorkflowService`
 - **File:** `app/executors/developer.py`
-- **Signature:** `async def run_workflow(self, repo_path: Path, steps: list[DevStep]) -> WorkflowResult`
-- **Preconditions:** `repo_path` is verified git repository inside allowed roots; all steps pass policy.
-- **Postconditions:** Executes edit -> test -> inspect diff loop; auto-commit is NOT triggered.
-- **Security Boundary:** Yes (`test_auto_commit_disabled_by_default`).
-- **Bounds:** Max 10 steps per workflow, max diff capture 100KB. Timeout 120.0s.
-- **Audit Code:** `SEC-DEV-RUN`. Errors: `GitExecutionError`, `TestExecutionFailedError`.
+- **Architecture:** `DeveloperWorkflowService` sits above `ActionDispatcher`.
+- **Routing:**
+  - Process operations (`git`, `pytest`): `ActionRequest(tool="process.run")` routed to `dispatcher.dispatch_request()`.
+  - File operations: `ActionRequest(tool="file.*")` routed to `dispatcher.dispatch_request()`.
+  - Deterministic actions: `RegistryMatch` routed to `dispatcher.dispatch_match()`.
+  - Allowed file roots sourced from `config.files.roots`. Auto-commit disabled by default.
 
 ---
 
-## 8. Resource & Lifecycle Interfaces (PH-160)
+## 11. Lifecycle Hardening Interfaces (PH-160)
 
 ### `LifecycleManager.monitor_memory`
 - **File:** `app/core/lifecycle.py`
 - **Signature:** `def monitor_memory(self) -> MemorySnapshot`
-- **Preconditions:** cgroup v2 memory controller or `/proc/self/status` available.
-- **Postconditions:** Returns MemorySnapshot with `current_rss_mb`, `peak_rss_mb`, and `limit_mb`.
-- **Bounds:** Instantaneous procfs read. Timeout 0.1s. Idempotent: True.
-- **Audit Code:** `AUD-RES-MONITOR`. Errors: `ProcfsReadError`.
+- **Hardening:** Cgroup-aware RSS measurement accounting for daemon and child processes. Never relies on `gc.collect()` after `MemoryMax=300M` crossing.

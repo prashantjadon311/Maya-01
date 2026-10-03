@@ -1,10 +1,10 @@
 {
   "interfaces": [
     {
-      "name": "ApprovalBroker.request_approval",
+      "name": "ApprovalBroker.request_decision",
       "owning_phase": "PH050",
       "file": "app/policy/broker.py",
-      "signature": "async def request_approval(self, req: ActionRequest, reason: str, risk: RiskLevel) -> ApprovalGrant",
+      "signature": "async def request_decision(self, req: ActionRequest, reason: str, risk: RiskLevel) -> PopupDecision",
       "inputs": [
         {
           "name": "req",
@@ -19,7 +19,7 @@
           "type": "RiskLevel"
         }
       ],
-      "output": "ApprovalGrant",
+      "output": "PopupDecision",
       "preconditions": [
         "req is validated Pydantic model",
         "risk in (RiskLevel.MEDIUM, RiskLevel.HIGH)"
@@ -30,7 +30,7 @@
       ],
       "is_security_boundary": true,
       "security_test_id": "test_approval_popup_transient_display",
-      "bounds": "Max 10 concurrent pending approval requests in broker memory",
+      "bounds": "Max 10 concurrent pending approval requests; fails closed/busy when full",
       "timeout_seconds": 60.0,
       "cancellation": "Cancels popup subprocess immediately and resolves to DENY",
       "idempotent": false,
@@ -42,52 +42,18 @@
       ]
     },
     {
-      "name": "ApprovalBroker.verify_grant",
-      "owning_phase": "PH050",
-      "file": "app/policy/broker.py",
-      "signature": "def verify_grant(self, grant_id: str, action_hash: str) -> bool",
-      "inputs": [
-        {
-          "name": "grant_id",
-          "type": "str"
-        },
-        {
-          "name": "action_hash",
-          "type": "str"
-        }
-      ],
-      "output": "bool",
-      "preconditions": [
-        "grant_id is valid UUID",
-        "action_hash is 64-char lowercase hex"
-      ],
-      "postconditions": [
-        "returns True if grant exists, unexpired, and hash matches exactly"
-      ],
-      "is_security_boundary": true,
-      "security_test_id": "test_approval_hash_mismatch_denied",
-      "bounds": "Constant-time string comparison (hmac.compare_digest)",
-      "timeout_seconds": 0.1,
-      "cancellation": "Sync operation; non-cancellable",
-      "idempotent": true,
-      "audit_code": "SEC-APPR-VERIFY",
-      "errors": [
-        "InvalidGrantError"
-      ]
-    },
-    {
       "name": "ApprovalBroker.consume_grant",
       "owning_phase": "PH050",
       "file": "app/policy/broker.py",
-      "signature": "def consume_grant(self, grant_id: str, action_hash: str) -> bool",
+      "signature": "async def consume_grant(self, grant_id: str, request: ActionRequest) -> bool",
       "inputs": [
         {
           "name": "grant_id",
           "type": "str"
         },
         {
-          "name": "action_hash",
-          "type": "str"
+          "name": "request",
+          "type": "ActionRequest"
         }
       ],
       "output": "bool",
@@ -100,7 +66,7 @@
       ],
       "is_security_boundary": true,
       "security_test_id": "test_approval_single_use_replay_denied",
-      "bounds": "Atomically removes key from dict under asyncio.Lock",
+      "bounds": "O(1) in-memory lookup; single-use atomic pop under asyncio.Lock",
       "timeout_seconds": 0.1,
       "cancellation": "Sync operation; non-cancellable",
       "idempotent": false,
@@ -221,7 +187,7 @@
       "name": "AgentRuntime.run_task",
       "owning_phase": "PH070",
       "file": "app/agents/runtime.py",
-      "signature": "async def run_task(self, objective: str, workspace_root: Path) -> AgentTaskResult",
+      "signature": "async def run_task(self, task: AgentTask) -> AgentTaskResult",
       "inputs": [
         {
           "name": "objective",
@@ -243,7 +209,7 @@
       ],
       "is_security_boundary": true,
       "security_test_id": "test_agent_cannot_bypass_policy_dispatcher",
-      "bounds": "Max 15 steps, max 20 AI API calls, max 64KB transcript",
+      "bounds": "Single active task at a time; max_steps <= 30; max_budget_calls <= 50",
       "timeout_seconds": 300.0,
       "cancellation": "Terminates step loop, records partial evidence, aborts subprocesses",
       "idempotent": false,
@@ -318,15 +284,11 @@
       "name": "STTAdapter.transcribe",
       "owning_phase": "PH090",
       "file": "app/voice/stt.py",
-      "signature": "async def transcribe(self, pcm_bytes: bytes, language: str = 'hi-IN') -> str",
+      "signature": "async def transcribe(self, segment: CommandAudioSegment) -> str",
       "inputs": [
         {
-          "name": "pcm_bytes",
-          "type": "bytes"
-        },
-        {
-          "name": "language",
-          "type": "str"
+          "name": "segment",
+          "type": "CommandAudioSegment"
         }
       ],
       "output": "str",
@@ -340,7 +302,7 @@
       ],
       "is_security_boundary": true,
       "security_test_id": "test_stt_transcribes_postwake_only",
-      "bounds": "Max audio length 10.0 seconds (320KB PCM)",
+      "bounds": "Audio buffer released immediately post-transcription; no persistent retention",
       "timeout_seconds": 10.0,
       "cancellation": "Aborts HTTP request to STT endpoint and clears audio buffer",
       "idempotent": false,
@@ -514,7 +476,7 @@
     {
       "name": "LifecycleManager.monitor_memory",
       "owning_phase": "PH160",
-      "file": "app/core/lifecycle.py",
+      "file": "app/lifecycle.py",
       "signature": "def monitor_memory(self) -> MemorySnapshot",
       "inputs": [],
       "output": "MemorySnapshot",
@@ -534,6 +496,28 @@
       "errors": [
         "ProcfsReadError"
       ]
+    },
+    {
+      "name": "NvidiaProvider.aclose",
+      "owning_phase": "PH060",
+      "file": "app/ai/nvidia.py",
+      "signature": "async def aclose(self) -> None",
+      "inputs": [],
+      "output": "None",
+      "preconditions": [
+        "client initialized"
+      ],
+      "postconditions": [
+        "underlying HTTP/SSL client connections closed"
+      ],
+      "is_security_boundary": false,
+      "security_test_id": null,
+      "bounds": "Graceful close within 5.0 seconds timeout",
+      "timeout_seconds": 5.0,
+      "cancellation": "Immediate cancellation of pending socket closes",
+      "idempotent": true,
+      "audit_code": "AI-PROV-CLOSE",
+      "errors": []
     }
   ]
 }

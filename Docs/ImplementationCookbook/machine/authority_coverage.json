@@ -1,0 +1,1550 @@
+{
+  "sections": [
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "# Project H \u2014 Product Requirements and Functional Contract V2",
+      "normative": false,
+      "requirement_ids": [],
+      "notes": "Document title"
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "## 1. Product statement",
+      "normative": false,
+      "requirement_ids": [],
+      "notes": "High-level vision and product statement"
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "## 2. Primary runtime AI",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PROV-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "## 3. Voice behavior",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-VOIC-001",
+        "REQ-VOIC-002"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "### 3.1 Push-to-talk",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-VOIC-PTT-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "### 3.2 Always-listening mode",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-VOIC-ALW-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "### 3.3 Wake word",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-VOIC-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "### 3.4 Speech-to-text",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-STT-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "### 3.5 Text-to-speech",
+      "normative": false,
+      "requirement_ids": [],
+      "notes": "OUT_OF_V1: Local piper-tts/system TTS audio synthesis deferred per V1 scope; UI toggle only"
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "## 4. Tray/panel behavior",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-TRAY-001",
+        "REQ-TRAY-002"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "## 5. Command router",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-ROUT-001",
+        "REQ-ROUT-002"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "## 6. Action registry",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-REG-001",
+        "REQ-REG-002"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "## 7. Browser control",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-BROW-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "### 7.1 Browser architecture",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-BROW-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "### 7.2 Domain allowlist",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-BROW-002"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "### 7.3 Site adapters",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-ADPT-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "### 7.4 Sensitive browser actions",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-BROW-004"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "## 8. Files",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-EXEC-002"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "## 9. Terminal / Linux commands",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-EXEC-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "### 9.1 Default behavior",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-EXEC-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "### 9.2 Approval popup",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-APPR-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "### 9.3 Pre-approved commands",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-POL-002"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "### 9.4 Always-approval examples",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-POL-ALWAYS-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "## 10. Developer assistant / VS Code",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-DEV-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "## 11. Agents",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-AGNT-001",
+        "REQ-AGNT-002"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "## 12. Dashboard",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-DASH-001",
+        "REQ-DASH-003"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "## 13. History and memory",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-HIST-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "## 14. Resource budget",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-RES-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/DOCS.md",
+      "heading": "## 15. V1 non-goals",
+      "normative": false,
+      "requirement_ids": [],
+      "notes": "OUT_OF_V1: Explicit non-goals for V1 (multi-agent swarms, cloud accounts, remote telemetry, photographic wallpapers)"
+    },
+    {
+      "source": "Docs/SECURITY.md",
+      "heading": "# Project H \u2014 Security, Permission and Privacy Contract",
+      "normative": false,
+      "requirement_ids": [],
+      "notes": "Document title"
+    },
+    {
+      "source": "Docs/SECURITY.md",
+      "heading": "## 1. Core rule",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-POL-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/SECURITY.md",
+      "heading": "## 2. Permission decision",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-POL-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/SECURITY.md",
+      "heading": "## 3. Risk model",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-POL-RISK-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/SECURITY.md",
+      "heading": "### Low",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-POL-RISK-LOW-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/SECURITY.md",
+      "heading": "### Medium",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-POL-RISK-MED-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/SECURITY.md",
+      "heading": "### High",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-POL-002"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/SECURITY.md",
+      "heading": "## 4. Terminal safety",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-EXEC-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/SECURITY.md",
+      "heading": "## 5. Native approval popup",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-APPR-001",
+        "REQ-APPR-003"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/SECURITY.md",
+      "heading": "## 6. Browser policy",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-BROW-002",
+        "REQ-BROW-003"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/SECURITY.md",
+      "heading": "## 7. Browser secrets",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-BROW-004"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/SECURITY.md",
+      "heading": "## 8. File policy",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-EXEC-002"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/SECURITY.md",
+      "heading": "## 9. Voice privacy",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-VOIC-001",
+        "REQ-STT-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/SECURITY.md",
+      "heading": "## 10. AI data minimization",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PROV-004"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/SECURITY.md",
+      "heading": "## 11. Audit",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-HIST-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/SECURITY.md",
+      "heading": "## 12. Agent containment",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-AGNT-001",
+        "REQ-AGNT-002"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/SECURITY.md",
+      "heading": "## 13. Default deny for ambiguity",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-REG-AMBIG-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/SECURITY.md",
+      "heading": "## 14. Update trust",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UPDATE-TRUST-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "# Project H \u2014 Architecture V2",
+      "normative": false,
+      "requirement_ids": [],
+      "notes": "Document title"
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "## 1. High-level architecture",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-ARCH-SYS-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "## 2. Process model",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-ARCH-PROC-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "### Resident",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-ARCH-PROC-RES-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "### Transient",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-ARCH-PROC-TRN-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "## 3. Suggested source tree",
+      "normative": false,
+      "requirement_ids": [],
+      "notes": "Canonical repository source layout and module boundaries"
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "## 4. Dependency rules",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-ARCH-DEP-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "## 5. Command flow",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-ROUT-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "### Deterministic command",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-ROUT-002"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "### Complex command",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-ROUT-AI-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "## 6. Voice state machine",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-VOIC-SM-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "## 7. Browser architecture",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-BROW-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "### Why extension + native messaging",
+      "normative": false,
+      "requirement_ids": [],
+      "notes": "Architectural rationale for WebExtension Native Messaging over WebDriver"
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "## 8. Provider architecture",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PROV-001",
+        "REQ-PROV-BASE-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "## 9. Tool schema",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-TOOL-SCHEMA-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "## 10. Approval architecture",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-APPR-001",
+        "REQ-APPR-002"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "## 11. Storage",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-STOR-SQLITE-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "## 12. Dashboard serving",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-DASH-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "## 13. System tray",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-TRAY-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "## 14. Memory strategy",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-RES-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "### Cgroup enforcement",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-RES-CGROUP-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/ARCHITECTURE.md",
+      "heading": "## 15. Failure behavior",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-ARCH-FAIL-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/CONFIG.md",
+      "heading": "# Project H \u2014 Configuration and Action Packs",
+      "normative": false,
+      "requirement_ids": [],
+      "notes": "Document title"
+    },
+    {
+      "source": "Docs/CONFIG.md",
+      "heading": "## 1. Config location",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-CFG-LOC-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/CONFIG.md",
+      "heading": "## 2. Canonical config example",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-CFG-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/CONFIG.md",
+      "heading": "## 3. Browser allowlist",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-BROW-002"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/CONFIG.md",
+      "heading": "## 4. File roots",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-EXEC-002"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/CONFIG.md",
+      "heading": "## 5. Action pack format",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-REG-PACK-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/CONFIG.md",
+      "heading": "## 6. Developer preapproval rules",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-POL-DEV-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/CONFIG.md",
+      "heading": "## 7. JSON design rules",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-CFG-JSON-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/CONFIG.md",
+      "heading": "## 8. Dashboard editor",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-DASH-002"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "# Project H \u2014 Dashboard UI Specification V2",
+      "normative": false,
+      "requirement_ids": [],
+      "notes": "Document title"
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 1. Design intent",
+      "normative": false,
+      "requirement_ids": [],
+      "notes": "UI design intent, desktop aesthetic, reference alignment"
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 2. Frontend technology",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-TECH-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 3. Performance budget",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-PERF-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 4. Visual system",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-VIS-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### 4.1 Color tokens",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-TOKENS-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### 4.2 Typography",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-TYPO-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### 4.3 Radius and border",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-BORDER-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### 4.4 Background",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-BG-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 5. AI Core animation",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-AICORE-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Goal",
+      "normative": false,
+      "requirement_ids": [],
+      "notes": "Design goals for AI Core SVG visualization"
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Recommended implementation",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-AICORE-IMPL-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 6. Desktop shell",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-SHELL-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 7. Global top bar",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-TOPBAR-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 8. Screen: Home",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-VIEW-HOME-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Left/center content",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-HOME-CONTENT-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### AI Core panel",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-HOME-AICORE-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Bottom composer",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-HOME-COMPOSER-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 9. Screen: Chat",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-VIEW-CHAT-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 10. Screen: Tasks / Agents",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-VIEW-TASKS-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Task list",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-TASKS-LIST-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Agent settings drawer",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-TASKS-DRAWER-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 11. Screen: Browser",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-VIEW-BROWSER-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Domain allowlist table",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-BROWSER-DOMAINS-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Browser bridge status",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-BROWSER-STATUS-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Site adapter cards",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-BROWSER-ADAPTERS-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 12. Screen: Voice",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-VIEW-VOICE-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Assistant identity",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-VOICE-IDENTITY-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Listening",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-VOICE-LISTEN-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### STT",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-VOICE-STT-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Privacy card",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-VOICE-PRIVACY-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### TTS",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-VOICE-TTS-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 13. Screen: Actions",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-VIEW-ACTIONS-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 14. Screen: Permissions",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-VIEW-PERMS-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Terminal",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-PERMS-TERM-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Files",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-PERMS-FILES-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Browser",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-PERMS-BROWSER-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 15. Screen: Files / Workspaces",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-VIEW-WORKSPACES-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 16. Screen: Developer",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-VIEW-DEV-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Repositories",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-DEV-REPOS-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### VS Code",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-DEV-VSCODE-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Coding agent defaults",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-DEV-AGENT-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 17. Screen: Settings",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-VIEW-SETTINGS-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### General",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-SETTINGS-GEN-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### AI",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-SETTINGS-AI-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Voice",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-SETTINGS-VOICE-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Browser",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-SETTINGS-BROWSER-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Actions & permissions",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-SETTINGS-ACTIONS-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Privacy",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-SETTINGS-PRIVACY-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### Resource limits",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-SETTINGS-RES-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "### System",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-SETTINGS-SYS-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 18. Native approval popup",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-APPR-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 19. Tray menu UI",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-TRAY-002"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 20. Responsive behavior",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-RESPONSIVE-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 21. Accessibility",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-A11Y-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/UI.md",
+      "heading": "## 22. Dashboard settings inventory",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-UI-SETTINGS-INV-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "# Project H \u2014 TDD Implementation Plan V2",
+      "normative": false,
+      "requirement_ids": [],
+      "notes": "Document title"
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "## Phase 0 \u2014 Repository and measurement harness",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH000-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "## Phase 1 \u2014 Config and schemas",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH010-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "## Phase 2 \u2014 Policy engine",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH020-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "## Phase 3 \u2014 Deterministic action registry",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH030-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "## Phase 4 \u2014 Safe executors",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH040-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "### Process",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH040-PROC-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "### File",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH040-FILE-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "### xdg/app",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH040-XDG-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "## Phase 5 \u2014 Approval popup",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH050-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "## Phase 6 \u2014 NVIDIA Nemotron provider",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH060-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "## Phase 7 \u2014 Command router + agent runtime",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH070-001",
+        "REQ-AGNT-VERIFY-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "## Phase 8 \u2014 Voice wake pipeline",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH080-001",
+        "REQ-VOIC-NO-STT-001",
+        "REQ-VOIC-POST-001",
+        "REQ-VOIC-CLOSE-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "## Phase 9 \u2014 STT adapter",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH090-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "## Phase 10 \u2014 Tray/StatusNotifierItem",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH100-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "## Phase 11 \u2014 Firefox extension + native bridge",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH110-001",
+        "REQ-BROW-PERM-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "## Phase 12 \u2014 Site adapters",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH120-001",
+        "REQ-ADPT-SMOKE-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "## Phase 13 \u2014 Dashboard backend",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH130-001",
+        "REQ-DASH-CRUD-001",
+        "REQ-DASH-AGNT-001",
+        "REQ-DASH-EVENT-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "## Phase 14 \u2014 Dashboard frontend",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH140-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "## Phase 15 \u2014 Developer workflows",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH150-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "## Phase 16 \u2014 Resource hardening",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH160-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "## Phase 17 \u2014 Packaging",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH170-001",
+        "REQ-PKG-EXT-001",
+        "REQ-PKG-ICON-001",
+        "REQ-PKG-FIRST-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/PLAN.md",
+      "heading": "## Phase 18 \u2014 Final acceptance",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-PLAN-PH180-001",
+        "REQ-ACCP-REDTEAM-001",
+        "REQ-ACCP-BROWSER-001",
+        "REQ-ACCP-VOICE-001",
+        "REQ-ACCP-MEMORY-001",
+        "REQ-ACCP-INSTALL-001",
+        "REQ-ACCP-AUTOSTART-001",
+        "REQ-ACCP-PACKAGING-001",
+        "REQ-ACCP-EVIDENCE-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/EXECUTION.md",
+      "heading": "# Project H \u2014 Gemini / Antigravity Execution Contract V2",
+      "normative": false,
+      "requirement_ids": [],
+      "notes": "Document title"
+    },
+    {
+      "source": "Docs/EXECUTION.md",
+      "heading": "## 1. Role",
+      "normative": false,
+      "requirement_ids": [],
+      "notes": "Engineer role and responsibility definition"
+    },
+    {
+      "source": "Docs/EXECUTION.md",
+      "heading": "## 2. First run",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-EXEC-RUN-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/EXECUTION.md",
+      "heading": "## 3. Existing work",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-EXEC-EXIST-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/EXECUTION.md",
+      "heading": "## 4. TDD",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-EXEC-TDD-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/EXECUTION.md",
+      "heading": "## 5. Live API usage",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-EXEC-API-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/EXECUTION.md",
+      "heading": "## 6. Nemotron usage",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-EXEC-NEMO-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/EXECUTION.md",
+      "heading": "## 7. Terminal rules during development",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-EXEC-TERM-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/EXECUTION.md",
+      "heading": "## 8. Browser extension development",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-EXEC-BROW-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/EXECUTION.md",
+      "heading": "## 9. Memory workflow",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-EXEC-MEM-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/EXECUTION.md",
+      "heading": "## 10. UI workflow",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-EXEC-UI-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/EXECUTION.md",
+      "heading": "## 11. Approval workflow",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-EXEC-APPR-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/EXECUTION.md",
+      "heading": "## 12. Coding agent workflow",
+      "normative": true,
+      "requirement_ids": [
+        "REQ-EXEC-AGENT-001"
+      ],
+      "notes": null
+    },
+    {
+      "source": "Docs/EXECUTION.md",
+      "heading": "## 13. Result packet per task",
+      "normative": false,
+      "requirement_ids": [],
+      "notes": "Task execution result packet format template"
+    },
+    {
+      "source": "Docs/EXECUTION.md",
+      "heading": "## 14. Final result packet",
+      "normative": false,
+      "requirement_ids": [],
+      "notes": "Final execution result packet format template"
+    }
+  ]
+}

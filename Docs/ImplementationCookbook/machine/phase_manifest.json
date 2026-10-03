@@ -11,16 +11,20 @@
       ],
       "files_created": [
         "app/policy/broker.py",
+        "app/lifecycle.py",
         "tests/test_approval_broker.py",
         "tests/fakes/fake_popup.py"
       ],
       "files_modified": [
-        "app/core/dispatcher.py"
+        "app/core/dispatcher.py",
+        "app/executors/base.py",
+        "app/executors/process.py",
+        "app/executors/files.py",
+        "app/executors/xdg.py"
       ],
       "files_forbidden_to_modify": [
         "app/policy/engine.py",
-        "app/actions/matcher.py",
-        "app/executors/*"
+        "app/actions/matcher.py"
       ],
       "dependencies": [],
       "required_capsules": [
@@ -40,8 +44,7 @@
         "Daemon restart clears all pending grants in memory"
       ],
       "output_interfaces": [
-        "ApprovalBroker.request_approval",
-        "ApprovalBroker.verify_grant",
+        "ApprovalBroker.request_decision",
         "ApprovalBroker.consume_grant"
       ],
       "stop_conditions": [
@@ -59,11 +62,15 @@
         "Docs/ImplementationCookbook/10_DATA_SCHEMAS.md"
       ],
       "files_created": [
+        "app/ai/base.py",
         "app/ai/nvidia.py",
         "tests/test_nvidia_provider.py",
         "tests/fakes/fake_nvidia.py"
       ],
-      "files_modified": [],
+      "files_modified": [
+        "app/core/config.py",
+        "pyproject.toml"
+      ],
       "files_forbidden_to_modify": [
         "app/core/dispatcher.py",
         "app/executors/*"
@@ -74,9 +81,10 @@
       "required_capsules": [],
       "tests": [
         "test_nvidia_client_configuration",
+        "test_reasoning_trace_not_leaked",
+        "test_ai_provider_protocol_compliance",
         "test_nvidia_zero_sdk_retries",
         "test_nvidia_streaming_tool_call_parsing",
-        "test_reasoning_trace_not_leaked",
         "test_provider_tests_offline_no_quota"
       ],
       "acceptance_criteria": [
@@ -88,7 +96,8 @@
       ],
       "output_interfaces": [
         "NvidiaProvider.complete",
-        "NvidiaProvider.stream_chat"
+        "NvidiaProvider.stream_chat",
+        "NvidiaProvider.aclose"
       ],
       "stop_conditions": [
         "OpenAI SDK requires incompatible dependencies",
@@ -126,8 +135,13 @@
       "tests": [
         "test_command_router_order_of_precedence",
         "test_exact_action_zero_ai_calls",
+        "test_command_router_ai_fallback",
         "test_agent_budget_and_step_limit_enforced",
-        "test_agent_cannot_bypass_policy_dispatcher"
+        "test_agent_cannot_bypass_policy_dispatcher",
+        "test_agent_verification_step_enforced",
+        "test_agent_tool_schema_validation",
+        "test_agent_runtime_single_task_lock",
+        "test_agent_task_lifecycle"
       ],
       "acceptance_criteria": [
         "4-tier routing order: exact match -> built-in -> structured -> AI reasoning",
@@ -162,7 +176,9 @@
         "tests/fakes/fake_voice.py"
       ],
       "files_modified": [
-        "app/core/state.py"
+        "app/core/config.py",
+        "app/core/state.py",
+        "pyproject.toml"
       ],
       "files_forbidden_to_modify": [
         "app/policy/*",
@@ -177,6 +193,12 @@
       "tests": [
         "test_prewake_audio_zero_network_callback",
         "test_audio_ring_buffer_hard_bound",
+        "test_push_to_talk_activation",
+        "test_always_listening_mode_toggle",
+        "test_voice_state_machine_transitions",
+        "test_no_stt_before_wake",
+        "test_command_segment_begins_after_wake",
+        "test_disabling_listen_closes_audio_stream",
         "test_command_recording_vad_stop"
       ],
       "acceptance_criteria": [
@@ -209,7 +231,8 @@
         "tests/fakes/fake_stt.py"
       ],
       "files_modified": [
-        "app/core/config.py"
+        "app/core/config.py",
+        "pyproject.toml"
       ],
       "files_forbidden_to_modify": [
         "app/voice/wake.py",
@@ -221,8 +244,7 @@
       "required_capsules": [],
       "tests": [
         "test_stt_transcribes_postwake_only",
-        "test_audio_buffer_released_after_stt",
-        "test_stt_failure_prevents_execution"
+        "test_audio_buffer_released_after_stt"
       ],
       "acceptance_criteria": [
         "Remote STT called strictly for post-wake command segment",
@@ -252,7 +274,9 @@
         "tests/fakes/fake_dbus.py"
       ],
       "files_modified": [
-        "app/core/state.py"
+        "app/core/state.py",
+        "app/lifecycle.py",
+        "pyproject.toml"
       ],
       "files_forbidden_to_modify": [
         "app/policy/*",
@@ -265,7 +289,8 @@
       "required_capsules": [],
       "tests": [
         "test_tray_dbus_registration",
-        "test_tray_menu_actions_and_state_sync"
+        "test_tray_menu_actions_and_state_sync",
+        "test_tray_injected_control_callbacks"
       ],
       "acceptance_criteria": [
         "Freedesktop StatusNotifierItem registered over session D-Bus",
@@ -317,7 +342,10 @@
         "test_native_messaging_framing_and_size_limit",
         "test_browser_unlisted_domain_denied",
         "test_browser_origin_mismatch_denied",
-        "test_password_and_secret_fields_not_extracted"
+        "test_password_and_secret_fields_not_extracted",
+        "test_browser_ungranted_host_permission_denied",
+        "test_browser_bridge_uds_peercred_auth",
+        "test_browser_extension_message_validation"
       ],
       "acceptance_criteria": [
         "4-byte native endian length-prefixed protocol framing (max 1MB)",
@@ -364,6 +392,7 @@
       "required_capsules": [],
       "tests": [
         "test_site_adapters_semantic_extraction",
+        "test_site_adapters_live_smoke",
         "test_outdated_adapter_fails_safely"
       ],
       "acceptance_criteria": [
@@ -393,10 +422,17 @@
         "app/api/app.py",
         "app/api/routes_config.py",
         "app/api/routes_audit.py",
+        "app/api/routes_state.py",
+        "app/api/routes_actions.py",
+        "app/api/routes_agents.py",
+        "app/api/schemas.py",
         "app/storage/sqlite.py",
         "tests/test_dashboard_api.py"
       ],
-      "files_modified": [],
+      "files_modified": [
+        "app/core/config.py",
+        "pyproject.toml"
+      ],
       "files_forbidden_to_modify": [
         "app/executors/*",
         "app/policy/engine.py"
@@ -410,7 +446,13 @@
       ],
       "tests": [
         "test_dashboard_cors_and_localhost_binding",
-        "test_dashboard_config_crud_transactionality"
+        "test_dashboard_config_crud_transactionality",
+        "test_dashboard_action_crud",
+        "test_dashboard_agent_controls",
+        "test_dashboard_event_stream_sse",
+        "test_dashboard_audit_pagination",
+        "test_sqlite_wal_and_serialized_worker",
+        "test_dashboard_storage_degraded_fallback"
       ],
       "acceptance_criteria": [
         "FastAPI app binds strictly to 127.0.0.1:8765 with zero wildcard CORS",
@@ -451,7 +493,60 @@
       ],
       "required_capsules": [],
       "tests": [
-        "test_frontend_assets_local_and_no_node_runtime"
+        "test_frontend_assets_local_and_no_node_runtime",
+        "test_ui_vanilla_tech_stack",
+        "test_ui_asset_performance_budget",
+        "test_ui_visual_system_tokens",
+        "test_ui_color_tokens",
+        "test_ui_typography_stack",
+        "test_ui_radius_and_border",
+        "test_ui_background_gradient",
+        "test_ui_aicore_animation",
+        "test_ui_aicore_svg_keyframes",
+        "test_ui_desktop_shell_layout",
+        "test_ui_global_topbar",
+        "test_ui_view_home",
+        "test_ui_home_content_panel",
+        "test_ui_home_aicore_panel",
+        "test_ui_home_bottom_composer",
+        "test_ui_view_chat",
+        "test_ui_view_tasks_agents",
+        "test_ui_tasks_list_component",
+        "test_ui_agent_settings_drawer",
+        "test_ui_view_browser",
+        "test_ui_browser_domain_table",
+        "test_ui_browser_bridge_status",
+        "test_ui_browser_adapter_cards",
+        "test_ui_view_voice",
+        "test_ui_voice_identity",
+        "test_ui_voice_listening_controls",
+        "test_ui_voice_stt_controls",
+        "test_ui_voice_privacy_card",
+        "test_ui_voice_tts_controls",
+        "test_ui_view_actions",
+        "test_ui_view_permissions",
+        "test_ui_perms_terminal",
+        "test_ui_perms_files",
+        "test_ui_perms_browser",
+        "test_ui_view_workspaces",
+        "test_ui_view_developer",
+        "test_ui_dev_repositories",
+        "test_ui_dev_vscode",
+        "test_ui_dev_agent_defaults",
+        "test_ui_view_settings",
+        "test_ui_settings_general",
+        "test_ui_settings_ai",
+        "test_ui_settings_voice",
+        "test_ui_settings_browser",
+        "test_ui_settings_actions",
+        "test_ui_settings_privacy",
+        "test_ui_settings_resources",
+        "test_ui_settings_system",
+        "test_ui_responsive_layout",
+        "test_ui_accessibility_and_reduced_motion",
+        "test_ui_settings_inventory_binding",
+        "test_ui_sse_connection_lifecycle",
+        "test_ui_no_external_cdns"
       ],
       "acceptance_criteria": [
         "Single-page static dashboard using vanilla JS and local Bootstrap 5.3 CSS",
@@ -516,10 +611,11 @@
         "Docs/ImplementationCookbook/14_RESOURCE_BUDGET.md"
       ],
       "files_created": [
-        "app/core/lifecycle.py",
         "tests/test_resource_hardening.py"
       ],
-      "files_modified": [],
+      "files_modified": [
+        "app/lifecycle.py"
+      ],
       "files_forbidden_to_modify": [
         "packaging/systemd/maya.service",
         "app/core/config.py"
@@ -529,7 +625,10 @@
       ],
       "required_capsules": [],
       "tests": [
-        "test_resident_cgroup_memory_stress_compliance"
+        "test_resident_cgroup_memory_stress_compliance",
+        "test_cgroup_memory_accounting_with_children",
+        "test_resource_monitor_lifecycle",
+        "test_memory_measurement_protocol"
       ],
       "acceptance_criteria": [
         "Full stress scenario with concurrent voice, dashboard, AI, and agent activity",
@@ -571,7 +670,12 @@
       ],
       "required_capsules": [],
       "tests": [
-        "test_systemd_service_unit_configuration"
+        "test_packaging_firefox_extension",
+        "test_packaging_desktop_icons",
+        "test_packaging_first_run_config",
+        "test_systemd_service_unit_configuration",
+        "test_packaging_uninstall_cleanup",
+        "test_packaging_safe_api_key_environment"
       ],
       "acceptance_criteria": [
         "User systemd service unit configured with MemoryHigh=240M and MemoryMax=300M",
@@ -608,7 +712,17 @@
       ],
       "required_capsules": [],
       "tests": [
-        "test_offline_deterministic_actions_succeed"
+        "test_final_acceptance_permission_red_team",
+        "test_final_acceptance_browser_allowlist",
+        "test_final_acceptance_voice_privacy",
+        "test_final_acceptance_memory_stress",
+        "test_final_acceptance_clean_install",
+        "test_final_acceptance_autostart",
+        "test_final_acceptance_packaging",
+        "test_final_acceptance_target_ubuntu_evidence",
+        "test_offline_deterministic_actions_succeed",
+        "test_final_acceptance_failure_fail_closed",
+        "test_final_acceptance_tdd_compliance"
       ],
       "acceptance_criteria": [
         "All 44 atomic requirements verified with passing automated tests",

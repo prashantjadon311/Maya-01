@@ -1,6 +1,7 @@
 from collections import defaultdict
 from pathlib import Path
 from tools.cookbook.model import CookbookModel, ValidationIssue
+from tools.cookbook.fingerprint import fingerprint_json
 
 
 def detect_cycles(components: list[str], edges: list[dict[str, str]]) -> list[list[str]]:
@@ -84,6 +85,32 @@ def validate_cookbook(model: CookbookModel) -> list[ValidationIssue]:
                     )
                 )
 
+    # 1b. Authority coverage check
+    if model.authority_coverage is not None:
+        for sec in model.authority_coverage.sections:
+            if sec.normative:
+                has_reqs = bool(sec.requirement_ids)
+                has_out_of_v1 = bool(sec.notes and "OUT_OF_V1" in sec.notes)
+                if not has_reqs and not has_out_of_v1:
+                    issues.append(
+                        ValidationIssue(
+                            code="UNMAPPED_AUTHORITY_SECTION",
+                            path=f"authority_coverage/{sec.source}#{sec.heading}",
+                            message=f"Normative section '{sec.heading}' in {sec.source} has no mapped requirements or OUT_OF_V1 rationale",
+                            severity="critical",
+                        )
+                    )
+            for rid in sec.requirement_ids:
+                if rid not in req_ids:
+                    issues.append(
+                        ValidationIssue(
+                            code="UNKNOWN_REQUIREMENT_IN_AUTHORITY",
+                            path=f"authority_coverage/{sec.source}#{sec.heading}/{rid}",
+                            message=f"Authority coverage references unknown requirement ID: {rid}",
+                            severity="critical",
+                        )
+                    )
+
     # 2. Test validation & duplicate check
     test_ids = set()
     test_map = {}
@@ -120,7 +147,7 @@ def validate_cookbook(model: CookbookModel) -> list[ValidationIssue]:
                     )
                 )
 
-    # Check that requirement tests exist in test_map
+    # Check that requirement tests exist in test_map and match requirement
     for req in model.requirements.requirements:
         if req.phase and req.test_id:
             if req.test_id not in test_ids:
@@ -132,6 +159,27 @@ def validate_cookbook(model: CookbookModel) -> list[ValidationIssue]:
                         severity="critical",
                     )
                 )
+            else:
+                test_rec = test_map[req.test_id]
+                if test_rec.requirement_id != req.id:
+                    issues.append(
+                        ValidationIssue(
+                            code="REQUIREMENT_TEST_MISMATCH",
+                            path=f"requirements/{req.id}",
+                            message=f"Test {req.test_id} requirement_id '{test_rec.requirement_id}' != '{req.id}'",
+                            severity="critical",
+                        )
+                    )
+                if test_rec.phase != req.phase:
+                    issues.append(
+                        ValidationIssue(
+                            code="REQUIREMENT_PHASE_MISMATCH",
+                            path=f"requirements/{req.id}",
+                            message=f"Test {req.test_id} phase '{test_rec.phase}' != requirement phase '{req.phase}'",
+                            severity="critical",
+                        )
+                    )
+
 
     # 3. Interfaces validation & duplicates
     iface_names = set()
@@ -266,7 +314,7 @@ def validate_cookbook(model: CookbookModel) -> list[ValidationIssue]:
         v = edge.to if hasattr(edge, "to") else edge.get("to")
         if u and v:
             edge_dicts.append({"from": u, "to": v})
-    
+
     cycles = detect_cycles(model.dependencies.components, edge_dicts)
     for c in cycles:
         issues.append(
@@ -295,7 +343,7 @@ def validate_cookbook(model: CookbookModel) -> list[ValidationIssue]:
                     )
                 )
 
-    # 6. Freeze gate check
+    # 7. Freeze gate check
     if model.authority.status == "FROZEN":
         unresolved = [i for i in issues if i.severity in ("critical", "important")]
         if unresolved:
@@ -309,3 +357,134 @@ def validate_cookbook(model: CookbookModel) -> list[ValidationIssue]:
             )
 
     return issues
+
+
+def compute_freeze_counters(model: CookbookModel, issues: list[ValidationIssue]) -> dict[str, int]:
+    """Compute the 10 mandatory freeze counters from model and validation issues."""
+    test_ids = {t.test_id for t in model.tests.tests}
+
+    # 1. UNMAPPED_REQUIREMENTS
+    unmapped_reqs = sum(
+        1 for r in model.requirements.requirements
+        if not r.phase and not r.out_of_v1_rationale
+    )
+
+    # 2. UNTESTED_ACCEPTANCE_CRITERIA
+    untested_crit = sum(
+        1 for r in model.requirements.requirements
+        if r.phase and (not r.test_id or r.test_id not in test_ids)
+    )
+
+    # 3. UNRESOLVED_PUBLIC_INTERFACES
+    unresolved_ifaces = sum(
+        1 for i in issues
+        if i.code in ("DUPLICATE_INTERFACE", "UNKNOWN_OUTPUT_INTERFACE", "INTERFACE_OWNER_MISMATCH")
+    )
+
+    # 4. UNRESOLVED_SECURITY_INTERFACES
+    unresolved_sec = sum(
+        1 for i in issues
+        if i.code in ("SECURITY_TEST_MISSING", "FALSE_SECURITY_TEST", "MISSING_ASSERT_NOT")
+    )
+
+    # 5. UNOWNED_FUTURE_FILES
+    unowned_files = sum(
+        1 for i in issues
+        if i.code in ("UNOWNED_FILE", "FILE_OWNER_MISMATCH", "UNAUTHORIZED_MODIFIER")
+    )
+
+    # 6. CIRCULAR_DEPENDENCIES
+    circular_deps = sum(
+        1 for i in issues
+        if i.code in ("CIRCULAR_DEPENDENCY", "ILLEGAL_DEPENDENCY")
+    )
+
+    # 7. UNBOUNDED_RESIDENT_STRUCTURES
+    unbounded = sum(
+        1 for i in issues
+        if i.code == "UNBOUNDED_RESOURCE"
+    )
+
+    # 8. CRITICAL_GAPS
+    critical_gaps = sum(
+        1 for i in issues
+        if i.severity == "critical" and i.code != "FROZEN_WITH_OPEN_ISSUES"
+    )
+
+    # 9. IMPORTANT_GAPS
+    important_gaps = sum(
+        1 for i in issues
+        if i.severity == "important"
+    )
+
+    # 10. GUESS_REQUIRED_IMPLEMENTATION_ITEMS
+    guess_required = sum(
+        1 for i in issues
+        if i.code in ("GUESS_REQUIRED", "VAGUE_SPECIFICATION", "PLACEHOLDER_FOUND")
+    )
+
+    return {
+        "UNMAPPED_REQUIREMENTS": unmapped_reqs,
+        "UNTESTED_ACCEPTANCE_CRITERIA": untested_crit,
+        "UNRESOLVED_PUBLIC_INTERFACES": unresolved_ifaces,
+        "UNRESOLVED_SECURITY_INTERFACES": unresolved_sec,
+        "UNOWNED_FUTURE_FILES": unowned_files,
+        "CIRCULAR_DEPENDENCIES": circular_deps,
+        "UNBOUNDED_RESIDENT_STRUCTURES": unbounded,
+        "CRITICAL_GAPS": critical_gaps,
+        "IMPORTANT_GAPS": important_gaps,
+        "GUESS_REQUIRED_IMPLEMENTATION_ITEMS": guess_required,
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
+    """CLI entrypoint for cookbook validation."""
+    import argparse
+    import sys
+    from tools.cookbook.model import load_cookbook
+
+    parser = argparse.ArgumentParser(description="Deterministic Maya Implementation Cookbook Validator")
+    parser.add_argument("path", nargs="?", default="Docs/ImplementationCookbook", help="Path to cookbook root directory")
+    args = parser.parse_args(argv)
+
+    root = Path(args.path)
+    if not root.exists():
+        print(f"Error: Directory not found: {root}")
+        return 1
+
+    try:
+        model = load_cookbook(root)
+    except Exception as exc:
+        print(f"Error loading cookbook manifests: {exc}")
+        return 1
+
+    issues = validate_cookbook(model)
+    counters = compute_freeze_counters(model, issues)
+
+    # Print issues deterministically sorted by severity, code, path
+    severity_order = {"critical": 0, "important": 1, "warning": 2}
+    sorted_issues = sorted(issues, key=lambda i: (severity_order.get(i.severity, 99), i.code, i.path))
+
+    if sorted_issues:
+        print(f"VALIDATION ISSUES ({len(sorted_issues)}):")
+        for issue in sorted_issues:
+            print(f"  [{issue.severity.upper()}] {issue.code} at {issue.path}: {issue.message}")
+    else:
+        print("VALIDATION ISSUES: 0 issues found.")
+
+    # Print freeze counters deterministically
+    print("\nMANDATORY FREEZE COUNTERS:")
+    for name, val in counters.items():
+        print(f"  {name}: {val}")
+
+    blockers = [i for i in issues if i.severity in ("critical", "important")]
+    non_zero_counters = [k for k, v in counters.items() if v != 0]
+
+    if blockers or non_zero_counters:
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    import sys
+    raise SystemExit(main(sys.argv[1:]))

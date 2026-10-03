@@ -176,3 +176,48 @@ def test_validator_catches_phase_modified_file_unauthorized():
     codes = [i.code for i in issues]
     assert "UNAUTHORIZED_MODIFIER" in codes
 
+
+def test_validator_cli_entrypoint_success(capsys):
+    from tools.cookbook.validate import main as validate_main
+    valid_dir = FIXTURES_ROOT / "valid_minimal"
+    ret = validate_main([str(valid_dir)])
+    captured = capsys.readouterr()
+    assert ret == 0
+    assert "MANDATORY FREEZE COUNTERS" in captured.out
+    assert "CRITICAL_GAPS: 0" in captured.out
+
+
+def test_validator_cli_entrypoint_failure(capsys, tmp_path):
+    from tools.cookbook.validate import main as validate_main
+    # Create empty directory
+    ret = validate_main([str(tmp_path)])
+    captured = capsys.readouterr()
+    assert ret != 0
+
+
+def test_fingerprint_cli_print_and_expect(capsys, tmp_path):
+    from tools.cookbook.fingerprint import main as fingerprint_main
+    test_file = tmp_path / "test.json"
+    test_file.write_text('{"b": 2, "a": 1}', encoding="utf-8")
+
+    # 1. Print fingerprint
+    ret = fingerprint_main([str(test_file)])
+    captured = capsys.readouterr()
+    assert ret == 0
+    calculated_hash = captured.out.strip()
+    assert len(calculated_hash) == 64
+
+    # 2. Expect match
+    ret_match = fingerprint_main([str(test_file), "--expect", calculated_hash])
+    assert ret_match == 0
+
+    # 3. Expect mismatch
+    ret_mismatch = fingerprint_main([str(test_file), "--expect", "0" * 64])
+    assert ret_mismatch != 0
+
+
+def test_actual_cookbook_is_freeze_clean():
+    model = load_cookbook(COOKBOOK_ROOT)
+    issues = validate_cookbook(model)
+    blockers = [i for i in issues if i.severity in {"critical", "important"}]
+    assert blockers == []

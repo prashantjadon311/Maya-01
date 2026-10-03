@@ -29,13 +29,29 @@ Additionally, `Docs/SKILL.md` (`3ee7bf617703e36bda264096154bc2609950deea`) acts 
 
 ## 3. Baselines
 
-- **Cookbook Work Base SHA:** `d603173624ddc9285b32ee00f33c10be2ecc9b58`
+- **Cookbook Work Base SHA:** `d367261e617fb96ca2d353871590c0dc616b8fe0`
 - **Product Code Base SHA:** `ef00714c86d3d7b5684d693da35aa82595a088d4`
 - **CI Run Baseline:** `37107781413`
 
 ---
 
-## 4. Conflict & Gap Ledger
+## 4. Comprehensive Authority Coverage (172 Sections)
+
+All 172 specification sections from the authority documents are indexed and audited in `Docs/ImplementationCookbook/machine/authority_coverage.json`:
+
+- **`DOCS.md` (29 sections):** Vision, UX paradigms, hardware tiers, subsystem boundaries, resident memory budget (300MB), offline capabilities, audio pipeline, browser automation, developer workflows, licensing.
+- **`SECURITY.md` (18 sections):** Threat model, prompt injection defense, policy engine, approval broker, hash binding, executor isolation, native messaging bridge security, dashboard CORS/CSRF boundaries, audit logging.
+- **`ARCHITECTURE.md` (22 sections):** Component hierarchy, composition root, state transitions, async concurrency, queue limits, IPC protocols, extension bridge.
+- **`CONFIG.md` (9 sections):** TOML schema, environment variables, validation rules, sensible defaults, configuration reload semantics.
+- **`UI.md` (56 sections):** All 10 views (Home, Chat, Tasks/Agents, Browser, Voice, Actions, Permissions, Files/Workspaces, Developer, Settings), top bar, sidebar, composer, SVG AI Core state animations, responsive breakpoints, reduced motion, a11y keyboard focus, SSE contracts.
+- **`PLAN.md` (23 sections):** Milestone progression (PH000–PH180), acceptance criteria per phase, dependencies, verification suites.
+- **`EXECUTION.md` (15 sections):** Micro-order requirements, gate criteria, testing rigor, checkpoint protocols.
+
+Every normative requirement derived from these 172 sections is tracked with zero gaps.
+
+---
+
+## 5. Conflict & Gap Ledger
 
 | Conflict ID | Higher Authority | Lower Source / State | Conflict Description | Ruling & Decision | Affected Phases | Required Action |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -45,3 +61,7 @@ Additionally, `Docs/SKILL.md` (`3ee7bf617703e36bda264096154bc2609950deea`) acts 
 | `CONF-004` | `Docs/SECURITY.md` | Shell execution | Subprocess execution could tempt `shell=True` for convenience. | `SECURITY.md` strictly forbids `shell=True`. All executions must use `asyncio.create_subprocess_exec` with explicit argv lists. | PH-040, PH-050, PH-150 | Enforce argv execution across all executors. |
 | `CONF-005` | `Docs/SECURITY.md` | UI location of approval | Approval requests could tempt web dashboard modal. | `SECURITY.md` Section 5 and `DOCS.md` Section 1 require an independent native approval popup that functions even if dashboard is closed. | PH-050 | Build independent transient popup protocol and broker. |
 | `CONF-006` | `Docs/DOCS.md` | Cgroup limits | Memory limits could tempt loosening during development. | `MemoryHigh=240M`, `MemoryMax=300M` are hard invariants. Silent limit increases are forbidden. | PH-160, PH-170 | Design strict bounds, bounded queues, and memory monitoring. |
+| `CONF-007` | `Docs/SECURITY.md` | `ProcessExecutor` contract | PH040 ProcessExecutor requires `PolicyEvaluation(decision=ALLOW_PREAPPROVED)` context, blocking human-approved actions. | Do not fake human approval as `ALLOW_PREAPPROVED`. Introduce typed `ExecutionAuthorization` supporting both `PREAPPROVED` and `HUMAN_ALLOW_ONCE` with explicit `ProcessExecutionConstraints`. | PH-040, PH-050 | Extend executor context in PH050 to accept `ExecutionAuthorization`. |
+| `CONF-008` | `Docs/SECURITY.md` | Pre-wake audio buffer | Prepending 500ms of pre-wake ring buffer to command audio risks transmitting ambient room audio. | Pre-wake ring buffer data is wake-detector-only and must NEVER enter remote STT payload. Post-wake audio begins strictly after wake boundary. | PH-080, PH-090 | Remove pre-wake audio prepend; enforce strict post-wake provenance via `CommandAudioSegment`. |
+| `CONF-009` | `Docs/ARCHITECTURE.md`| Lifecycle composition | PH100 tray previously called a `LifecycleManager` scheduled for creation in PH160. | `app/lifecycle.py` must be created in an earlier integration phase (PH050) as foundation, then hardened with cgroup controls in PH160. Tray receives injected shutdown callback. | PH-050, PH-100, PH-160 | Create `app/lifecycle.py` in PH050. |
+| `CONF-010` | `Docs/CONFIG.md` / NVIDIA | STT endpoint protocol | Casual proposals assume OpenAI-compatible `/v1/audio/transcriptions` for Parakeet ASR. | `STTConfig.model` (`nvidia/parakeet-1_1b-rnnt-multilingual-asr`) is an NVIDIA Riva model using Riva gRPC service (`grpc.nvcf.nvidia.com:443`) or local Riva NIM container (port 9000). | PH-090 | Freeze authoritative Riva gRPC / NIM protocol for STTAdapter. |

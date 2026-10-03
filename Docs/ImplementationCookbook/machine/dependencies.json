@@ -43,9 +43,9 @@
     {"from": "dashboard_ui", "to": "dashboard_api"},
     {"from": "dashboard_api", "to": "dispatcher"},
     {"from": "dashboard_api", "to": "storage"},
-    {"from": "tray", "to": "gateway"},
-    {"from": "tray", "to": "lifecycle"}
+    {"from": "tray", "to": "gateway"}
   ],
+
   "forbidden_edges": [
     {"from": "ai_provider", "to": "executors"},
     {"from": "dashboard_ui", "to": "executors"},

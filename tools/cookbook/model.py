@@ -35,12 +35,12 @@ class RequirementItem(BaseModel):
     source: str
     category: str
     description: str
-    phase: str
-    component: str
-    file: str
-    symbol: str
-    test_id: str
-    acceptance_evidence: str
+    phase: str | None = None
+    component: str | None = None
+    file: str | None = None
+    symbol: str | None = None
+    test_id: str | None = None
+    acceptance_evidence: str | None = None
     out_of_v1_rationale: str | None = None
 
 
@@ -113,7 +113,7 @@ class PhaseManifestItem(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
     phase_id: str
     title: str
-    status: Literal["PLANNED", "IN_PROGRESS", "COMPLETED", "FROZEN"]
+    status: Literal["PLANNED", "IN_PROGRESS", "COMPLETED", "FROZEN", "BLOCKED_OPEN_DESIGN_DECISION"]
     required_reads: list[str] = Field(default_factory=list)
     files_created: list[str] = Field(default_factory=list)
     files_modified: list[str] = Field(default_factory=list)
@@ -145,11 +145,27 @@ class TestRecipeItem(BaseModel):
     assert_positive: str
     assert_not: str | None = None
     verification_command: str
+    status: Literal["VERIFIED", "PLANNED_FUTURE_TEST", "MANUAL_ACCEPTANCE"] = "PLANNED_FUTURE_TEST"
 
 
 class TestsModel(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
     tests: list[TestRecipeItem]
+
+
+class AuthorityCoverageItem(BaseModel):
+    model_config = ConfigDict(strict=True, extra="forbid")
+    source: str
+    heading: str
+    normative: bool
+    requirement_ids: list[str] = Field(default_factory=list)
+    notes: str | None = None
+
+
+class AuthorityCoverageModel(BaseModel):
+    model_config = ConfigDict(strict=True, extra="forbid")
+    sections: list[AuthorityCoverageItem]
+
 
 
 class DependencyEdge(BaseModel):
@@ -176,6 +192,7 @@ class CookbookModel(BaseModel):
     phase_manifest: PhaseManifestModel
     tests: TestsModel
     dependencies: DependenciesModel
+    authority_coverage: AuthorityCoverageModel | None = None
 
 
 def load_cookbook(root: Path) -> CookbookModel:
@@ -214,6 +231,13 @@ def load_cookbook(root: Path) -> CookbookModel:
         dep_data = json.load(f)
     dependencies = DependenciesModel.model_validate(dep_data)
 
+    authority_coverage = None
+    cov_path = machine_dir / "authority_coverage.json"
+    if cov_path.exists():
+        with open(cov_path, "r", encoding="utf-8") as f:
+            cov_data = json.load(f)
+        authority_coverage = AuthorityCoverageModel.model_validate(cov_data)
+
     return CookbookModel(
         root_path=root,
         authority=authority,
@@ -224,4 +248,5 @@ def load_cookbook(root: Path) -> CookbookModel:
         phase_manifest=phase_manifest,
         tests=tests,
         dependencies=dependencies,
+        authority_coverage=authority_coverage,
     )
