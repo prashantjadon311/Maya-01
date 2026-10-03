@@ -2,12 +2,12 @@
 
 Enforces canonicalization, root containment, capability checks, atomic writing,
 and prevents traversal/symlink escapes. Rechecks all security invariants immediately before I/O.
+Uses file-descriptor anchored I/O for relative paths under matched roots to prevent TOCTOU symlink swaps.
 """
 
 import json
 import os
 from pathlib import Path
-import tempfile
 from typing import Any
 
 from app.actions.schema import ActionRequest, ActionResult
@@ -19,8 +19,33 @@ from app.executors.base import (
     FileReadArgs,
     FileWriteArgs,
 )
-from app.policy.engine import DEFAULT_SENSITIVE_PATHS
+from app.policy.engine import DEFAULT_SENSITIVE_PATHS, PolicyDecision, PolicyEvaluation
 from app.policy.paths import canonical_path
+
+
+def _open_dirfd_under_root(root_path: Path, relative_components: tuple[str, ...]) -> int:
+    """Open directory descriptor anchored under root_path following relative_components securely without symlinks."""
+    flags = os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0)
+    curr_fd = os.open(str(root_path), flags)
+    for comp in relative_components:
+        try:
+            next_fd = os.open(comp, flags, dir_fd=curr_fd)
+        except Exception:
+            os.close(curr_fd)
+            raise
+        os.close(curr_fd)
+        curr_fd = next_fd
+    return curr_fd
+
+
+def _open_parent_dirfd(root_path: Path, relative_components: tuple[str, ...]) -> tuple[int, str]:
+    """Open parent directory descriptor under root_path for relative_components and return (parent_fd, leaf_name)."""
+    if not relative_components:
+        raise ValueError("relative_components must not be empty for parent dirfd")
+    parent_components = relative_components[:-1]
+    leaf_name = relative_components[-1]
+    parent_fd = _open_dirfd_under_root(root_path, parent_components)
+    return parent_fd, leaf_name
 
 
 class FileExecutor(BaseExecutor):
@@ -39,26 +64,27 @@ class FileExecutor(BaseExecutor):
             for p in all_denied
         ]
 
-    def _verify_path_security(self, path_str: str, required_cap: str) -> tuple[Path | None, str | None]:
+    def _verify_path_security(self, path_str: str, required_cap: str) -> tuple[Path | None, Path | None, str | None]:
         """Canonicalize path and verify against sensitive defaults and allowed root capabilities."""
         try:
             target = canonical_path(path_str)
         except Exception as exc:
-            return None, f"Malformed path '{path_str}': {exc}"
+            return None, None, f"Malformed path '{path_str}': {exc}"
 
         # Sensitive paths check
         for denied_str in self.permanently_denied_paths:
             denied_path = Path(denied_str)
             if target == denied_path or denied_path in target.parents:
-                return None, f"Access to sensitive path '{target}' is permanently denied"
+                return None, None, f"Access to sensitive path '{target}' is permanently denied"
 
         # Credential file check (.env)
         if target.name == ".env" or target.name.startswith(".env."):
-            return None, "Access to credential files (.env) is denied"
+            return None, None, "Access to credential files (.env) is denied"
 
         # Root containment and capability check
         in_allowed_root = False
         has_capability = False
+        matched_root: Path | None = None
         for root in self.allowed_roots:
             try:
                 root_path = canonical_path(root.path)
@@ -68,23 +94,31 @@ class FileExecutor(BaseExecutor):
                 in_allowed_root = True
                 if required_cap == "read" and root.read:
                     has_capability = True
+                    matched_root = root_path
                     break
                 if required_cap == "write" and root.write:
                     has_capability = True
+                    matched_root = root_path
                     break
                 if required_cap == "delete" and root.delete:
                     has_capability = True
+                    matched_root = root_path
                     break
 
         if not in_allowed_root:
-            return None, f"Path '{target}' is outside configured allowed file roots"
-        if not has_capability:
-            return None, f"Allowed root does not grant '{required_cap}' capability for '{target}'"
+            return None, None, f"Path '{target}' is outside configured allowed file roots"
+        if not has_capability or matched_root is None:
+            return None, None, f"Allowed root does not grant '{required_cap}' capability for '{target}'"
 
-        return target, None
+        return target, matched_root, None
 
     async def execute(self, action: ActionRequest, context: Any = None) -> ActionResult:
         """Route to appropriate file operation based on action.tool."""
+        if not isinstance(context, PolicyEvaluation) or context.decision != PolicyDecision.ALLOW_PREAPPROVED:
+            return ActionResult(
+                success=False,
+                error="File execution denied: requires valid preapproved PolicyEvaluation context",
+            )
         if action.tool == "file.read":
             return await self.execute_read(action)
         elif action.tool == "file.list":
@@ -102,39 +136,49 @@ class FileExecutor(BaseExecutor):
         except Exception as exc:
             return ActionResult(success=False, error=f"Invalid file.read arguments: {exc}")
 
-        target, error = self._verify_path_security(args.path, "read")
+        target, matched_root, error = self._verify_path_security(args.path, "read")
         if error is not None:
             return ActionResult(success=False, error=error)
-        assert target is not None
+        assert target is not None and matched_root is not None
 
-        flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+        rel_parts = target.relative_to(matched_root).parts
+        if not rel_parts:
+            return ActionResult(success=False, error=f"File not found or not a regular file: {target}")
+
         try:
-            fd = os.open(str(target), flags)
+            parent_fd, leaf_name = _open_parent_dirfd(matched_root, rel_parts)
         except OSError as exc:
-            return ActionResult(success=False, error=f"Failed to open file safely (symlink or access error): {exc}")
+            return ActionResult(success=False, error=f"Failed to open parent directory safely: {exc}")
 
         try:
-            st = os.fstat(fd)
-            import stat
-            if not stat.S_ISREG(st.st_mode):
-                os.close(fd)
-                return ActionResult(success=False, error=f"File not found or not a regular file: {target}")
-            if st.st_size > args.max_bytes:
-                os.close(fd)
-                return ActionResult(
-                    success=False,
-                    error=f"File size ({st.st_size} bytes) exceeds max limit ({args.max_bytes} bytes)",
-                )
+            flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0)
+            try:
+                fd = os.open(leaf_name, flags, dir_fd=parent_fd)
+            except OSError as exc:
+                return ActionResult(success=False, error=f"Failed to open file safely (symlink or access error): {exc}")
 
-            with os.fdopen(fd, "rb") as f:
-                data = f.read(args.max_bytes + 1)
-            if len(data) > args.max_bytes:
-                return ActionResult(success=False, error=f"File content exceeds max limit ({args.max_bytes} bytes)")
+            try:
+                st = os.fstat(fd)
+                import stat
+                if not stat.S_ISREG(st.st_mode):
+                    return ActionResult(success=False, error=f"File not found or not a regular file: {target}")
+                if st.st_size > args.max_bytes:
+                    return ActionResult(
+                        success=False,
+                        error=f"File size ({st.st_size} bytes) exceeds max limit ({args.max_bytes} bytes)",
+                    )
 
-            content = data.decode("utf-8", errors="replace")
-            return ActionResult(success=True, output=content)
-        except Exception as exc:
-            return ActionResult(success=False, error=f"Failed to read file: {exc}")
+                with os.fdopen(fd, "rb", closefd=True) as f:
+                    data = f.read(args.max_bytes + 1)
+                if len(data) > args.max_bytes:
+                    return ActionResult(success=False, error=f"File content exceeds max limit ({args.max_bytes} bytes)")
+
+                content = data.decode("utf-8", errors="replace")
+                return ActionResult(success=True, output=content)
+            except Exception as exc:
+                return ActionResult(success=False, error=f"Failed to read file: {exc}")
+        finally:
+            os.close(parent_fd)
 
     async def execute_list(self, action: ActionRequest) -> ActionResult:
         """Execute file.list operation without following child symlinks."""
@@ -143,39 +187,54 @@ class FileExecutor(BaseExecutor):
         except Exception as exc:
             return ActionResult(success=False, error=f"Invalid file.list arguments: {exc}")
 
-        target, error = self._verify_path_security(args.path, "read")
+        target, matched_root, error = self._verify_path_security(args.path, "read")
         if error is not None:
             return ActionResult(success=False, error=error)
-        assert target is not None
+        assert target is not None and matched_root is not None
 
         if target.is_symlink():
             return ActionResult(success=False, error="Target is a symlink: directory listing through symlinks is denied")
-        if not target.is_dir():
-            return ActionResult(success=False, error=f"Target is not an existing directory: {target}")
+
+        rel_parts = target.relative_to(matched_root).parts
+        try:
+            if not rel_parts:
+                dir_fd = os.open(str(matched_root), os.O_RDONLY | os.O_DIRECTORY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0))
+            else:
+                dir_fd = _open_dirfd_under_root(matched_root, rel_parts)
+        except OSError as exc:
+            return ActionResult(success=False, error=f"Failed to open directory safely: {exc}")
 
         try:
+            st = os.fstat(dir_fd)
+            import stat
+            if not stat.S_ISDIR(st.st_mode):
+                return ActionResult(success=False, error=f"Target is not an existing directory: {target}")
+
             entries = []
-            for idx, entry in enumerate(sorted(target.iterdir(), key=lambda p: p.name)):
-                if idx >= args.max_entries:
-                    break
-                is_sym = entry.is_symlink()
-                is_dir = False if is_sym else entry.is_dir(follow_symlinks=False)
-                is_file = False if is_sym else entry.is_file(follow_symlinks=False)
-                entry_size = None
-                if is_file:
-                    try:
-                        entry_size = entry.lstat().st_size
-                    except OSError:
-                        pass
-                entries.append({
-                    "name": entry.name,
-                    "is_dir": is_dir,
-                    "size": entry_size,
-                })
+            with os.scandir(dir_fd) as scanner:
+                sorted_entries = sorted(list(scanner), key=lambda e: e.name)
+                for idx, entry in enumerate(sorted_entries):
+                    if idx >= args.max_entries:
+                        break
+                    is_sym = entry.is_symlink()
+                    is_dir = False if is_sym else entry.is_dir(follow_symlinks=False)
+                    is_file = False if is_sym else entry.is_file(follow_symlinks=False)
+                    entry_size = None
+                    if is_file:
+                        try:
+                            entry_size = entry.stat(follow_symlinks=False).st_size
+                        except OSError:
+                            pass
+                    entries.append({
+                        "name": entry.name,
+                        "is_dir": is_dir,
+                        "size": entry_size,
+                    })
             return ActionResult(success=True, output=json.dumps(entries))
         except Exception as exc:
             return ActionResult(success=False, error=f"Failed to list directory: {exc}")
-
+        finally:
+            os.close(dir_fd)
 
     async def execute_write(self, action: ActionRequest) -> ActionResult:
         """Execute atomic file.write operation with fsync and symlink protection."""
@@ -184,55 +243,83 @@ class FileExecutor(BaseExecutor):
         except Exception as exc:
             return ActionResult(success=False, error=f"Invalid file.write arguments: {exc}")
 
-        target, error = self._verify_path_security(args.path, "write")
+        target, matched_root, error = self._verify_path_security(args.path, "write")
         if error is not None:
             return ActionResult(success=False, error=error)
-        assert target is not None
+        assert target is not None and matched_root is not None
 
         # Re-check symlink on the target path: never write through a symlink
         raw_path = Path(args.path).expanduser()
         if raw_path.is_symlink() or target.is_symlink():
             return ActionResult(success=False, error="Writing through a symlink is strictly forbidden")
 
-        parent = target.parent
-        if not parent.is_dir():
-            return ActionResult(success=False, error=f"Parent directory does not exist: {parent}")
+        rel_parts = target.relative_to(matched_root).parts
+        if not rel_parts:
+            return ActionResult(success=False, error="Writing directly to allowed root directory path is forbidden")
 
-        # Verify parent is also within allowed root
-        parent_target, parent_error = self._verify_path_security(str(parent), "write")
-        if parent_error is not None:
-            return ActionResult(success=False, error=f"Parent directory access error: {parent_error}")
-
-        payload: bytes
-        if isinstance(args.content, str):
-            payload = args.content.encode("utf-8")
-        else:
-            payload = args.content
-
-        # Atomic write via temporary file in the same directory
-        temp_fd, temp_path_str = tempfile.mkstemp(dir=parent, prefix=".tmp_projh_")
-        temp_path = Path(temp_path_str)
         try:
-            with os.fdopen(temp_fd, "wb") as f:
-                f.write(payload)
-                f.flush()
-                os.fsync(f.fileno())
+            parent_fd, leaf_name = _open_parent_dirfd(matched_root, rel_parts)
+        except OSError as exc:
+            return ActionResult(success=False, error=f"Parent directory does not exist or access error: {exc}")
+
+        try:
+            import stat
+            # Check if leaf_name is already a symlink in parent_fd
+            try:
+                st = os.lstat(leaf_name, dir_fd=parent_fd)
+                if stat.S_ISLNK(st.st_mode):
+                    return ActionResult(success=False, error="Writing through a symlink is strictly forbidden")
+            except OSError:
+                pass
+
+            payload: bytes
+            if isinstance(args.content, str):
+                payload = args.content.encode("utf-8")
+            else:
+                payload = args.content
+
+            # Create temporary file inside parent_fd directory descriptor
+            temp_name = f".tmp_projh_{os.urandom(8).hex()}"
+            flags = os.O_RDWR | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0)
+            try:
+                temp_fd = os.open(temp_name, flags, 0o600, dir_fd=parent_fd)
+            except OSError as exc:
+                return ActionResult(success=False, error=f"Failed to create temp file: {exc}")
+
+            try:
+                os.write(temp_fd, payload)
+                os.fsync(temp_fd)
+            finally:
+                os.close(temp_fd)
 
             # TOCTOU revalidation immediately before replace
-            rechecked, recheck_err = self._verify_path_security(str(target), "write")
+            rechecked, _, recheck_err = self._verify_path_security(str(target), "write")
             if recheck_err is not None or rechecked != target:
-                temp_path.unlink(missing_ok=True)
+                os.unlink(temp_name, dir_fd=parent_fd)
                 return ActionResult(success=False, error="Target path changed during write")
 
             if raw_path.is_symlink() or target.is_symlink():
-                temp_path.unlink(missing_ok=True)
+                os.unlink(temp_name, dir_fd=parent_fd)
                 return ActionResult(success=False, error="Writing through a symlink is strictly forbidden")
 
-            os.replace(temp_path, target)
+            try:
+                st2 = os.lstat(leaf_name, dir_fd=parent_fd)
+                if stat.S_ISLNK(st2.st_mode):
+                    os.unlink(temp_name, dir_fd=parent_fd)
+                    return ActionResult(success=False, error="Writing through a symlink is strictly forbidden")
+            except OSError:
+                pass
+
+            os.replace(temp_name, leaf_name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
             return ActionResult(success=True, output=f"Successfully wrote {len(payload)} bytes to {target.name}")
         except Exception as exc:
-            temp_path.unlink(missing_ok=True)
+            try:
+                os.unlink(temp_name, dir_fd=parent_fd)
+            except OSError:
+                pass
             return ActionResult(success=False, error=f"Atomic write failed: {exc}")
+        finally:
+            os.close(parent_fd)
 
     async def execute_delete(self, action: ActionRequest) -> ActionResult:
         """Defensive implementation of file.delete.
@@ -246,7 +333,7 @@ class FileExecutor(BaseExecutor):
         except Exception as exc:
             return ActionResult(success=False, error=f"Invalid file.delete arguments: {exc}")
 
-        _target, error = self._verify_path_security(args.path, "delete")
+        _target, _, error = self._verify_path_security(args.path, "delete")
         if error is not None:
             return ActionResult(success=False, error=error)
 

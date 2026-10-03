@@ -41,13 +41,6 @@ DANGEROUS_ENV_VARS = frozenset({
 })
 
 
-class NetworkIsolationBackend:
-    """Explicit capability abstraction for network isolation backends."""
-
-    def is_available(self) -> bool:
-        return False
-
-
 async def _read_stream_bounded(stream: asyncio.StreamReader, limit: int) -> str:
     """Read an asyncio stream up to limit bytes without unbounded memory growth."""
     buffer = bytearray()
@@ -64,12 +57,12 @@ async def _read_stream_bounded(stream: asyncio.StreamReader, limit: int) -> str:
 class ProcessExecutor(BaseExecutor):
     """Executes subprocesses securely with argv-only semantics and no shell."""
 
-    def __init__(self, network_backend: NetworkIsolationBackend | None = None) -> None:
-        self.network_backend = network_backend
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        pass
 
     async def execute(self, action: ActionRequest, context: Any = None) -> ActionResult:
         """Execute a process.run action request within trusted constraints."""
-        # 1. Defense-in-depth API check: require valid PolicyEvaluation context
+        # 0. Defense-in-depth API check: require valid PolicyEvaluation context
         if (
             not isinstance(context, PolicyEvaluation)
             or context.decision != PolicyDecision.ALLOW_PREAPPROVED
@@ -81,27 +74,50 @@ class ProcessExecutor(BaseExecutor):
                 error="Process execution denied: requires valid preapproved PolicyEvaluation context",
             )
 
-        # 2. Parse and validate arguments against strict schema
+        if action.tool != "process.run":
+            return ActionResult(success=False, error=f"Process executor unsupported tool: {action.tool}")
+
+        # 1. Parse and validate arguments against strict schema
         try:
             args = ProcessArgs.model_validate(action.arguments)
         except Exception as exc:
             return ActionResult(success=False, error=f"Invalid process arguments: {exc}")
 
-        # 3. Extract trusted preapproval constraints
+        # 2. Re-verify rule rebinding invariants at execution boundary
         rule = context.matched_preapproval_rule
+        if args.argv[0] != rule.executable:
+            return ActionResult(
+                success=False,
+                error=f"Process execution denied: argv[0] '{args.argv[0]}' does not match preapproved rule executable '{rule.executable}'",
+            )
+
+        actual_prefix = tuple(args.argv[1 : 1 + len(rule.argv_prefix)])
+        if actual_prefix != rule.argv_prefix:
+            return ActionResult(
+                success=False,
+                error="Process execution denied: argv prefix does not match preapproved rule",
+            )
+
+        resolved_now = resolve_trusted_executable(rule.executable)
+        if resolved_now is None or resolved_now != context.resolved_executable.resolve():
+            return ActionResult(
+                success=False,
+                error="Process execution denied: resolved executable mismatch or untrusted path",
+            )
+
+        # 3. Extract trusted preapproval constraints
         timeout_seconds = rule.timeout_seconds
         env_allowlist = rule.env_allowlist
         network_allowed = rule.network_allowed
         working_roots = rule.working_roots
         resolved_exe = context.resolved_executable
 
-        # 4. Network isolation enforcement
+        # 4. Network isolation enforcement (fail closed in PH-040)
         if not network_allowed:
-            if self.network_backend is None or not self.network_backend.is_available():
-                return ActionResult(
-                    success=False,
-                    error="Network isolation unavailable: preapproved rule specifies network_allowed=False but no network isolation backend is available in PH-040",
-                )
+            return ActionResult(
+                success=False,
+                error="Network isolation unavailable in PH-040: network_allowed=False rules cannot auto-execute",
+            )
 
         # 5. Immediate cwd revalidation (TOCTOU defense)
         try:

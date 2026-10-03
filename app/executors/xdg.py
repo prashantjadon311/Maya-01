@@ -11,7 +11,7 @@ from typing import Any
 from app.actions.schema import ActionRequest, ActionResult
 from app.core.config import FileRootConfig
 from app.executors.base import BaseExecutor, XdgOpenArgs
-from app.policy.engine import DEFAULT_SENSITIVE_PATHS, resolve_trusted_executable
+from app.policy.engine import DEFAULT_SENSITIVE_PATHS, PolicyDecision, PolicyEvaluation, resolve_trusted_executable
 from app.policy.paths import canonical_path
 
 
@@ -23,6 +23,12 @@ class XdgExecutor(BaseExecutor):
 
     async def execute(self, action: ActionRequest, context: Any = None) -> ActionResult:
         """Execute an app.open action request."""
+        # 0. Require valid PolicyEvaluation context
+        if not isinstance(context, PolicyEvaluation) or context.decision != PolicyDecision.ALLOW_PREAPPROVED:
+            return ActionResult(
+                success=False,
+                error="XDG execution denied: requires valid preapproved PolicyEvaluation context",
+            )
         # 1. Parse and validate arguments against strict schema
         try:
             args = XdgOpenArgs.model_validate(action.arguments)
@@ -81,26 +87,35 @@ class XdgExecutor(BaseExecutor):
                 error="xdg-open binary not available in trusted system locations",
             )
 
-        # 5. Execute xdg-open with argv only (shell=False)
+        # Immediate re-verification before spawn (TOCTOU defense)
+        try:
+            rechecked = canonical_path(str(target_path))
+            if not rechecked.exists() or rechecked != target_path:
+                return ActionResult(success=False, error="Target path changed immediately prior to execution")
+        except Exception:
+            return ActionResult(success=False, error="Target path re-verification failed")
+
+        # 5. Execute xdg-open with argv only (shell=False, DEVNULL for stdout and stderr)
         try:
             proc = await asyncio.create_subprocess_exec(
                 str(xdg_bin),
                 str(target_path),
                 stdin=asyncio.subprocess.DEVNULL,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.DEVNULL,
             )
-            stdout_data, stderr_data = await asyncio.wait_for(proc.communicate(), timeout=10.0)
-            if proc.returncode != 0:
-                err_text = stderr_data.decode("utf-8", errors="replace")
-                return ActionResult(success=False, error=f"xdg-open exited with code {proc.returncode}: {err_text}")
-            return ActionResult(success=True, output=f"Opened '{target_path}' via xdg-open")
-        except asyncio.TimeoutError:
             try:
-                proc.kill()
-                await proc.wait()
-            except OSError:
-                pass
-            return ActionResult(success=False, error="xdg-open execution timed out")
+                await asyncio.wait_for(proc.wait(), timeout=10.0)
+            except asyncio.TimeoutError:
+                try:
+                    proc.kill()
+                    await proc.wait()
+                except OSError:
+                    pass
+                return ActionResult(success=False, error="xdg-open execution timed out")
+
+            if proc.returncode != 0:
+                return ActionResult(success=False, error=f"xdg-open exited with code {proc.returncode}")
+            return ActionResult(success=True, output=f"Opened '{target_path}' via xdg-open")
         except Exception as exc:
             return ActionResult(success=False, error=f"Failed to spawn xdg-open: {exc}")
