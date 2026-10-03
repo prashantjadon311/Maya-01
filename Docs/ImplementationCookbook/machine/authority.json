@@ -1,0 +1,31 @@
+{
+  "cookbook_version": "1.0.0",
+  "status": "DRAFT",
+  "cookbook_work_base_sha": "d603173624ddc9285b32ee00f33c10be2ecc9b58",
+  "product_code_base_sha": "ef00714c86d3d7b5684d693da35aa82595a088d4",
+  "base_sha": "ef00714c86d3d7b5684d693da35aa82595a088d4",
+  "ci_baseline_run": "37107781413",
+  "python_floor": ">=3.11",
+  "target_os": "Ubuntu",
+  "authority_order": [
+    "Docs/DOCS.md",
+    "Docs/SECURITY.md",
+    "Docs/ARCHITECTURE.md",
+    "Docs/CONFIG.md",
+    "Docs/UI.md",
+    "Docs/PLAN.md",
+    "Docs/TASKS.md",
+    "Docs/EXECUTION.md"
+  ],
+  "blob_shas": {
+    "Docs/DOCS.md": "f0661e12eb37d7cb35468fb998d24e3be9ca61a0",
+    "Docs/SECURITY.md": "018eddf2c193818f2e54f38dfe24639aac8af395",
+    "Docs/ARCHITECTURE.md": "60c03ec8ef6122409da8c56020896dfe9f26bbd6",
+    "Docs/CONFIG.md": "0df558337f3fe51a90f7eef6369b22218309879f",
+    "Docs/UI.md": "33599d1fe7c09f3cd558824bcd13826dd958b302",
+    "Docs/PLAN.md": "317d8e583903d901310755ca96db5eab8f090399",
+    "Docs/TASKS.md": "f2b8f60c28f023946a3e3c4376c0bba14f585902",
+    "Docs/EXECUTION.md": "4a41e269f1a46146e87b83829560294b85890563",
+    "Docs/SKILL.md": "3ee7bf617703e36bda264096154bc2609950deea"
+  }
+}
