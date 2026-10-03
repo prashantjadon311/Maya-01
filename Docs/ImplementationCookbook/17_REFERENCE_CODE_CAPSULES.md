@@ -10,10 +10,14 @@ These code capsules provide authoritative reference implementations for all secu
 # app/policy/broker.py
 import asyncio
 import hashlib
+import html
 import hmac
+from pathlib import Path
+import re
 import time
+from typing import Any, Protocol
 import uuid
-from typing import Protocol
+
 from app.actions.schema import ActionRequest
 from app.policy.risk import RiskLevel
 from app.policy.broker_schema import (
@@ -25,6 +29,55 @@ from app.policy.broker_schema import (
 )
 
 MAX_PENDING_APPROVALS = 10
+MAX_ACTIVE_GRANTS = 10
+ZENITY = Path("/usr/bin/zenity")
+
+SENSITIVE_FLAGS = {
+    "--password",
+    "--passwd",
+    "--token",
+    "--api-key",
+    "--apikey",
+    "--authorization",
+    "--cookie",
+    "--secret",
+}
+
+SENSITIVE_KEY_RE = re.compile(
+    r"(password|passwd|token|api[_-]?key|authorization|cookie|secret)",
+    re.IGNORECASE,
+)
+
+
+def redact_argv(argv: list[str]) -> tuple[str, ...]:
+    output: list[str] = []
+    redact_next = False
+    for item in argv:
+        if redact_next:
+            output.append("<redacted>")
+            redact_next = False
+            continue
+        if "=" in item:
+            flag, value = item.split("=", 1)
+            if flag.lower() in SENSITIVE_FLAGS:
+                output.append(f"{flag}=<redacted>")
+                continue
+        if item.lower() in SENSITIVE_FLAGS:
+            output.append(item)
+            redact_next = True
+            continue
+        output.append(item)
+    return tuple(output)
+
+
+def redact_mapping(value: dict[str, Any]) -> dict[str, Any]:
+    safe: dict[str, Any] = {}
+    for key, item in value.items():
+        if SENSITIVE_KEY_RE.search(key):
+            safe[key] = "<redacted>"
+        else:
+            safe[key] = item
+    return safe
 
 
 class PopupBackend(Protocol):
@@ -32,22 +85,108 @@ class PopupBackend(Protocol):
         self,
         pending: PendingApproval,
         display: ApprovalDisplay,
-    ) -> PopupDecision: ...
+    ) -> str: ...
+
+    async def cancel_request(
+        self,
+        pending_id: str,
+    ) -> None: ...
+
+
+class ZenityPopupBackend:
+    def __init__(self) -> None:
+        self._active: dict[str, asyncio.subprocess.Process] = {}
+        self._lock = asyncio.Lock()
+
+    async def request_decision(
+        self,
+        pending: PendingApproval,
+        display: ApprovalDisplay,
+    ) -> str:
+        if not ZENITY.is_file():
+            return "DENY"
+
+        body_lines = [
+            display.reason,
+            "",
+            f"Tool: {display.tool}",
+            f"Target: {display.target}",
+            f"Risk: {display.risk.value}",
+            f"Fingerprint: {display.action_fingerprint}",
+        ]
+        if display.argv_preview:
+            body_lines.append("Command: " + " ".join(display.argv_preview))
+        if display.cwd:
+            body_lines.append(f"Workspace: {display.cwd}")
+
+        body = html.escape("\n".join(body_lines), quote=False)
+        proc = await asyncio.create_subprocess_exec(
+            str(ZENITY),
+            "--question",
+            "--title",
+            display.title,
+            "--text",
+            body,
+            "--ok-label",
+            "Allow once",
+            "--cancel-label",
+            "Deny",
+            stdin=asyncio.subprocess.DEVNULL,
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+
+        async with self._lock:
+            self._active[pending.pending_id] = proc
+
+        try:
+            rc = await proc.wait()
+            return "ALLOW_ONCE" if rc == 0 else "DENY"
+        finally:
+            async with self._lock:
+                self._active.pop(pending.pending_id, None)
+
+    async def cancel_request(self, pending_id: str) -> None:
+        async with self._lock:
+            proc = self._active.get(pending_id)
+        if proc is None or proc.returncode is not None:
+            return
+        proc.terminate()
+        try:
+            await asyncio.wait_for(proc.wait(), timeout=1.0)
+        except TimeoutError:
+            proc.kill()
+            await proc.wait()
 
 
 class ApprovalBroker:
-    def __init__(self, popup_backend: PopupBackend, timeout_seconds: float = 60.0):
+    def __init__(
+        self,
+        popup_backend: PopupBackend,
+        *,
+        timeout_seconds: float = 60.0,
+    ) -> None:
         self.popup_backend = popup_backend
+        self._popup_backend = popup_backend
         self.timeout_seconds = timeout_seconds
+        self._timeout_seconds = timeout_seconds
         self._pending: dict[str, PendingApproval] = {}
         self._grants: dict[str, ApprovalGrant] = {}
         self._lock = asyncio.Lock()
+        self._closed = False
 
     @staticmethod
-    def compute_action_hash(req: ActionRequest) -> str:
+    def compute_action_hash(request: ActionRequest) -> str:
         """Deterministically hash canonical serialized request payload."""
-        canonical_bytes = req.model_dump_json().encode("utf-8")
-        return hashlib.sha256(canonical_bytes).hexdigest()
+        return hashlib.sha256(request.to_canonical_bytes()).hexdigest()
+
+    def _prune_expired_grants_locked(self, now: float) -> None:
+        expired = [
+            gid for gid, g in self._grants.items()
+            if now > g.expires_at
+        ]
+        for gid in expired:
+            self._grants.pop(gid, None)
 
     async def request_decision(
         self,
@@ -56,6 +195,26 @@ class ApprovalBroker:
         risk: RiskLevel,
     ) -> ApprovalOutcome:
         action_hash = self.compute_action_hash(req)
+        display = ApprovalDisplay(
+            title=f"Security Approval Required ({risk.value})",
+            tool=req.tool,
+            target=req.workspace or req.arguments.get("path") or req.arguments.get("command") or "local",
+            argv_preview=redact_argv(req.arguments.get("argv", [])) if "argv" in req.arguments else (),
+            cwd=req.workspace,
+            reason=reason,
+            risk=risk,
+            timeout_seconds=int(self._timeout_seconds),
+            action_fingerprint=action_hash[:16],
+        )
+        return await self.request_approval(req, display, risk)
+
+    async def request_approval(
+        self,
+        request: ActionRequest,
+        display: ApprovalDisplay,
+        risk: RiskLevel,
+    ) -> ApprovalOutcome:
+        action_hash = self.compute_action_hash(request)
         pending_id = str(uuid.uuid4())
         now = time.monotonic()
 
@@ -63,75 +222,88 @@ class ApprovalBroker:
             pending_id=pending_id,
             action_hash=action_hash,
             created_at=now,
-            expires_at=now + self.timeout_seconds,
-            reason=reason,
+            expires_at=now + self._timeout_seconds,
             risk=risk,
-            request=req,
         )
 
         async with self._lock:
-            # Capacity guard: fail closed/busy when full; never silently evict active pending approval
+            if self._closed:
+                return ApprovalOutcome(decision="DENY", grant=None)
+            self._prune_expired_grants_locked(now)
             if len(self._pending) >= MAX_PENDING_APPROVALS:
-                return ApprovalOutcome(decision=PopupDecision.DENY, grant=None)
+                return ApprovalOutcome(decision="DENY", grant=None)
             self._pending[pending_id] = pending
 
-        display = ApprovalDisplay(
-            title=f"Security Approval Required ({risk.value})",
-            reason=reason,
-            tool=req.tool,
-            action_hash=action_hash,
-            timeout_seconds=int(self.timeout_seconds),
-        )
-
-        decision = PopupDecision.DENY
-        grant_obj: ApprovalGrant | None = None
         try:
-            async with asyncio.timeout(self.timeout_seconds):
-                decision = await self.popup_backend.request_decision(pending, display)
-        except (TimeoutError, asyncio.CancelledError, Exception):
-            decision = PopupDecision.DENY
+            async with asyncio.timeout(self._timeout_seconds):
+                decision = await self._popup_backend.request_decision(pending, display)
+        except asyncio.CancelledError:
+            await self._popup_backend.cancel_request(pending_id)
+            async with self._lock:
+                self._pending.pop(pending_id, None)
+            raise
+        except TimeoutError:
+            await self._popup_backend.cancel_request(pending_id)
+            decision = "DENY"
+        except Exception:
+            await self._popup_backend.cancel_request(pending_id)
+            decision = "DENY"
         finally:
             async with self._lock:
-                # Remove from pending; PENDING is NEVER consumable
                 self._pending.pop(pending_id, None)
 
-                # Only explicit ALLOW_ONCE mints a single-use ApprovalGrant
-                if decision == PopupDecision.ALLOW_ONCE:
-                    grant_id = str(uuid.uuid4())
-                    grant_obj = ApprovalGrant(
-                        grant_id=grant_id,
-                        action_hash=action_hash,
-                        created_at=time.monotonic(),
-                        expires_at=time.monotonic() + self.timeout_seconds,
-                        risk=risk,
-                        source="HUMAN_ALLOW_ONCE",
-                    )
-                    self._grants[grant_id] = grant_obj
+        if decision != "ALLOW_ONCE":
+            return ApprovalOutcome(decision="DENY", grant=None)
 
-        return ApprovalOutcome(decision=decision, grant=grant_obj)
+        now = time.monotonic()
+        async with self._lock:
+            if self._closed:
+                return ApprovalOutcome(decision="DENY", grant=None)
+            self._prune_expired_grants_locked(now)
+            if len(self._grants) >= MAX_ACTIVE_GRANTS:
+                return ApprovalOutcome(decision="DENY", grant=None)
+            grant = ApprovalGrant(
+                grant_id=str(uuid.uuid4()),
+                action_hash=action_hash,
+                created_at=now,
+                expires_at=now + self._timeout_seconds,
+                risk=risk,
+                source="HUMAN_ALLOW_ONCE",
+            )
+            self._grants[grant.grant_id] = grant
 
-    async def consume_grant(self, grant_id: str, request: ActionRequest) -> bool:
-        """Atomically verify and consume a grant in a single critical section."""
-        request_hash = self.compute_action_hash(request)
+        return ApprovalOutcome(decision="ALLOW_ONCE", grant=grant)
+
+    async def consume_grant(
+        self,
+        grant_id: str,
+        request: ActionRequest,
+    ) -> bool:
+        current_hash = self.compute_action_hash(request)
+        now = time.monotonic()
         async with self._lock:
             grant = self._grants.get(grant_id)
             if grant is None:
                 return False
-
-            now = time.monotonic()
             if now > grant.expires_at:
                 self._grants.pop(grant_id, None)
                 return False
-
-            # Constant-time comparison prevents timing attacks
-            if not hmac.compare_digest(grant.action_hash, request_hash):
-                # Hash mismatch invalidates grant immediately
+            if not hmac.compare_digest(grant.action_hash, current_hash):
                 self._grants.pop(grant_id, None)
                 return False
-
-            # Valid grant: atomically pop so it cannot be replayed
             self._grants.pop(grant_id, None)
             return True
+
+    async def aclose(self) -> None:
+        async with self._lock:
+            self._closed = True
+            pending_ids = tuple(self._pending.keys())
+            self._pending.clear()
+            self._grants.clear()
+        await asyncio.gather(
+            *(self._popup_backend.cancel_request(pid) for pid in pending_ids),
+            return_exceptions=True,
+        )
 
     def reset(self) -> None:
         """Invalidate all pending requests and grants upon daemon restart."""

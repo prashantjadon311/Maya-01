@@ -1,8 +1,13 @@
 import ast
 from collections import defaultdict
+from dataclasses import dataclass
 import hashlib
+import json
+import os
 from pathlib import Path
 import re
+import subprocess
+import sys
 from typing import Any
 
 from tools.cookbook.fingerprint import fingerprint_json
@@ -27,6 +32,60 @@ VAGUE_PATTERNS = [
     (re.compile(r"\bchoose between\b", re.IGNORECASE), "choose between"),
     (re.compile(r"\bhttpx or nvidia-riva-client\b", re.IGNORECASE), "httpx or nvidia-riva-client"),
 ]
+
+SECTION_HEADING_RE = re.compile(
+    r"^##\s+(\d+)\.\s+(.*)$",
+    re.MULTILINE,
+)
+
+BASE_SHA_PIN_RE = re.compile(
+    r"Base SHA pinned at [` ]?[0-9a-f]{40}",
+    re.IGNORECASE,
+)
+
+GENERIC_PLACEHOLDER_PATTERNS = [
+    re.compile(
+        r"Standard exact algorithms / security invariants contract",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"Standard failure cases / edge cases contract",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"Standard fakes / fixtures contract",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"Standard adversarial / negative tests contract",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"verified and enforced per phase manifest",
+        re.IGNORECASE,
+    ),
+]
+
+TEST_ID_RE = re.compile(r"\btest_[A-Za-z0-9_]+\b")
+CAPSULE_RE = re.compile(r"\bCAP-[0-9]+[A-Z]?\b")
+
+
+@dataclass(frozen=True)
+class PacketSection:
+    number: int
+    title: str
+    body: str
+
+
+@dataclass(frozen=True)
+class PacketContract:
+    files_created: frozenset[str]
+    files_modified: frozenset[str]
+    files_forbidden: frozenset[str]
+    dependencies: frozenset[str]
+    output_interfaces: frozenset[str]
+    tests: frozenset[str]
+    required_capsules: frozenset[str]
 
 
 def find_repo_root(start_path: Path) -> Path:
@@ -150,148 +209,399 @@ def check_capsule_import(mod_name: str, repo_root: Path, registered_files: set[s
             )
 
 
+def sha256_file(path: Path) -> str:
+    """Compute sha256 hex digest of file bytes."""
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def freeze_artifact_paths(cookbook_root: Path) -> list[Path]:
+    """Return all deterministic paths included in the freeze artifact bundle."""
+    paths: list[Path] = []
+
+    # Machine contracts except authority.json, which contains the hashes.
+    machine = cookbook_root / "machine"
+    if machine.is_dir():
+        for p in sorted(machine.glob("*.json")):
+            if p.name != "authority.json":
+                paths.append(p)
+    else:
+        for p in sorted(cookbook_root.glob("*.json")):
+            if p.name != "authority.json":
+                paths.append(p)
+
+    # Phase packets.
+    phases_dir = cookbook_root / "phases"
+    if phases_dir.is_dir():
+        paths.extend(sorted(phases_dir.glob("PH*.md")))
+
+    # Critical human-readable contracts.
+    for name in [
+        "01_AUTHORITY_MAP.md",
+        "02_REQUIREMENTS.md",
+        "03_CURRENT_CODE_MODEL.md",
+        "04_FINAL_SYSTEM_ARCHITECTURE.md",
+        "05_TRUST_BOUNDARIES.md",
+        "06_STATE_OWNERSHIP.md",
+        "07_OBJECT_LIFETIMES.md",
+        "08_COMPOSITION_ROOT.md",
+        "09_PUBLIC_INTERFACES.md",
+        "10_DATA_SCHEMAS.md",
+        "11_STATE_MACHINES.md",
+        "12_CONCURRENCY.md",
+        "13_ERRORS_RETRIES_CANCELLATION.md",
+        "14_RESOURCE_BUDGET.md",
+        "15_SECURITY_MODEL.md",
+        "16_FILE_OWNERSHIP.md",
+        "17_REFERENCE_CODE_CAPSULES.md",
+        "18_TEST_FIXTURES.md",
+        "19_TEST_MATRIX.md",
+        "20_FAILURE_MATRIX.md",
+        "21_END_TO_END_JOURNEYS.md",
+    ]:
+        p = cookbook_root / name
+        if p.exists():
+            paths.append(p)
+
+    execution = cookbook_root / "execution"
+    if execution.is_dir():
+        paths.extend(sorted(execution.glob("*.md")))
+        paths.extend(sorted(execution.glob("*.json")))
+
+    return paths
+
+
+def compute_artifact_hashes(
+    repo_root: Path,
+    cookbook_root: Path,
+) -> dict[str, str]:
+    """Compute relative-path to sha256 map for all freeze bundle artifacts."""
+    result: dict[str, str] = {}
+
+    resolved_repo = repo_root.resolve()
+    for path in freeze_artifact_paths(cookbook_root):
+        rel = path.resolve().relative_to(resolved_repo).as_posix()
+        result[rel] = sha256_file(path)
+
+    return dict(sorted(result.items()))
+
+
+def compute_artifact_bundle_hash(
+    artifact_hashes: dict[str, str],
+) -> str:
+    """Compute composite sha256 of all artifact hashes in canonical JSON format."""
+    payload = json.dumps(
+        artifact_hashes,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    ).encode("utf-8")
+
+    return hashlib.sha256(payload).hexdigest()
+
+
+def parse_numbered_sections(text: str) -> dict[int, PacketSection]:
+    """Parse 36 numbered sections from phase packet markdown."""
+    matches = list(SECTION_HEADING_RE.finditer(text))
+    sections: dict[int, PacketSection] = {}
+
+    for idx, match in enumerate(matches):
+        number = int(match.group(1))
+        title = match.group(2).strip()
+
+        start = match.end()
+        end = matches[idx + 1].start() if idx + 1 < len(matches) else len(text)
+
+        body = text[start:end].strip()
+
+        if number in sections:
+            raise ValueError(f"duplicate section {number}")
+
+        sections[number] = PacketSection(
+            number=number,
+            title=title,
+            body=body,
+        )
+
+    return sections
+
+
+def _normalize_bullet_value(raw: str) -> str:
+    value = raw.strip()
+    if value.startswith("`") and value.endswith("`"):
+        value = value[1:-1]
+    return value.strip()
+
+
+def parse_bullet_values(section_body: str) -> frozenset[str]:
+    """Extract bullet items as a set of normalized strings."""
+    if re.search(r"^\s*None(?:\.|\s|\(|$)", section_body, re.IGNORECASE):
+        return frozenset()
+
+    values: set[str] = set()
+
+    for line in section_body.splitlines():
+        match = re.match(r"^\s*-\s+(.+?)\s*$", line)
+        if not match:
+            continue
+
+        raw_item = match.group(1).strip()
+        code_match = re.match(r"^`([^`]+)`", raw_item)
+        if code_match:
+            value = code_match.group(1).strip()
+        else:
+            value = _normalize_bullet_value(raw_item)
+            if ":" in value:
+                value = value.split(":", 1)[0].strip()
+
+        values.add(value)
+
+    return frozenset(values)
+
+
+def parse_packet_contract(
+    packet_text: str,
+) -> tuple[dict[int, PacketSection], PacketContract]:
+    """Parse section map and structured contract from phase packet text."""
+    sections = parse_numbered_sections(packet_text)
+
+    tests = set(TEST_ID_RE.findall(sections.get(25, PacketSection(25, "", "")).body))
+    tests.update(TEST_ID_RE.findall(sections.get(26, PacketSection(26, "", "")).body))
+
+    capsules = set(CAPSULE_RE.findall(sections.get(14, PacketSection(14, "", "")).body))
+
+    return sections, PacketContract(
+        files_created=parse_bullet_values(sections.get(5, PacketSection(5, "", "")).body),
+        files_modified=parse_bullet_values(sections.get(6, PacketSection(6, "", "")).body),
+        files_forbidden=parse_bullet_values(sections.get(7, PacketSection(7, "", "")).body),
+        dependencies=parse_bullet_values(sections.get(8, PacketSection(8, "", "")).body),
+        output_interfaces=parse_bullet_values(sections.get(11, PacketSection(11, "", "")).body),
+        tests=frozenset(tests),
+        required_capsules=frozenset(capsules),
+    )
+
+
+def compare_packet_to_manifest(
+    *,
+    phase: Any,
+    contract: PacketContract,
+    issues: list[ValidationIssue],
+) -> None:
+    """Compare parsed packet contract with phase manifest item."""
+    checks = [
+        (
+            "PHASE_PACKET_FILES_CREATED_MISMATCH",
+            contract.files_created,
+            frozenset(phase.files_created),
+        ),
+        (
+            "PHASE_PACKET_FILES_MODIFIED_MISMATCH",
+            contract.files_modified,
+            frozenset(phase.files_modified),
+        ),
+        (
+            "PHASE_PACKET_FILES_FORBIDDEN_MISMATCH",
+            contract.files_forbidden,
+            frozenset(phase.files_forbidden_to_modify),
+        ),
+        (
+            "PHASE_PACKET_DEPENDENCY_MISMATCH",
+            contract.dependencies,
+            frozenset(phase.dependencies),
+        ),
+        (
+            "PHASE_PACKET_INTERFACE_MISMATCH",
+            contract.output_interfaces,
+            frozenset(phase.output_interfaces),
+        ),
+        (
+            "PHASE_PACKET_TEST_MISMATCH",
+            contract.tests,
+            frozenset(phase.tests),
+        ),
+        (
+            "PHASE_PACKET_CAPSULE_MISMATCH",
+            contract.required_capsules,
+            frozenset(phase.required_capsules),
+        ),
+    ]
+
+    for code, packet_value, manifest_value in checks:
+        if packet_value != manifest_value:
+            issues.append(
+                ValidationIssue(
+                    code=code,
+                    path=f"phases/{phase.phase_id}.md",
+                    message=(
+                        f"packet={sorted(packet_value)} "
+                        f"manifest={sorted(manifest_value)}"
+                    ),
+                    severity="critical",
+                )
+            )
+
+
+def validate_section_content(
+    phase_id: str,
+    sections: dict[int, PacketSection],
+    issues: list[ValidationIssue],
+) -> None:
+    """Ensure packet sections contain phase-specific implementation rather than generic placeholders."""
+    for number, section in sections.items():
+        for pattern in GENERIC_PLACEHOLDER_PATTERNS:
+            if pattern.search(section.body):
+                issues.append(
+                    ValidationIssue(
+                        code="PLACEHOLDER_SECTION_CONTENT",
+                        path=f"phases/{phase_id}.md#section-{number}",
+                        message=(
+                            f"Section {number} contains generic placeholder "
+                            "instead of phase-specific implementation contract"
+                        ),
+                        severity="critical",
+                    )
+                )
+
+
+def positive_phase_text(
+    sections: dict[int, PacketSection],
+    *,
+    include: set[int] | None = None,
+) -> str:
+    """Concatenate positive implementation sections (excluding negative/adversarial sections by default)."""
+    if include is None:
+        include = set(range(1, 35)) - {26}
+
+    return "\n".join(
+        sections[n].body
+        for n in sorted(include)
+        if n in sections
+    )
+
+
+def parse_packet(
+    phase_ref: str | Path,
+    cookbook_root: Path | None = None,
+) -> dict[int, PacketSection]:
+    """Parse a phase packet by ID or path and return its section map."""
+    if isinstance(phase_ref, Path):
+        path = phase_ref
+    elif str(phase_ref).endswith(".md"):
+        path = Path(phase_ref)
+    else:
+        root = cookbook_root or (Path(__file__).resolve().parent.parent.parent / "Docs" / "ImplementationCookbook")
+        path = root / "phases" / f"{phase_ref}.md"
+
+    text = path.read_text(encoding="utf-8")
+    return parse_numbered_sections(text)
+
+
+def extract_capsule_python(capsule_id: str, cookbook_root: Path | None = None) -> str:
+    """Extract python source code blocks for a capsule from 17_REFERENCE_CODE_CAPSULES.md."""
+    root = cookbook_root or (Path(__file__).resolve().parent.parent.parent / "Docs" / "ImplementationCookbook")
+    path = root / "17_REFERENCE_CODE_CAPSULES.md"
+    if not path.exists():
+        return ""
+    text = path.read_text(encoding="utf-8")
+    pattern = rf"##+.*?\b{re.escape(capsule_id)}\b(.*?)(?=\n##+|\Z)"
+    match = re.search(pattern, text, re.DOTALL)
+    if not match:
+        return ""
+    block = match.group(1)
+    py_blocks = re.findall(r"```python\s*(.*?)\s*```", block, re.DOTALL)
+    return "\n".join(py_blocks)
+
+
+def verify_existing_test_collectability(
+    repo_root: Path,
+    tests: Any,
+) -> list[ValidationIssue]:
+    """Collect VERIFIED_EXISTING pytest node IDs to ensure they are valid and collectable."""
+    issues: list[ValidationIssue] = []
+    by_file: dict[str, list[str]] = defaultdict(list)
+
+    for test in tests:
+        if getattr(test, "status", None) != "VERIFIED_EXISTING":
+            continue
+
+        if not getattr(test, "pytest_nodeid", None) or not getattr(test, "test_function", None):
+            issues.append(
+                ValidationIssue(
+                    code="VERIFIED_TEST_NODEID_MISSING",
+                    path=f"tests/{getattr(test, 'test_id', 'unknown')}",
+                    message="VERIFIED_EXISTING test has no pytest_nodeid/function",
+                    severity="critical",
+                )
+            )
+            continue
+
+        expected_prefix = f"{test.file}::{test.test_function}"
+
+        # Parametrized node IDs may append [case].
+        if not test.pytest_nodeid.startswith(expected_prefix):
+            issues.append(
+                ValidationIssue(
+                    code="VERIFIED_TEST_NODEID_MISMATCH",
+                    path=f"tests/{test.test_id}",
+                    message=(
+                        f"nodeid={test.pytest_nodeid!r}, "
+                        f"expected prefix={expected_prefix!r}"
+                    ),
+                    severity="critical",
+                )
+            )
+            continue
+
+        if (repo_root / test.file).exists():
+            by_file[test.file].append(test.pytest_nodeid)
+
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(repo_root)
+
+    for file_name, nodeids in sorted(by_file.items()):
+        try:
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "pytest",
+                    "--collect-only",
+                    "-q",
+                    *nodeids,
+                ],
+                cwd=repo_root,
+                env=env,
+                text=True,
+                capture_output=True,
+            )
+
+            if result.returncode != 0:
+                issues.append(
+                    ValidationIssue(
+                        code="VERIFIED_TEST_NOT_COLLECTABLE",
+                        path=file_name,
+                        message=result.stdout[-2000:] + result.stderr[-2000:],
+                        severity="critical",
+                    )
+                )
+        except Exception as exc:
+            issues.append(
+                ValidationIssue(
+                    code="VERIFIED_TEST_NOT_COLLECTABLE",
+                    path=file_name,
+                    message=f"Collection execution error: {exc}",
+                    severity="critical",
+                )
+            )
+
+    return issues
+
+
 def validate_cookbook(model: CookbookModel) -> list[ValidationIssue]:
     """Deterministically validate all cookbook models and manifest constraints."""
     issues: list[ValidationIssue] = []
     repo_root = find_repo_root(model.root_path)
 
-    # 1. Requirement validation & duplicate check
-    req_ids = set()
-    req_map = {}
-    for req in model.requirements.requirements:
-        if req.id in req_ids:
-            issues.append(
-                ValidationIssue(
-                    code="DUPLICATE_REQUIREMENT_ID",
-                    path=f"requirements/{req.id}",
-                    message=f"Duplicate requirement ID: {req.id}",
-                    severity="critical",
-                )
-            )
-        req_ids.add(req.id)
-        req_map[req.id] = req
-
-        if not req.phase and not req.out_of_v1_rationale:
-            issues.append(
-                ValidationIssue(
-                    code="UNMAPPED_REQUIREMENT",
-                    path=f"requirements/{req.id}",
-                    message=f"Requirement {req.id} is unmapped and has no out_of_v1_rationale",
-                    severity="critical",
-                )
-            )
-        elif req.phase:
-            if not req.test_id:
-                issues.append(
-                    ValidationIssue(
-                        code="MISSING_TEST",
-                        path=f"requirements/{req.id}",
-                        message=f"Requirement {req.id} in phase {req.phase} has no test_id",
-                        severity="important",
-                    )
-                )
-
-    # 1b. Authority coverage check
-    if model.authority_coverage is not None:
-        real_heading_counts: dict[tuple[str, str], int] = defaultdict(int)
-        for doc_rel in model.authority.authority_order:
-            doc_path = repo_root / doc_rel
-            if doc_path.exists():
-                for h in extract_markdown_headings(doc_path):
-                    real_heading_counts[(doc_rel, h)] += 1
-
-        seen_cov_counts: dict[tuple[str, str], int] = defaultdict(int)
-        for sec in model.authority_coverage.sections:
-            cov_key = (sec.source, sec.heading)
-            seen_cov_counts[cov_key] += 1
-            max_allowed = real_heading_counts.get(cov_key, 1)
-            if seen_cov_counts[cov_key] > max_allowed:
-                issues.append(
-                    ValidationIssue(
-                        code="AUTHORITY_COVERAGE_DUPLICATE",
-                        path=f"authority_coverage/{sec.source}#{sec.heading}",
-                        message=f"Duplicate authority coverage heading: {sec.source}#{sec.heading}",
-                        severity="critical",
-                    )
-                )
-
-            classification = sec.classification if hasattr(sec, "classification") and sec.classification else ("NORMATIVE" if getattr(sec, "normative", True) else "INFORMATIVE")
-            if classification == "NORMATIVE":
-                if not sec.requirement_ids:
-                    issues.append(
-                        ValidationIssue(
-                            code="UNMAPPED_AUTHORITY_SECTION",
-                            path=f"authority_coverage/{sec.source}#{sec.heading}",
-                            message=f"Normative section '{sec.heading}' in {sec.source} has no mapped requirements",
-                            severity="critical",
-                        )
-                    )
-            elif classification == "INFORMATIVE":
-                reason = sec.reason or sec.notes
-                if not reason or not reason.strip():
-                    issues.append(
-                        ValidationIssue(
-                            code="INFORMATIVE_SECTION_MISSING_REASON",
-                            path=f"authority_coverage/{sec.source}#{sec.heading}",
-                            message=f"Informative section '{sec.heading}' in {sec.source} has no non-empty reason",
-                            severity="critical",
-                        )
-                    )
-            elif classification == "EXPLICIT_OUT_OF_V1":
-                reason = sec.reason or sec.notes
-                if not reason or not reason.strip():
-                    issues.append(
-                        ValidationIssue(
-                            code="OUT_OF_V1_MISSING_REASON",
-                            path=f"authority_coverage/{sec.source}#{sec.heading}",
-                            message=f"Explicit out-of-V1 section '{sec.heading}' in {sec.source} has no governing authority reason",
-                            severity="critical",
-                        )
-                    )
-
-            for rid in sec.requirement_ids:
-                if rid not in req_ids:
-                    issues.append(
-                        ValidationIssue(
-                            code="UNKNOWN_REQUIREMENT_IN_AUTHORITY",
-                            path=f"authority_coverage/{sec.source}#{sec.heading}/{rid}",
-                            message=f"Authority coverage references unknown requirement ID: {rid}",
-                            severity="critical",
-                        )
-                    )
-
-        # Dynamic authority heading extraction (run when status is not DRAFT)
-        if model.authority.status != "DRAFT":
-            for doc_rel in model.authority.authority_order:
-                doc_path = repo_root / doc_rel
-                if doc_path.exists():
-                    real_headings = extract_markdown_headings(doc_path)
-                    real_set = set(real_headings)
-                    cov_headings_for_doc = {s.heading for s in model.authority_coverage.sections if s.source == doc_rel}
-
-                    for rh in real_headings:
-                        if rh not in cov_headings_for_doc:
-                            issues.append(
-                                ValidationIssue(
-                                    code="AUTHORITY_HEADING_UNTRACKED",
-                                    path=f"authority_coverage/{doc_rel}#{rh}",
-                                    message=f"Heading '{rh}' in {doc_rel} has no entry in authority_coverage.json",
-                                    severity="critical",
-                                )
-                            )
-
-                    for ch in cov_headings_for_doc:
-                        if ch not in real_set:
-                            issues.append(
-                                ValidationIssue(
-                                    code="AUTHORITY_COVERAGE_STALE",
-                                    path=f"authority_coverage/{doc_rel}#{ch}",
-                                    message=f"Authority coverage references nonexistent heading '{ch}' in {doc_rel}",
-                                    severity="critical",
-                                )
-                            )
-
-    # 2. Test validation & duplicate check
+    # 1. Tests indexing and verification
     test_ids = set()
     test_map = {}
     for t in model.tests.tests:
@@ -369,40 +679,214 @@ def validate_cookbook(model: CookbookModel) -> list[ValidationIssue]:
                         )
                     )
 
-    # Check that requirement tests exist in test_map and match requirement
+    # 1b. Batch test collectability check
+    issues.extend(verify_existing_test_collectability(repo_root, model.tests.tests))
+
+    # 2. Requirement validation & multi-test evidence mapping
+    req_ids = set()
+    req_map = {}
     for req in model.requirements.requirements:
-        if req.phase and req.test_id:
-            if req.test_id not in test_ids:
+        if req.id in req_ids:
+            issues.append(
+                ValidationIssue(
+                    code="DUPLICATE_REQUIREMENT_ID",
+                    path=f"requirements/{req.id}",
+                    message=f"Duplicate requirement ID: {req.id}",
+                    severity="critical",
+                )
+            )
+        req_ids.add(req.id)
+        req_map[req.id] = req
+
+        if not req.phase and not req.out_of_v1_rationale:
+            issues.append(
+                ValidationIssue(
+                    code="UNMAPPED_REQUIREMENT",
+                    path=f"requirements/{req.id}",
+                    message=f"Requirement {req.id} is unmapped and has no out_of_v1_rationale",
+                    severity="critical",
+                )
+            )
+        elif req.phase:
+            if not req.test_ids:
                 issues.append(
                     ValidationIssue(
                         code="UNTESTED_ACCEPTANCE",
                         path=f"requirements/{req.id}",
-                        message=f"Test {req.test_id} for requirement {req.id} not found in tests.json",
+                        message=f"Requirement {req.id} in phase {req.phase} has no test_ids",
                         severity="critical",
                     )
                 )
             else:
-                test_rec = test_map[req.test_id]
-                if test_rec.requirement_id != req.id:
+                for test_id in req.test_ids:
+                    if test_id not in test_ids:
+                        issues.append(
+                            ValidationIssue(
+                                code="UNTESTED_ACCEPTANCE",
+                                path=f"requirements/{req.id}",
+                                message=f"Test {test_id} for requirement {req.id} not found in tests.json",
+                                severity="critical",
+                            )
+                        )
+                    else:
+                        test_rec = test_map[test_id]
+                        if test_rec.requirement_id != req.id:
+                            issues.append(
+                                ValidationIssue(
+                                    code="REQUIREMENT_TEST_MISMATCH",
+                                    path=f"requirements/{req.id}",
+                                    message=f"Test {test_id} requirement_id '{test_rec.requirement_id}' != '{req.id}'",
+                                    severity="critical",
+                                )
+                            )
+                        if test_rec.phase != req.phase:
+                            issues.append(
+                                ValidationIssue(
+                                    code="REQUIREMENT_PHASE_MISMATCH",
+                                    path=f"requirements/{req.id}",
+                                    message=f"Test {test_id} phase '{test_rec.phase}' != requirement phase '{req.phase}'",
+                                    severity="critical",
+                                )
+                            )
+
+    # 3. Authority coverage check
+    if model.authority_coverage is not None:
+        real_heading_counts: dict[tuple[str, str], int] = defaultdict(int)
+        headings_by_source: dict[str, list[str]] = defaultdict(list)
+        for doc_rel in model.authority.authority_order:
+            doc_path = repo_root / doc_rel
+            if doc_path.exists():
+                headings = extract_markdown_headings(doc_path)
+                headings_by_source[doc_rel] = headings
+                for h in headings:
+                    real_heading_counts[(doc_rel, h)] += 1
+
+        authority_rank = {doc: i for i, doc in enumerate(model.authority.authority_order)}
+
+        seen_cov_counts: dict[tuple[str, str], int] = defaultdict(int)
+        for sec in model.authority_coverage.sections:
+            cov_key = (sec.source, sec.heading)
+            seen_cov_counts[cov_key] += 1
+            max_allowed = real_heading_counts.get(cov_key, 1)
+            if seen_cov_counts[cov_key] > max_allowed:
+                issues.append(
+                    ValidationIssue(
+                        code="AUTHORITY_COVERAGE_DUPLICATE",
+                        path=f"authority_coverage/{sec.source}#{sec.heading}",
+                        message=f"Duplicate authority coverage heading: {sec.source}#{sec.heading}",
+                        severity="critical",
+                    )
+                )
+
+            classification = getattr(sec, "classification", "NORMATIVE")
+            if classification == "NORMATIVE":
+                if not sec.requirement_ids:
                     issues.append(
                         ValidationIssue(
-                            code="REQUIREMENT_TEST_MISMATCH",
-                            path=f"requirements/{req.id}",
-                            message=f"Test {req.test_id} requirement_id '{test_rec.requirement_id}' != '{req.id}'",
+                            code="UNMAPPED_AUTHORITY_SECTION",
+                            path=f"authority_coverage/{sec.source}#{sec.heading}",
+                            message=f"Normative section '{sec.heading}' in {sec.source} has no mapped requirements",
                             severity="critical",
                         )
                     )
-                if test_rec.phase != req.phase:
+            elif classification == "INFORMATIVE":
+                reason = sec.reason or sec.notes
+                if not reason or not reason.strip():
                     issues.append(
                         ValidationIssue(
-                            code="REQUIREMENT_PHASE_MISMATCH",
-                            path=f"requirements/{req.id}",
-                            message=f"Test {req.test_id} phase '{test_rec.phase}' != requirement phase '{req.phase}'",
+                            code="INFORMATIVE_SECTION_MISSING_REASON",
+                            path=f"authority_coverage/{sec.source}#{sec.heading}",
+                            message=f"Informative section '{sec.heading}' in {sec.source} has no non-empty reason",
+                            severity="critical",
+                        )
+                    )
+            elif classification == "EXPLICIT_OUT_OF_V1":
+                reason = sec.reason or sec.notes
+                if not reason or not reason.strip():
+                    issues.append(
+                        ValidationIssue(
+                            code="OUT_OF_V1_MISSING_REASON",
+                            path=f"authority_coverage/{sec.source}#{sec.heading}",
+                            message=f"Explicit out-of-V1 section '{sec.heading}' in {sec.source} has no governing authority reason",
                             severity="critical",
                         )
                     )
 
-    # 3. Interfaces validation & duplicates
+                if not sec.exclusion_source or not sec.exclusion_heading:
+                    issues.append(
+                        ValidationIssue(
+                            code="OUT_OF_V1_AUTHORITY_UNVERIFIED",
+                            path=f"authority_coverage/{sec.source}#{sec.heading}",
+                            message=f"Explicit out-of-V1 section '{sec.heading}' missing exclusion_source or exclusion_heading",
+                            severity="critical",
+                        )
+                    )
+                else:
+                    source_headings = set(headings_by_source.get(sec.exclusion_source, []))
+                    if sec.exclusion_heading not in source_headings:
+                        issues.append(
+                            ValidationIssue(
+                                code="OUT_OF_V1_AUTHORITY_UNVERIFIED",
+                                path=f"authority_coverage/{sec.source}#{sec.heading}",
+                                message=f"Exclusion heading '{sec.exclusion_heading}' not found in exclusion source '{sec.exclusion_source}'",
+                                severity="critical",
+                            )
+                        )
+                    source_rank = authority_rank.get(sec.source, 10_000)
+                    exclusion_rank = authority_rank.get(sec.exclusion_source, 10_000)
+                    if exclusion_rank > source_rank:
+                        issues.append(
+                            ValidationIssue(
+                                code="OUT_OF_V1_AUTHORITY_UNVERIFIED",
+                                path=f"authority_coverage/{sec.source}#{sec.heading}",
+                                message=f"Exclusion source '{sec.exclusion_source}' (rank {exclusion_rank}) has lower authority than source '{sec.source}' (rank {source_rank})",
+                                severity="critical",
+                            )
+                        )
+
+            for rid in sec.requirement_ids:
+                if rid not in req_ids:
+                    issues.append(
+                        ValidationIssue(
+                            code="UNKNOWN_REQUIREMENT_IN_AUTHORITY",
+                            path=f"authority_coverage/{sec.source}#{sec.heading}/{rid}",
+                            message=f"Authority coverage references unknown requirement ID: {rid}",
+                            severity="critical",
+                        )
+                    )
+
+        # Dynamic authority heading extraction (run when status is not DRAFT)
+        if model.authority.status != "DRAFT":
+            for doc_rel in model.authority.authority_order:
+                doc_path = repo_root / doc_rel
+                if doc_path.exists():
+                    real_headings = extract_markdown_headings(doc_path)
+                    real_set = set(real_headings)
+                    cov_headings_for_doc = {s.heading for s in model.authority_coverage.sections if s.source == doc_rel}
+
+                    for rh in real_headings:
+                        if rh not in cov_headings_for_doc:
+                            issues.append(
+                                ValidationIssue(
+                                    code="AUTHORITY_HEADING_UNTRACKED",
+                                    path=f"authority_coverage/{doc_rel}#{rh}",
+                                    message=f"Heading '{rh}' in {doc_rel} has no entry in authority_coverage.json",
+                                    severity="critical",
+                                )
+                            )
+
+                    for ch in cov_headings_for_doc:
+                        if ch not in real_set:
+                            issues.append(
+                                ValidationIssue(
+                                    code="AUTHORITY_COVERAGE_STALE",
+                                    path=f"authority_coverage/{doc_rel}#{ch}",
+                                    message=f"Authority coverage references nonexistent heading '{ch}' in {doc_rel}",
+                                    severity="critical",
+                                )
+                            )
+
+    # 4. Interfaces validation & duplicates
     iface_names = set()
     for iface in model.interfaces.interfaces:
         if iface.name in iface_names:
@@ -437,7 +921,75 @@ def validate_cookbook(model: CookbookModel) -> list[ValidationIssue]:
                     )
                 )
 
-    # 4. File ownership
+    # 5. Resource bounds validation
+    bound_ids = set()
+    if model.resource_bounds is not None:
+        for bound in model.resource_bounds.bounds:
+            if bound.id in bound_ids:
+                issues.append(
+                    ValidationIssue(
+                        code="DUPLICATE_RESOURCE_BOUND_ID",
+                        path=f"resource_bounds/{bound.id}",
+                        message=f"Duplicate resource bound ID: {bound.id}",
+                        severity="critical",
+                    )
+                )
+            bound_ids.add(bound.id)
+
+            if not bound.owner or not bound.owner.strip():
+                issues.append(
+                    ValidationIssue(
+                        code="RESOURCE_BOUND_MISSING_OWNER",
+                        path=f"resource_bounds/{bound.id}",
+                        message=f"Resource bound {bound.id} has empty owner",
+                        severity="critical",
+                    )
+                )
+
+            if bound.phase not in CANONICAL_PHASES:
+                issues.append(
+                    ValidationIssue(
+                        code="UNKNOWN_RESOURCE_BOUND_PHASE",
+                        path=f"resource_bounds/{bound.id}",
+                        message=f"Resource bound {bound.id} has unknown phase: {bound.phase}",
+                        severity="critical",
+                    )
+                )
+
+            if bound.max_count is None and bound.max_bytes is None and bound.timeout_seconds is None:
+                issues.append(
+                    ValidationIssue(
+                        code="RESOURCE_BOUND_MISSING_NUMERIC_LIMIT",
+                        path=f"resource_bounds/{bound.id}",
+                        message=f"Resource bound {bound.id} must declare at least one numeric limit (max_count, max_bytes, timeout_seconds)",
+                        severity="critical",
+                    )
+                )
+
+            if not bound.overflow_policy or not bound.overflow_policy.strip():
+                issues.append(
+                    ValidationIssue(
+                        code="RESOURCE_BOUND_MISSING_OVERFLOW_POLICY",
+                        path=f"resource_bounds/{bound.id}",
+                        message=f"Resource bound {bound.id} has empty overflow policy",
+                        severity="critical",
+                    )
+                )
+
+        # Check that interface resource bounds exist
+        for iface in model.interfaces.interfaces:
+            for bound_id in iface.resource_bound_ids:
+                if bound_id not in bound_ids:
+                    issues.append(
+                        ValidationIssue(
+                            code="UNKNOWN_RESOURCE_BOUND_REFERENCE",
+                            path=f"interfaces/{iface.name}/{bound_id}",
+                            message=f"Interface {iface.name} references unknown resource bound ID: {bound_id}",
+                            severity="critical",
+                        )
+                    )
+
+    # 6. File ownership
     seen_file_paths = set()
     for f in model.file_owners.files:
         if f.path in seen_file_paths:
@@ -461,7 +1013,7 @@ def validate_cookbook(model: CookbookModel) -> list[ValidationIssue]:
                 )
             )
 
-    # 5. Phase manifest validation
+    # 7. Phase manifest validation
     file_owner_map = {f.path: f for f in model.file_owners.files}
     iface_owner_map = {i.name: i.owning_phase for i in model.interfaces.interfaces}
 
@@ -488,7 +1040,6 @@ def validate_cookbook(model: CookbookModel) -> list[ValidationIssue]:
         cap_text = capsule_file.read_text(encoding="utf-8")
         defined_capsules = set(re.findall(r"\bCAP-[0-9A-Za-z_-]+\b", cap_text))
     else:
-        # Fallback for minimal fixture to read defined capsule IDs
         repo_capsule = repo_root / "Docs" / "ImplementationCookbook" / "17_REFERENCE_CODE_CAPSULES.md"
         if repo_capsule.is_file():
             cap_text = repo_capsule.read_text(encoding="utf-8")
@@ -640,7 +1191,7 @@ def validate_cookbook(model: CookbookModel) -> list[ValidationIssue]:
                     )
                 )
 
-    # 6. Dependencies and cycle detection
+    # 8. Dependencies and cycle detection
     edge_dicts = []
     seen_edges = set()
     for edge in model.dependencies.edges:
@@ -691,7 +1242,6 @@ def validate_cookbook(model: CookbookModel) -> list[ValidationIssue]:
 
             edge_dicts.append({"from": u, "to": v})
 
-    # Run cycle detection only on non-self edges to avoid duplicate issue reporting
     non_self_edges = [e for e in edge_dicts if e["from"] != e["to"]]
     cycles = detect_cycles(model.dependencies.components, non_self_edges)
     for c in cycles:
@@ -704,7 +1254,6 @@ def validate_cookbook(model: CookbookModel) -> list[ValidationIssue]:
             )
         )
 
-    # Check forbidden edges
     for f_edge in model.dependencies.forbidden_edges:
         f_from = f_edge.from_ if hasattr(f_edge, "from_") else (f_edge.get("from") or f_edge.get("from_"))
         f_to = f_edge.to if hasattr(f_edge, "to") else f_edge.get("to")
@@ -721,7 +1270,7 @@ def validate_cookbook(model: CookbookModel) -> list[ValidationIssue]:
                     )
                 )
 
-    # 7. AST Capsule verification (if capsule file exists)
+    # 9. AST Capsule verification (if capsule file exists)
     if capsule_file and capsule_file.is_file():
         registered_file_set = {f.path for f in model.file_owners.files}
         py_blocks = re.findall(r"```python\s*(.*?)\s*```", cap_text, re.DOTALL)
@@ -746,7 +1295,7 @@ def validate_cookbook(model: CookbookModel) -> list[ValidationIssue]:
                     if node.module:
                         check_capsule_import(node.module, repo_root, registered_file_set, issues)
 
-    # 8. Phase packet verification (if phases/ directory exists)
+    # 10. Phase packet verification (if phases/ directory exists)
     phases_dir = None
     if (model.root_path / "phases").is_dir():
         phases_dir = model.root_path / "phases"
@@ -755,6 +1304,7 @@ def validate_cookbook(model: CookbookModel) -> list[ValidationIssue]:
 
     if phases_dir and phases_dir.is_dir():
         manifest_phase_ids = {p.phase_id for p in model.phase_manifest.phases if p.phase_id.startswith("PH") and int(p.phase_id[2:]) >= 50}
+        phase_obj_map = {p.phase_id: p for p in model.phase_manifest.phases}
         for pid in sorted(manifest_phase_ids):
             packet_path = phases_dir / f"{pid}.md"
             if not packet_path.exists():
@@ -768,6 +1318,17 @@ def validate_cookbook(model: CookbookModel) -> list[ValidationIssue]:
                 )
                 continue
             packet_content = packet_path.read_text(encoding="utf-8")
+
+            # Check for stale phase base SHA pin
+            if BASE_SHA_PIN_RE.search(packet_content):
+                issues.append(
+                    ValidationIssue(
+                        code="STALE_PHASE_BASE_SHA",
+                        path=f"phases/{pid}.md",
+                        message=f"Phase packet {pid}.md contains hardcoded pre-merge base SHA pin",
+                        severity="critical",
+                    )
+                )
 
             # Check vague phrases
             for pat, phrase_name in VAGUE_PATTERNS:
@@ -819,7 +1380,24 @@ def validate_cookbook(model: CookbookModel) -> list[ValidationIssue]:
                     )
                 )
 
-    # 9. Freeze gate check & fingerprint verification
+            # Parse packet contract and compare to manifest
+            try:
+                sections, contract = parse_packet_contract(packet_content)
+                validate_section_content(pid, sections, issues)
+                phase_obj = phase_obj_map.get(pid)
+                if phase_obj:
+                    compare_packet_to_manifest(phase=phase_obj, contract=contract, issues=issues)
+            except Exception as exc:
+                issues.append(
+                    ValidationIssue(
+                        code="PHASE_PACKET_PARSE_ERROR",
+                        path=f"phases/{pid}.md",
+                        message=f"Failed to parse packet contract for {pid}.md: {exc}",
+                        severity="critical",
+                    )
+                )
+
+    # 11. Freeze gate check & fingerprint verification
     if model.authority.status == "FROZEN":
         machine_dir = model.root_path / "machine" if (model.root_path / "machine").is_dir() else model.root_path
 
@@ -882,6 +1460,54 @@ def validate_cookbook(model: CookbookModel) -> list[ValidationIssue]:
                     )
                 )
 
+        # Check artifact hashes
+        if model.authority.artifact_hashes:
+            actual_hashes = compute_artifact_hashes(repo_root, model.root_path)
+            for exp_rel, exp_hash in model.authority.artifact_hashes.items():
+                if exp_rel not in actual_hashes:
+                    issues.append(
+                        ValidationIssue(
+                            code="FREEZE_ARTIFACT_MISSING",
+                            path=f"authority/artifact_hashes/{exp_rel}",
+                            message=f"Freeze artifact missing from disk: {exp_rel}",
+                            severity="critical",
+                        )
+                    )
+                elif actual_hashes[exp_rel] != exp_hash:
+                    issues.append(
+                        ValidationIssue(
+                            code="FREEZE_ARTIFACT_HASH_MISMATCH",
+                            path=f"authority/artifact_hashes/{exp_rel}",
+                            message=f"Artifact hash mismatch for {exp_rel}: expected {exp_hash}, got {actual_hashes[exp_rel]}",
+                            severity="critical",
+                        )
+                    )
+
+            for act_rel in actual_hashes:
+                if act_rel not in model.authority.artifact_hashes:
+                    issues.append(
+                        ValidationIssue(
+                            code="FREEZE_ARTIFACT_UNEXPECTED",
+                            path=f"authority/artifact_hashes/{act_rel}",
+                            message=f"Unexpected artifact present in cookbook but missing from freeze hashes: {act_rel}",
+                            severity="critical",
+                        )
+                    )
+
+        # Check artifact bundle hash
+        if model.authority.artifact_bundle_hash:
+            actual_hashes = compute_artifact_hashes(repo_root, model.root_path)
+            actual_bundle_hash = compute_artifact_bundle_hash(actual_hashes)
+            if actual_bundle_hash != model.authority.artifact_bundle_hash:
+                issues.append(
+                    ValidationIssue(
+                        code="FREEZE_BUNDLE_HASH_MISMATCH",
+                        path="authority/artifact_bundle_hash",
+                        message=f"Artifact bundle hash mismatch: expected {model.authority.artifact_bundle_hash}, got {actual_bundle_hash}",
+                        severity="critical",
+                    )
+                )
+
         unresolved = [i for i in issues if i.severity in ("critical", "important")]
         if unresolved:
             issues.append(
@@ -909,13 +1535,19 @@ def compute_freeze_counters(model: CookbookModel, issues: list[ValidationIssue])
     # 2. UNTESTED_ACCEPTANCE_CRITERIA
     untested_crit = sum(
         1 for r in model.requirements.requirements
-        if r.phase and (not r.test_id or r.test_id not in test_ids)
+        if r.phase and (not r.test_ids or not all(tid in test_ids for tid in r.test_ids))
     )
 
     # 3. UNRESOLVED_PUBLIC_INTERFACES
     unresolved_ifaces = sum(
         1 for i in issues
-        if i.code in ("DUPLICATE_INTERFACE", "UNKNOWN_OUTPUT_INTERFACE", "INTERFACE_OWNER_MISMATCH", "PHASE_PACKET_INTERFACE_MISMATCH")
+        if i.code in (
+            "DUPLICATE_INTERFACE",
+            "UNKNOWN_OUTPUT_INTERFACE",
+            "INTERFACE_OWNER_MISMATCH",
+            "PHASE_PACKET_INTERFACE_MISMATCH",
+            "UNKNOWN_RESOURCE_BOUND_REFERENCE",
+        )
     )
 
     # 4. UNRESOLVED_SECURITY_INTERFACES
@@ -927,19 +1559,43 @@ def compute_freeze_counters(model: CookbookModel, issues: list[ValidationIssue])
     # 5. UNOWNED_FUTURE_FILES
     unowned_files = sum(
         1 for i in issues
-        if i.code in ("UNOWNED_FILE", "FILE_OWNER_MISMATCH", "UNAUTHORIZED_MODIFIER", "DUPLICATE_FILE_OWNER_PATH", "PHASE_PACKET_MANIFEST_FILE_MISMATCH")
+        if i.code in (
+            "UNOWNED_FILE",
+            "FILE_OWNER_MISMATCH",
+            "UNAUTHORIZED_MODIFIER",
+            "DUPLICATE_FILE_OWNER_PATH",
+            "PHASE_PACKET_MANIFEST_FILE_MISMATCH",
+            "PHASE_PACKET_FILES_CREATED_MISMATCH",
+            "PHASE_PACKET_FILES_MODIFIED_MISMATCH",
+            "PHASE_PACKET_FILES_FORBIDDEN_MISMATCH",
+        )
     )
 
     # 6. CIRCULAR_DEPENDENCIES
     circular_deps = sum(
         1 for i in issues
-        if i.code in ("CIRCULAR_DEPENDENCY", "ILLEGAL_DEPENDENCY", "PHASE_SELF_DEPENDENCY", "UNKNOWN_DEPENDENCY_PHASE", "OUT_OF_ORDER_PHASE_DEPENDENCY", "DUPLICATE_DEPENDENCY_EDGE")
+        if i.code in (
+            "CIRCULAR_DEPENDENCY",
+            "ILLEGAL_DEPENDENCY",
+            "PHASE_SELF_DEPENDENCY",
+            "UNKNOWN_DEPENDENCY_PHASE",
+            "OUT_OF_ORDER_PHASE_DEPENDENCY",
+            "DUPLICATE_DEPENDENCY_EDGE",
+            "PHASE_PACKET_DEPENDENCY_MISMATCH",
+        )
     )
 
     # 7. UNBOUNDED_RESIDENT_STRUCTURES
     unbounded = sum(
         1 for i in issues
-        if i.code == "UNBOUNDED_RESOURCE"
+        if i.code in (
+            "UNBOUNDED_RESOURCE",
+            "RESOURCE_BOUND_MISSING_NUMERIC_LIMIT",
+            "RESOURCE_BOUND_MISSING_OWNER",
+            "RESOURCE_BOUND_MISSING_OVERFLOW_POLICY",
+            "DUPLICATE_RESOURCE_BOUND_ID",
+            "UNKNOWN_RESOURCE_BOUND_PHASE",
+        )
     )
 
     # 8. CRITICAL_GAPS
@@ -957,7 +1613,13 @@ def compute_freeze_counters(model: CookbookModel, issues: list[ValidationIssue])
     # 10. GUESS_REQUIRED_IMPLEMENTATION_ITEMS
     guess_required = sum(
         1 for i in issues
-        if i.code in ("GUESS_REQUIRED", "VAGUE_SPECIFICATION", "PLACEHOLDER_FOUND")
+        if i.code in (
+            "GUESS_REQUIRED",
+            "VAGUE_SPECIFICATION",
+            "PLACEHOLDER_FOUND",
+            "PLACEHOLDER_SECTION_CONTENT",
+            "STALE_PHASE_BASE_SHA",
+        )
     )
 
     return {

@@ -65,8 +65,9 @@
       "files_created": [
         "app/ai/base.py",
         "app/ai/nvidia.py",
-        "tests/test_nvidia_provider.py",
-        "tests/fakes/fake_nvidia.py"
+        "app/ai/schema.py",
+        "tests/fakes/fake_nvidia.py",
+        "tests/test_nvidia_provider.py"
       ],
       "files_modified": [
         "app/core/config.py",
@@ -81,12 +82,15 @@
       ],
       "required_capsules": [],
       "tests": [
-        "test_nvidia_client_configuration",
-        "test_reasoning_trace_not_leaked",
         "test_ai_provider_protocol_compliance",
-        "test_nvidia_zero_sdk_retries",
+        "test_malformed_tool_call_rejected",
+        "test_missing_api_key_fails_fast",
+        "test_nvidia_client_configuration",
         "test_nvidia_streaming_tool_call_parsing",
-        "test_provider_tests_offline_no_quota"
+        "test_nvidia_zero_sdk_retries",
+        "test_provider_tests_offline_no_quota",
+        "test_reasoning_filter_split_tags",
+        "test_reasoning_trace_not_leaked"
       ],
       "acceptance_criteria": [
         "Reusable AsyncOpenAI client targeting NVIDIA base URL",
@@ -115,11 +119,12 @@
         "Docs/SECURITY.md"
       ],
       "files_created": [
-        "app/core/command_router.py",
         "app/agents/model.py",
         "app/agents/runtime.py",
-        "tests/test_command_router.py",
-        "tests/test_agent_runtime.py"
+        "app/agents/verifier.py",
+        "app/core/command_router.py",
+        "tests/test_agent_runtime.py",
+        "tests/test_command_router.py"
       ],
       "files_modified": [
         "app/core/dispatcher.py"
@@ -174,8 +179,7 @@
         "app/voice/wake.py",
         "app/voice/recorder.py",
         "tests/test_voice_wake.py",
-        "tests/fakes/fake_voice.py",
-        "app/voice/tts.py"
+        "tests/fakes/fake_voice.py"
       ],
       "files_modified": [
         "app/core/config.py",
@@ -201,8 +205,7 @@
         "test_no_stt_before_wake",
         "test_command_segment_begins_after_wake",
         "test_disabling_listen_closes_audio_stream",
-        "test_command_recording_vad_stop",
-        "test_tts_toggle_and_resource_safety"
+        "test_command_recording_vad_stop"
       ],
       "acceptance_criteria": [
         "Pre-wake audio confined to memory-only ring buffer with zero network transmission",
@@ -212,8 +215,7 @@
       ],
       "output_interfaces": [
         "WakeDetector.process_chunk",
-        "AudioSource.read_frames",
-        "TTSController.speak_response"
+        "AudioSource.read_frames"
       ],
       "stop_conditions": [
         "openWakeWord RSS exceeds 100MB",
@@ -292,9 +294,11 @@
       ],
       "required_capsules": [],
       "tests": [
+        "test_state_event_bus_overflow_drops_oldest",
         "test_tray_dbus_registration",
+        "test_tray_injected_control_callbacks",
         "test_tray_menu_actions_and_state_sync",
-        "test_tray_injected_control_callbacks"
+        "test_tray_menu_actions_unauthorized_call_denied"
       ],
       "acceptance_criteria": [
         "Freedesktop StatusNotifierItem registered over session D-Bus",
@@ -502,59 +506,60 @@
       "required_capsules": [],
       "tests": [
         "test_frontend_assets_local_and_no_node_runtime",
-        "test_ui_vanilla_tech_stack",
-        "test_ui_asset_performance_budget",
-        "test_ui_visual_system_tokens",
-        "test_ui_color_tokens",
-        "test_ui_typography_stack",
-        "test_ui_radius_and_border",
-        "test_ui_background_gradient",
+        "test_tts_toggle_disabled_in_v1",
+        "test_ui_accessibility_and_reduced_motion",
+        "test_ui_agent_settings_drawer",
         "test_ui_aicore_animation",
         "test_ui_aicore_svg_keyframes",
-        "test_ui_desktop_shell_layout",
-        "test_ui_global_topbar",
-        "test_ui_view_home",
-        "test_ui_home_content_panel",
-        "test_ui_home_aicore_panel",
-        "test_ui_home_bottom_composer",
-        "test_ui_view_chat",
-        "test_ui_view_tasks_agents",
-        "test_ui_tasks_list_component",
-        "test_ui_agent_settings_drawer",
-        "test_ui_view_browser",
-        "test_ui_browser_domain_table",
-        "test_ui_browser_bridge_status",
+        "test_ui_asset_performance_budget",
+        "test_ui_background_gradient",
         "test_ui_browser_adapter_cards",
-        "test_ui_view_voice",
-        "test_ui_voice_identity",
-        "test_ui_voice_listening_controls",
-        "test_ui_voice_stt_controls",
-        "test_ui_voice_privacy_card",
-        "test_ui_voice_tts_controls",
-        "test_ui_view_actions",
-        "test_ui_view_permissions",
-        "test_ui_perms_terminal",
-        "test_ui_perms_files",
-        "test_ui_perms_browser",
-        "test_ui_view_workspaces",
-        "test_ui_view_developer",
+        "test_ui_browser_bridge_status",
+        "test_ui_browser_domain_table",
+        "test_ui_color_tokens",
+        "test_ui_desktop_shell_layout",
+        "test_ui_dev_agent_defaults",
         "test_ui_dev_repositories",
         "test_ui_dev_vscode",
-        "test_ui_dev_agent_defaults",
-        "test_ui_view_settings",
-        "test_ui_settings_general",
-        "test_ui_settings_ai",
-        "test_ui_settings_voice",
-        "test_ui_settings_browser",
+        "test_ui_global_topbar",
+        "test_ui_home_aicore_panel",
+        "test_ui_home_bottom_composer",
+        "test_ui_home_content_panel",
+        "test_ui_no_external_cdns",
+        "test_ui_perms_browser",
+        "test_ui_perms_files",
+        "test_ui_perms_terminal",
+        "test_ui_radius_and_border",
+        "test_ui_responsive_layout",
         "test_ui_settings_actions",
+        "test_ui_settings_ai",
+        "test_ui_settings_browser",
+        "test_ui_settings_general",
+        "test_ui_settings_inventory_binding",
         "test_ui_settings_privacy",
         "test_ui_settings_resources",
         "test_ui_settings_system",
-        "test_ui_responsive_layout",
-        "test_ui_accessibility_and_reduced_motion",
-        "test_ui_settings_inventory_binding",
+        "test_ui_settings_voice",
         "test_ui_sse_connection_lifecycle",
-        "test_ui_no_external_cdns"
+        "test_ui_tasks_list_component",
+        "test_ui_typography_stack",
+        "test_ui_vanilla_tech_stack",
+        "test_ui_view_actions",
+        "test_ui_view_browser",
+        "test_ui_view_chat",
+        "test_ui_view_developer",
+        "test_ui_view_home",
+        "test_ui_view_permissions",
+        "test_ui_view_settings",
+        "test_ui_view_tasks_agents",
+        "test_ui_view_voice",
+        "test_ui_view_workspaces",
+        "test_ui_visual_system_tokens",
+        "test_ui_voice_identity",
+        "test_ui_voice_listening_controls",
+        "test_ui_voice_privacy_card",
+        "test_ui_voice_stt_controls",
+        "test_ui_voice_tts_controls"
       ],
       "acceptance_criteria": [
         "Single-page static dashboard using vanilla JS and local Bootstrap 5.3 CSS",
@@ -578,7 +583,7 @@
         "Docs/SECURITY.md"
       ],
       "files_created": [
-        "app/executors/developer.py",
+        "app/developer/workflow.py",
         "tests/test_developer_workflows.py"
       ],
       "files_modified": [],
@@ -625,7 +630,7 @@
         "app/lifecycle.py"
       ],
       "files_forbidden_to_modify": [
-        "packaging/systemd/maya.service",
+        "packaging/systemd/project-hd.service",
         "app/core/config.py"
       ],
       "dependencies": [
@@ -663,14 +668,14 @@
       ],
       "files_created": [
         "packaging/systemd/project-hd.service",
-        "packaging/native-manifest/project_h_firefox.json",
+        "packaging/native-manifest/project_h_firefox.json.template",
         "packaging/install.sh",
         "packaging/uninstall.sh",
         "tests/test_packaging.py"
       ],
       "files_modified": [
         "app/main.py",
-        "app/browser/native_host.py"
+        "pyproject.toml"
       ],
       "files_forbidden_to_modify": [
         "app/core/dispatcher.py",
@@ -711,8 +716,9 @@
         "Docs/ImplementationCookbook/02_REQUIREMENTS.md"
       ],
       "files_created": [
-        "tests/test_offline_determinism.py",
-        "Docs/Current/PH180_FINAL_ACCEPTANCE_REPORT.md"
+        "Docs/Current/PH180_FINAL_ACCEPTANCE_REPORT.md",
+        "tests/test_final_acceptance.py",
+        "tests/test_offline_determinism.py"
       ],
       "files_modified": [],
       "files_forbidden_to_modify": [

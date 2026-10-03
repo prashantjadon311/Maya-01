@@ -11,8 +11,19 @@
 You must execute a continuous internal execution loop iterating through phases **PH-050 → PH-060 → PH-070 → PH-080 → PH-090 → PH-100 → PH-110 → PH-120 → PH-130 → PH-140 → PH-150 → PH-160 → PH-170 → PH-180**.
 
 ### Pre-requisites & Implementation Safety:
-1. **Dedicated Branch:** Create and check out `maya-v1-implementation` branch from exact merged frozen `main`. **NEVER implement directly on main.**
-2. **Cookbook Immutability:** `Docs/ImplementationCookbook/**` is strictly read-only during phase implementation. Any discovery of a cookbook defect or missing specification must immediately trigger a hard stop with error code `COOKBOOK_DEFECT_BLOCKER`.
+1. **Dedicated Branch & Base SHA Resolution:**
+   Resolve the implementation base commit dynamically from merged main:
+   ```bash
+   git fetch origin
+   git checkout main
+   git pull --ff-only origin main
+
+   IMPLEMENTATION_BASE_SHA="$(git rev-parse HEAD)"
+
+   git switch -c maya-v1-implementation
+   ```
+   `IMPLEMENTATION_BASE_SHA` is the exact `origin/main` SHA after cookbook PR merge. Record `IMPLEMENTATION_BASE_SHA` in the first checkpoint (PH-050). **NEVER implement directly on main.**
+2. **Cookbook Immutability:** `Docs/ImplementationCookbook/**` is strictly read-only during phase implementation. Any discovery of a cookbook defect or missing specification must immediately trigger a hard stop with error code `COOKBOOK_DEFECT_BLOCKER`. Do not silently repair cookbook during production implementation. Stop.
 3. **Continuous Progression:** Do NOT stop or ask for user confirmation between successful phases. Once a phase passes all tests, review gates, and checkpoint requirements, immediately and automatically continue to the next phase in the loop.
 
 For each phase `PHxxx`:
@@ -28,10 +39,10 @@ For each phase `PHxxx`:
 
 2. **PRE-PHASE DELTA-CHECK:**
    Execute the verification steps from `Docs/ImplementationCookbook/execution/DELTA_CHECK.md`:
+   - Run complete artifact bundle fingerprint check.
+   - Run AST source interfaces check: `PYTHONPATH=. python -m tools.cookbook.verify_source_interfaces Docs/ImplementationCookbook/machine/source_interfaces.json`.
+   - Run cookbook validator: `PYTHONPATH=. python -m tools.cookbook.validate Docs/ImplementationCookbook`.
    - Verify working tree is clean: `git status --short`.
-   - Verify canonical interface and manifest fingerprints: `python -m tools.cookbook.fingerprint ... --expect <hash>`.
-   - Verify AST source interfaces: `python -m tools.cookbook.verify_source_interfaces Docs/ImplementationCookbook/machine/source_interfaces.json`.
-   - Verify cookbook integrity: `PYTHONPATH=. python -m tools.cookbook.validate Docs/ImplementationCookbook`.
    - Verify preceding test baseline is green.
 
 3. **STRICT TEST-DRIVEN DEVELOPMENT (TDD):**
@@ -56,7 +67,22 @@ For each phase `PHxxx`:
    - **Gate C (Fresher Implementability):** Explicit error handling, fail-closed timeouts, resource bounding.
    - **Gate D (Token & Memory):** Clean code, no dangling debug code, memory bounds respected.
 
-7. **ATOMIC GIT COMMIT:**
+7. **PRE-COMMIT ALLOWLIST CHECK & ATOMIC GIT COMMIT:**
+   Calculate actual changed file list (including unstaged and staged files) and compare against phase manifest allowlist:
+   ```python
+   allowed = set(phase.files_created) | set(phase.files_modified)
+
+   changed = set(
+       subprocess.check_output(["git", "diff", "--name-only"], text=True).splitlines()
+   ) | set(
+       subprocess.check_output(["git", "diff", "--cached", "--name-only"], text=True).splitlines()
+   )
+
+   unexpected = changed - allowed
+
+   if unexpected:
+       raise PhaseOwnershipError(sorted(unexpected))
+   ```
    - Verify changed files strictly match `files_created` and `files_modified` in `phase_manifest.json`.
    - Run `git diff --check` to ensure no whitespace errors or merge conflict markers.
    - Stage modified and created files for the phase:

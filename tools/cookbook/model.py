@@ -1,56 +1,67 @@
 from pathlib import Path
 from typing import Literal, Any
 import json
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class ValidationIssue(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
+
     code: str
     path: str
     message: str
     severity: Literal["critical", "important", "warning"]
 
 
-class AuthorityModel(BaseModel):
+class InterfaceParam(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
-    cookbook_version: str
-    status: Literal["DRAFT", "FROZEN", "BLOCKED"]
-    cookbook_work_base_sha: str
-    product_code_base_sha: str
-    base_sha: str
-    ci_baseline_run: str
-    python_floor: str
-    target_os: str
-    authority_order: list[str]
-    blob_shas: dict[str, str]
-    interface_hash: str | None = None
-    requirement_map_hash: str | None = None
-    phase_manifest_hash: str | None = None
+
+    name: str
+    type: str
 
 
 class RequirementItem(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
+
     id: str
     source: str
     category: str
     description: str
+
     phase: str | None = None
     component: str | None = None
     file: str | None = None
     symbol: str | None = None
-    test_id: str | None = None
+
+    # FINAL: one requirement may require multiple evidence records.
+    test_ids: list[str] = Field(default_factory=list)
+
     acceptance_evidence: str | None = None
     out_of_v1_rationale: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_test_id(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "test_id" in data:
+            val = data.pop("test_id")
+            if "test_ids" not in data:
+                data["test_ids"] = [val] if val else []
+        return data
+
+    @property
+    def test_id(self) -> str | None:
+        return self.test_ids[0] if self.test_ids else None
 
 
 class RequirementsModel(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
+
     requirements: list[RequirementItem]
 
 
 class SymbolItem(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
+
     symbol: str
     file: str
     type: str
@@ -66,22 +77,33 @@ class SymbolItem(BaseModel):
 
 class SymbolsModel(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
+
     symbols: list[SymbolItem]
 
 
 class InterfaceItem(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
+
     name: str
     owning_phase: str
     file: str
     signature: str
-    inputs: list[dict[str, str]] | list[str] = Field(default_factory=list)
+
+    inputs: list[InterfaceParam] = Field(default_factory=list)
     output: str
+
     preconditions: list[str] = Field(default_factory=list)
     postconditions: list[str] = Field(default_factory=list)
+
     is_security_boundary: bool = False
     security_test_id: str | None = None
+
+    # Human-readable summary.
     bounds: str | None = None
+
+    # Machine-verifiable bounds.
+    resource_bound_ids: list[str] = Field(default_factory=list)
+
     timeout_seconds: float | None = None
     cancellation: str | None = None
     idempotent: bool = False
@@ -91,11 +113,13 @@ class InterfaceItem(BaseModel):
 
 class InterfacesModel(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
+
     interfaces: list[InterfaceItem]
 
 
 class FileOwnerItem(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
+
     path: str
     owner_phase: str
     secondary_modifiers: list[str] = Field(default_factory=list)
@@ -106,11 +130,13 @@ class FileOwnerItem(BaseModel):
 
 class FileOwnersModel(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
+
     files: list[FileOwnerItem]
 
 
 class PhaseManifestItem(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
+
     phase_id: str
     title: str
     status: Literal["PLANNED", "IN_PROGRESS", "COMPLETED", "FROZEN", "BLOCKED_OPEN_DESIGN_DECISION"]
@@ -128,16 +154,33 @@ class PhaseManifestItem(BaseModel):
 
 class PhaseManifestModel(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
+
     phases: list[PhaseManifestItem]
 
 
 class TestRecipeItem(BaseModel):
-    model_config = ConfigDict(strict=False, extra="forbid")
+    model_config = ConfigDict(strict=True, extra="forbid")
+
     test_id: str
     phase: str
     requirement_id: str
     file: str
-    test_type: Literal["unit", "integration", "security", "adversarial", "resource", "manual"]
+
+    test_type: Literal[
+        "unit",
+        "integration",
+        "security",
+        "adversarial",
+        "resource",
+        "manual",
+    ]
+
+    status: Literal[
+        "VERIFIED_EXISTING",
+        "PLANNED_FUTURE_TEST",
+        "MANUAL_ACCEPTANCE",
+    ] = "PLANNED_FUTURE_TEST"
+
     fixture: str
     attack_setup: str | None = None
     fault_injection: str | None = None
@@ -145,56 +188,142 @@ class TestRecipeItem(BaseModel):
     assert_positive: str
     assert_not: str | None = None
     verification_command: str
-    status: Literal["VERIFIED_EXISTING", "PLANNED_FUTURE_TEST", "MANUAL_ACCEPTANCE", "VERIFIED"] = "PLANNED_FUTURE_TEST"
+
     test_function: str | None = None
     pytest_nodeid: str | None = None
     source_sha256: str | None = None
+
     component: str | None = None
     evidence_kind: str | None = None
 
 
 class TestsModel(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
+
     tests: list[TestRecipeItem]
 
 
 class AuthorityCoverageItem(BaseModel):
-    model_config = ConfigDict(strict=False, extra="forbid")
+    model_config = ConfigDict(strict=True, extra="forbid")
+
     source: str
     heading: str
-    classification: Literal["NORMATIVE", "INFORMATIVE", "EXPLICIT_OUT_OF_V1"] = "NORMATIVE"
-    normative: bool | None = None
+
+    classification: Literal[
+        "NORMATIVE",
+        "INFORMATIVE",
+        "EXPLICIT_OUT_OF_V1",
+    ]
+
     requirement_ids: list[str] = Field(default_factory=list)
+
     reason: str | None = None
     notes: str | None = None
+
+    # Required only for EXPLICIT_OUT_OF_V1.
+    exclusion_source: str | None = None
+    exclusion_heading: str | None = None
 
 
 class AuthorityCoverageModel(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
-    sections: list[AuthorityCoverageItem]
 
+    sections: list[AuthorityCoverageItem]
 
 
 class DependencyEdge(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
+
     from_: str = Field(alias="from")
     to: str
 
 
 class DependenciesModel(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
+
     components: list[str]
     edges: list[DependencyEdge]
     forbidden_edges: list[DependencyEdge] = Field(default_factory=list)
 
 
+class ResourceBoundItem(BaseModel):
+    model_config = ConfigDict(strict=True, extra="forbid")
+
+    id: str
+    owner: str
+    phase: str
+
+    lifetime: Literal[
+        "DAEMON",
+        "TASK",
+        "COMMAND",
+        "REQUEST",
+        "TAB",
+        "PROCESS",
+        "SESSION",
+    ]
+
+    structure: str
+
+    max_count: int | None = Field(default=None, gt=0)
+    max_bytes: int | None = Field(default=None, gt=0)
+    timeout_seconds: float | None = Field(default=None, gt=0)
+
+    overflow_policy: str
+
+    @model_validator(mode="after")
+    def validate_bound(self) -> "ResourceBoundItem":
+        if (
+            self.max_count is None
+            and self.max_bytes is None
+            and self.timeout_seconds is None
+        ):
+            raise ValueError(
+                f"Resource bound {self.id!r} has no numeric bound"
+            )
+        if not self.overflow_policy.strip():
+            raise ValueError(
+                f"Resource bound {self.id!r} has empty overflow_policy"
+            )
+        return self
+
+
 class ResourceBoundsModel(BaseModel):
-    model_config = ConfigDict(strict=False, extra="allow")
-    bounds: list[dict[str, Any]] | dict[str, Any]
+    model_config = ConfigDict(strict=True, extra="forbid")
+
+    bounds: list[ResourceBoundItem]
+
+
+class AuthorityModel(BaseModel):
+    model_config = ConfigDict(strict=True, extra="forbid")
+
+    cookbook_version: str
+    status: Literal["DRAFT", "FROZEN", "BLOCKED"]
+
+    cookbook_work_base_sha: str
+    product_code_base_sha: str
+    base_sha: str
+
+    ci_baseline_run: str
+    python_floor: str
+    target_os: str
+
+    authority_order: list[str]
+    blob_shas: dict[str, str]
+
+    # Legacy hashes preserved for backward validation
+    interface_hash: str | None = None
+    requirement_map_hash: str | None = None
+    phase_manifest_hash: str | None = None
+
+    # FINAL complete freeze map.
+    artifact_hashes: dict[str, str] = Field(default_factory=dict)
+    artifact_bundle_hash: str | None = None
 
 
 class CookbookModel(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
+
     root_path: Path
     authority: AuthorityModel
     requirements: RequirementsModel

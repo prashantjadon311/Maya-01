@@ -9,9 +9,11 @@
       "component": "harness",
       "file": "tests/test_harness.py",
       "symbol": "test_baseline_process_rss",
-      "test_id": "test_baseline_process_rss",
       "acceptance_evidence": "Baseline process RSS <= 35 MiB without external models loaded",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_baseline_process_rss"
+      ]
     },
     {
       "id": "REQ-ARCH-SYS-001",
@@ -22,9 +24,11 @@
       "component": "daemon",
       "file": "tests/test_harness.py",
       "symbol": "Daemon",
-      "test_id": "test_daemon_lifecycle",
       "acceptance_evidence": "Daemon starts and stops cleanly via minimal lifecycle boundary",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_daemon_lifecycle"
+      ]
     },
     {
       "id": "REQ-ARCH-PROC-001",
@@ -35,9 +39,11 @@
       "component": "harness",
       "file": "tests/test_harness.py",
       "symbol": "test_no_credentials_required",
-      "test_id": "test_no_credentials_required",
       "acceptance_evidence": "Zero live credentials or external network sockets required for baseline tests",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_no_credentials_required"
+      ]
     },
     {
       "id": "REQ-ARCH-PROC-RES-001",
@@ -48,9 +54,11 @@
       "component": "state",
       "file": "tests/test_schemas.py",
       "symbol": "AppState",
-      "test_id": "test_app_state_interface",
       "acceptance_evidence": "AppState tracks runtime status without thread locks or unvalidated transitions",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_app_state_interface"
+      ]
     },
     {
       "id": "REQ-ARCH-PROC-TRN-001",
@@ -61,9 +69,11 @@
       "component": "state",
       "file": "tests/test_schemas.py",
       "symbol": "AppState",
-      "test_id": "test_architecture_states",
       "acceptance_evidence": "All architectural states (DISABLED, IDLE, LISTENING, THINKING, EXECUTING, ERROR) supported",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_architecture_states"
+      ]
     },
     {
       "id": "REQ-ARCH-DEP-001",
@@ -74,9 +84,11 @@
       "component": "state",
       "file": "tests/test_schemas.py",
       "symbol": "AppState",
-      "test_id": "test_state_rejects_unknown_updates",
       "acceptance_evidence": "AppState rejects unknown status updates and unauthorized field mutations",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_state_rejects_unknown_updates"
+      ]
     },
     {
       "id": "REQ-EXEC-RUN-001",
@@ -87,9 +99,11 @@
       "component": "harness",
       "file": "tests/test_harness.py",
       "symbol": "test_config_fixture_exists",
-      "test_id": "test_config_fixture_exists",
       "acceptance_evidence": "Canonical config example fixture exists and passes baseline loading",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_config_fixture_exists"
+      ]
     },
     {
       "id": "REQ-EXEC-EXIST-001",
@@ -100,9 +114,11 @@
       "component": "state",
       "file": "tests/test_schemas.py",
       "symbol": "AppState",
-      "test_id": "test_state_rejects_coerced_boolean",
       "acceptance_evidence": "AppState strictly forbids boolean coercion for string status values",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_state_rejects_coerced_boolean"
+      ]
     },
     {
       "id": "REQ-CFG-001",
@@ -113,9 +129,11 @@
       "component": "config",
       "file": "tests/test_schemas.py",
       "symbol": "Config",
-      "test_id": "test_command_request_unknown_field_rejected",
       "acceptance_evidence": "CommandRequest rejects unknown injected fields and strict validation passes",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_command_request_unknown_field_rejected"
+      ]
     },
     {
       "id": "REQ-CFG-LOC-001",
@@ -126,9 +144,11 @@
       "component": "config",
       "file": "tests/test_config.py",
       "symbol": "AssistantConfig",
-      "test_id": "test_assistant_identity_is_nonempty_and_trimmed",
       "acceptance_evidence": "Assistant name is stripped of surrounding whitespace and non-empty",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_assistant_identity_is_nonempty_and_trimmed"
+      ]
     },
     {
       "id": "REQ-CFG-JSON-001",
@@ -139,9 +159,11 @@
       "component": "config",
       "file": "tests/test_config.py",
       "symbol": "Config",
-      "test_id": "test_config_unknown_field_fails",
       "acceptance_evidence": "Configuration fails fast on unknown nested configuration fields",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_config_unknown_field_fails"
+      ]
     },
     {
       "id": "REQ-PLAN-PH010-001",
@@ -152,9 +174,11 @@
       "component": "config",
       "file": "tests/test_config.py",
       "symbol": "DashboardConfig",
-      "test_id": "test_dashboard_is_ipv4_loopback_only",
       "acceptance_evidence": "Dashboard host strictly constrained to 127.0.0.1 loopback only",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_dashboard_is_ipv4_loopback_only"
+      ]
     },
     {
       "id": "REQ-POL-001",
@@ -165,9 +189,11 @@
       "component": "policy",
       "file": "tests/test_policy.py",
       "symbol": "PolicyEngine.evaluate",
-      "test_id": "test_policy_decision_enum_states",
       "acceptance_evidence": "Policy engine evaluates requests into exact 3-state decision enum",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_policy_decision_enum_states"
+      ]
     },
     {
       "id": "REQ-POL-002",
@@ -178,9 +204,11 @@
       "component": "policy",
       "file": "tests/test_registry.py",
       "symbol": "ActionDefinition",
-      "test_id": "test_action_definition_high_preapproved_rejected",
       "acceptance_evidence": "Action pack validation rejects definitions with risk='high' and preapproved=True",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_action_definition_high_preapproved_rejected"
+      ]
     },
     {
       "id": "REQ-POL-RISK-001",
@@ -191,9 +219,11 @@
       "component": "policy",
       "file": "tests/test_policy.py",
       "symbol": "classify_risk",
-      "test_id": "test_malformed_argv_denied",
       "acceptance_evidence": "Subprocess execution with shell metacharacters or malformed argv strictly denied",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_malformed_argv_denied"
+      ]
     },
     {
       "id": "REQ-POL-RISK-LOW-001",
@@ -204,9 +234,11 @@
       "component": "policy",
       "file": "tests/test_policy.py",
       "symbol": "classify_risk",
-      "test_id": "test_sensitive_defaults_cannot_be_overridden",
       "acceptance_evidence": "Sensitive commands default to ASK_USER regardless of user preapproval rules",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_sensitive_defaults_cannot_be_overridden"
+      ]
     },
     {
       "id": "REQ-POL-RISK-MED-001",
@@ -217,9 +249,11 @@
       "component": "policy",
       "file": "tests/test_policy.py",
       "symbol": "canonical_path",
-      "test_id": "test_file_symlink_and_parent_escape",
       "acceptance_evidence": "File operations attempting ../ escape or resolving symlinks outside roots denied",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_file_symlink_and_parent_escape"
+      ]
     },
     {
       "id": "REQ-POL-ALWAYS-001",
@@ -230,9 +264,11 @@
       "component": "policy",
       "file": "tests/test_policy.py",
       "symbol": "classify_risk",
-      "test_id": "test_privilege_wrappers_require_approval",
       "acceptance_evidence": "Commands invoking sudo, su, pkexec, doas always require user approval",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_privilege_wrappers_require_approval"
+      ]
     },
     {
       "id": "REQ-POL-DEV-001",
@@ -243,9 +279,11 @@
       "component": "policy",
       "file": "tests/test_policy_contract.py",
       "symbol": "PreapprovalRule",
-      "test_id": "test_preapproval_contract",
       "acceptance_evidence": "Developer preapproval rules validated against strict schema before caching",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_preapproval_contract"
+      ]
     },
     {
       "id": "REQ-PLAN-PH020-001",
@@ -256,9 +294,11 @@
       "component": "policy",
       "file": "tests/test_policy_contract.py",
       "symbol": "PolicyEngine",
-      "test_id": "test_destructive_executables_never_preapproved",
       "acceptance_evidence": "Executables like rm, dd, mkfs, fdisk strictly forbidden from preapproval",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_destructive_executables_never_preapproved"
+      ]
     },
     {
       "id": "REQ-REG-001",
@@ -269,9 +309,11 @@
       "component": "registry",
       "file": "tests/test_registry.py",
       "symbol": "ActionRegistry.reload",
-      "test_id": "test_symlinked_pack_rejected",
       "acceptance_evidence": "Symlinked action pack files in actions.d are skipped with warning",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_symlinked_pack_rejected"
+      ]
     },
     {
       "id": "REQ-REG-002",
@@ -282,9 +324,11 @@
       "component": "matcher",
       "file": "tests/test_registry.py",
       "symbol": "substitute_arguments",
-      "test_id": "test_strict_argument_substitution",
       "acceptance_evidence": "Slot arguments undergo exact literal substitution preventing shell escape",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_strict_argument_substitution"
+      ]
     },
     {
       "id": "REQ-REG-AMBIG-001",
@@ -295,9 +339,11 @@
       "component": "registry",
       "file": "tests/test_registry.py",
       "symbol": "ActionRegistry.resolve",
-      "test_id": "test_runtime_ambiguity_never_picks_an_action",
       "acceptance_evidence": "Multiple candidate matches return RegistryAmbiguity with zero execution",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_runtime_ambiguity_never_picks_an_action"
+      ]
     },
     {
       "id": "REQ-REG-PACK-001",
@@ -308,9 +354,11 @@
       "component": "registry",
       "file": "tests/test_registry.py",
       "symbol": "ActionRegistry.reload",
-      "test_id": "test_max_pack_files_enforced",
       "acceptance_evidence": "Packs exceeding MAX_PACK_FILES=64 are rejected preventing memory bloat",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_max_pack_files_enforced"
+      ]
     },
     {
       "id": "REQ-PLAN-PH030-001",
@@ -321,9 +369,11 @@
       "component": "registry",
       "file": "tests/test_registry.py",
       "symbol": "ActionRegistry.reload",
-      "test_id": "test_max_total_actions_enforced",
       "acceptance_evidence": "Total registered actions capped at 2048 to maintain bounded lookup latency",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_max_total_actions_enforced"
+      ]
     },
     {
       "id": "REQ-EXEC-001",
@@ -334,9 +384,11 @@
       "component": "executors",
       "file": "tests/test_executors.py",
       "symbol": "ProcessExecutor.execute",
-      "test_id": "test_process_shell_metacharacters_remain_literal",
       "acceptance_evidence": "Arguments with shell metacharacters are executed literally without shell interpolation",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_process_shell_metacharacters_remain_literal"
+      ]
     },
     {
       "id": "REQ-EXEC-002",
@@ -347,9 +399,11 @@
       "component": "executors",
       "file": "tests/test_executors.py",
       "symbol": "FileExecutor.execute",
-      "test_id": "test_file_traversal_denied",
       "acceptance_evidence": "Path traversal attempts escaping allowed root are strictly denied",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_file_traversal_denied"
+      ]
     },
     {
       "id": "REQ-PLAN-PH040-001",
@@ -360,9 +414,11 @@
       "component": "dispatcher",
       "file": "tests/test_dispatcher.py",
       "symbol": "ActionDispatcher.dispatch",
-      "test_id": "test_rule_risk_raises_trusted_risk",
       "acceptance_evidence": "Action rule risk cannot silently lower evaluation risk level",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_rule_risk_raises_trusted_risk"
+      ]
     },
     {
       "id": "REQ-PLAN-PH040-PROC-001",
@@ -373,9 +429,11 @@
       "component": "executors",
       "file": "tests/test_executors.py",
       "symbol": "ProcessExecutor._run_process",
-      "test_id": "test_process_timeout_kills_process",
       "acceptance_evidence": "Processes exceeding configured timeout are strictly killed via SIGKILL",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_process_timeout_kills_process"
+      ]
     },
     {
       "id": "REQ-PLAN-PH040-FILE-001",
@@ -386,9 +444,11 @@
       "component": "executors",
       "file": "tests/test_executors.py",
       "symbol": "FileExecutor._verify_capability",
-      "test_id": "test_file_capability_enforcement",
       "acceptance_evidence": "File operations enforce read/write/delete capabilities on root configs",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_file_capability_enforcement"
+      ]
     },
     {
       "id": "REQ-PLAN-PH040-XDG-001",
@@ -399,9 +459,11 @@
       "component": "executors",
       "file": "tests/test_executors.py",
       "symbol": "XdgExecutor.execute",
-      "test_id": "test_xdg_target_schemes_and_root_security",
       "acceptance_evidence": "Desktop launcher xdg-open restricted to validated local file targets and trusted schemes",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_xdg_target_schemes_and_root_security"
+      ]
     },
     {
       "id": "REQ-APPR-001",
@@ -412,9 +474,11 @@
       "component": "broker",
       "file": "app/policy/broker.py",
       "symbol": "ApprovalBroker.request_decision",
-      "test_id": "test_approval_popup_transient_display",
       "acceptance_evidence": "Modal dialog appears independently and returns explicit user decision",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_approval_popup_transient_display"
+      ]
     },
     {
       "id": "REQ-APPR-002",
@@ -425,9 +489,11 @@
       "component": "broker",
       "file": "app/policy/broker.py",
       "symbol": "ApprovalBroker.consume_grant",
-      "test_id": "test_approval_hash_mismatch_denied",
       "acceptance_evidence": "Altering action arguments invalidates the grant with comparison mismatch",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_approval_hash_mismatch_denied"
+      ]
     },
     {
       "id": "REQ-APPR-003",
@@ -438,9 +504,11 @@
       "component": "broker",
       "file": "app/policy/broker.py",
       "symbol": "ApprovalBroker.consume_grant",
-      "test_id": "test_approval_single_use_replay_denied",
       "acceptance_evidence": "Subsequent calls to consume_grant with the same grant_id return False",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_approval_single_use_replay_denied"
+      ]
     },
     {
       "id": "REQ-PLAN-PH050-001",
@@ -451,9 +519,11 @@
       "component": "broker",
       "file": "app/policy/broker.py",
       "symbol": "ApprovalBroker.request_decision",
-      "test_id": "test_approval_timeout_denies",
       "acceptance_evidence": "Unanswered popup after 60s timeout automatically denies execution",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_approval_timeout_denies"
+      ]
     },
     {
       "id": "REQ-EXEC-APPR-001",
@@ -464,9 +534,11 @@
       "component": "broker",
       "file": "app/policy/broker.py",
       "symbol": "ApprovalBroker.reset",
-      "test_id": "test_daemon_restart_clears_pending_approvals",
       "acceptance_evidence": "Daemon restart or broker reset invalidates all cached approval tokens",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_daemon_restart_clears_pending_approvals"
+      ]
     },
     {
       "id": "REQ-PROV-001",
@@ -477,9 +549,12 @@
       "component": "provider",
       "file": "app/ai/nvidia.py",
       "symbol": "NvidiaProvider",
-      "test_id": "test_nvidia_client_configuration",
       "acceptance_evidence": "AsyncOpenAI initialized with custom base_url, timeout, and max_retries=0",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_nvidia_client_configuration",
+        "test_missing_api_key_fails_fast"
+      ]
     },
     {
       "id": "REQ-PROV-004",
@@ -490,9 +565,12 @@
       "component": "provider",
       "file": "app/ai/nvidia.py",
       "symbol": "NvidiaProvider.stream_chat",
-      "test_id": "test_reasoning_trace_not_leaked",
       "acceptance_evidence": "Split tags like <thi + nk>secret</think> completely filtered with zero leak",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_reasoning_trace_not_leaked",
+        "test_reasoning_filter_split_tags"
+      ]
     },
     {
       "id": "REQ-PROV-BASE-001",
@@ -503,9 +581,11 @@
       "component": "provider",
       "file": "app/ai/base.py",
       "symbol": "AIProvider",
-      "test_id": "test_ai_provider_protocol_compliance",
       "acceptance_evidence": "Provider adheres to AIProvider Protocol without leaking OpenAI SDK objects",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ai_provider_protocol_compliance"
+      ]
     },
     {
       "id": "REQ-PLAN-PH060-001",
@@ -516,9 +596,11 @@
       "component": "provider",
       "file": "app/ai/nvidia.py",
       "symbol": "NvidiaProvider.complete",
-      "test_id": "test_nvidia_zero_sdk_retries",
       "acceptance_evidence": "Client strictly disables automatic retries on failed tool completions",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_nvidia_zero_sdk_retries"
+      ]
     },
     {
       "id": "REQ-EXEC-NEMO-001",
@@ -529,9 +611,12 @@
       "component": "provider",
       "file": "app/ai/nvidia.py",
       "symbol": "NvidiaProvider.stream_chat",
-      "test_id": "test_nvidia_streaming_tool_call_parsing",
       "acceptance_evidence": "Streamed tool call arguments parsed only when complete and within budget",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_nvidia_streaming_tool_call_parsing",
+        "test_malformed_tool_call_rejected"
+      ]
     },
     {
       "id": "REQ-EXEC-API-001",
@@ -542,9 +627,11 @@
       "component": "provider",
       "file": "tests/fakes/fake_nvidia.py",
       "symbol": "FakeOpenAIClient",
-      "test_id": "test_provider_tests_offline_no_quota",
       "acceptance_evidence": "Default pytest run uses fake client and never contacts api.nvidia.com",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_provider_tests_offline_no_quota"
+      ]
     },
     {
       "id": "REQ-ROUT-001",
@@ -555,9 +642,11 @@
       "component": "router",
       "file": "app/core/command_router.py",
       "symbol": "CommandRouter.route",
-      "test_id": "test_command_router_order_of_precedence",
       "acceptance_evidence": "Exact registered phrase matches resolve immediately without calling AI",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_command_router_order_of_precedence"
+      ]
     },
     {
       "id": "REQ-ROUT-002",
@@ -568,9 +657,11 @@
       "component": "router",
       "file": "app/core/command_router.py",
       "symbol": "CommandRouter.route",
-      "test_id": "test_exact_action_zero_ai_calls",
       "acceptance_evidence": "Verified AI call count is strictly zero for deterministic actions",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_exact_action_zero_ai_calls"
+      ]
     },
     {
       "id": "REQ-ROUT-AI-001",
@@ -581,9 +672,11 @@
       "component": "router",
       "file": "app/core/command_router.py",
       "symbol": "CommandRouter.route",
-      "test_id": "test_command_router_ai_fallback",
       "acceptance_evidence": "Non-matching natural language queries route to AI provider agent loop",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_command_router_ai_fallback"
+      ]
     },
     {
       "id": "REQ-AGNT-001",
@@ -594,9 +687,11 @@
       "component": "agents",
       "file": "app/agents/runtime.py",
       "symbol": "AgentRuntime.run_task",
-      "test_id": "test_agent_budget_and_step_limit_enforced",
       "acceptance_evidence": "Agent loop strictly halts when max_steps=15 or budget=20 is reached",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_agent_budget_and_step_limit_enforced"
+      ]
     },
     {
       "id": "REQ-AGNT-002",
@@ -607,9 +702,11 @@
       "component": "agents",
       "file": "app/agents/runtime.py",
       "symbol": "AgentRuntime.run_task",
-      "test_id": "test_agent_cannot_bypass_policy_dispatcher",
       "acceptance_evidence": "Agent cannot invoke executors directly; all requests route via policy",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_agent_cannot_bypass_policy_dispatcher"
+      ]
     },
     {
       "id": "REQ-AGNT-VERIFY-001",
@@ -620,9 +717,11 @@
       "component": "agents",
       "file": "app/agents/runtime.py",
       "symbol": "AgentVerifier",
-      "test_id": "test_agent_verification_step_enforced",
       "acceptance_evidence": "Task does not finish solely because model claims done; tests must verify",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_agent_verification_step_enforced"
+      ]
     },
     {
       "id": "REQ-TOOL-SCHEMA-001",
@@ -633,9 +732,11 @@
       "component": "agents",
       "file": "app/agents/model.py",
       "symbol": "AgentTask",
-      "test_id": "test_agent_tool_schema_validation",
       "acceptance_evidence": "Tool calls strictly validate arguments against Pydantic models",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_agent_tool_schema_validation"
+      ]
     },
     {
       "id": "REQ-PLAN-PH070-001",
@@ -646,9 +747,11 @@
       "component": "agents",
       "file": "app/agents/runtime.py",
       "symbol": "AgentRuntime.run_task",
-      "test_id": "test_agent_runtime_single_task_lock",
       "acceptance_evidence": "Second concurrent run_task call fails with AgentBusyError",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_agent_runtime_single_task_lock"
+      ]
     },
     {
       "id": "REQ-EXEC-AGENT-001",
@@ -659,9 +762,11 @@
       "component": "agents",
       "file": "app/agents/model.py",
       "symbol": "AgentTaskResult",
-      "test_id": "test_agent_task_lifecycle",
       "acceptance_evidence": "Agent task initializes, executes steps, and returns structured result",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_agent_task_lifecycle"
+      ]
     },
     {
       "id": "REQ-VOIC-001",
@@ -672,9 +777,11 @@
       "component": "voice",
       "file": "app/voice/audio.py",
       "symbol": "AudioSource",
-      "test_id": "test_prewake_audio_zero_network_callback",
       "acceptance_evidence": "Local openWakeWord operates purely offline; zero network calls made",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_prewake_audio_zero_network_callback"
+      ]
     },
     {
       "id": "REQ-VOIC-002",
@@ -685,9 +792,11 @@
       "component": "voice",
       "file": "app/voice/audio.py",
       "symbol": "AudioRingBuffer",
-      "test_id": "test_audio_ring_buffer_hard_bound",
       "acceptance_evidence": "Ring buffer memory stays strictly below configured maximum seconds",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_audio_ring_buffer_hard_bound"
+      ]
     },
     {
       "id": "REQ-VOIC-PTT-001",
@@ -698,9 +807,11 @@
       "component": "voice",
       "file": "app/voice/audio.py",
       "symbol": "AudioSource.start_ptt",
-      "test_id": "test_push_to_talk_activation",
       "acceptance_evidence": "Push-to-talk directly activates command recording pipeline",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_push_to_talk_activation"
+      ]
     },
     {
       "id": "REQ-VOIC-ALW-001",
@@ -711,9 +822,11 @@
       "component": "voice",
       "file": "app/voice/wake.py",
       "symbol": "WakeDetector",
-      "test_id": "test_always_listening_mode_toggle",
       "acceptance_evidence": "Always-listening toggle starts local wake detector thread safely",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_always_listening_mode_toggle"
+      ]
     },
     {
       "id": "REQ-VOIC-SM-001",
@@ -724,9 +837,11 @@
       "component": "voice",
       "file": "app/voice/recorder.py",
       "symbol": "CommandRecorder",
-      "test_id": "test_voice_state_machine_transitions",
       "acceptance_evidence": "Transitions: IDLE -> LISTENING -> THINKING -> EXECUTING -> IDLE",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_voice_state_machine_transitions"
+      ]
     },
     {
       "id": "REQ-VOIC-NO-STT-001",
@@ -737,9 +852,11 @@
       "component": "voice",
       "file": "app/voice/wake.py",
       "symbol": "WakeDetector.process_chunk",
-      "test_id": "test_no_stt_before_wake",
       "acceptance_evidence": "Audio chunks before wake threshold do not trigger STT adapter",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_no_stt_before_wake"
+      ]
     },
     {
       "id": "REQ-VOIC-POST-001",
@@ -750,9 +867,11 @@
       "component": "voice",
       "file": "app/voice/recorder.py",
       "symbol": "CommandRecorder.start_command",
-      "test_id": "test_command_segment_begins_after_wake",
       "acceptance_evidence": "Pre-wake audio ring buffer is never prepended to remote STT payload",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_command_segment_begins_after_wake"
+      ]
     },
     {
       "id": "REQ-VOIC-CLOSE-001",
@@ -763,9 +882,11 @@
       "component": "voice",
       "file": "app/voice/audio.py",
       "symbol": "AudioSource.stop",
-      "test_id": "test_disabling_listen_closes_audio_stream",
       "acceptance_evidence": "Audio input stream closed and soundcard handle released on disable",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_disabling_listen_closes_audio_stream"
+      ]
     },
     {
       "id": "REQ-PLAN-PH080-001",
@@ -776,9 +897,11 @@
       "component": "voice",
       "file": "app/voice/recorder.py",
       "symbol": "CommandRecorder.record_command",
-      "test_id": "test_command_recording_vad_stop",
       "acceptance_evidence": "Recording stops upon detecting trailing silence or reaching timeout",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_command_recording_vad_stop"
+      ]
     },
     {
       "id": "REQ-STT-001",
@@ -789,9 +912,11 @@
       "component": "stt",
       "file": "app/voice/stt.py",
       "symbol": "STTAdapter.transcribe",
-      "test_id": "test_stt_transcribes_postwake_only",
       "acceptance_evidence": "STT adapter processes trusted CommandAudioSegment only",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_stt_transcribes_postwake_only"
+      ]
     },
     {
       "id": "REQ-PLAN-PH090-001",
@@ -802,9 +927,11 @@
       "component": "stt",
       "file": "app/voice/stt.py",
       "symbol": "STTAdapter.transcribe",
-      "test_id": "test_audio_buffer_released_after_stt",
       "acceptance_evidence": "Temporary in-memory audio bytes cleared immediately in finally block",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_audio_buffer_released_after_stt"
+      ]
     },
     {
       "id": "REQ-TRAY-001",
@@ -815,9 +942,11 @@
       "component": "tray",
       "file": "app/tray/status_notifier.py",
       "symbol": "StatusNotifierTray",
-      "test_id": "test_tray_dbus_registration",
       "acceptance_evidence": "StatusNotifierItem service appears on D-Bus session bus",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_tray_dbus_registration"
+      ]
     },
     {
       "id": "REQ-TRAY-002",
@@ -828,9 +957,13 @@
       "component": "tray",
       "file": "app/tray/status_notifier.py",
       "symbol": "StatusNotifierTray.update_state",
-      "test_id": "test_tray_menu_actions_and_state_sync",
       "acceptance_evidence": "Tray icon and tooltip update dynamically when system state changes",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_tray_menu_actions_and_state_sync",
+        "test_tray_menu_actions_unauthorized_call_denied",
+        "test_state_event_bus_overflow_drops_oldest"
+      ]
     },
     {
       "id": "REQ-PLAN-PH100-001",
@@ -841,9 +974,11 @@
       "component": "tray",
       "file": "app/tray/status_notifier.py",
       "symbol": "StatusNotifierTray",
-      "test_id": "test_tray_injected_control_callbacks",
       "acceptance_evidence": "Tray invokes injected callbacks for shutdown and pause without cyclic dependency",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_tray_injected_control_callbacks"
+      ]
     },
     {
       "id": "REQ-BROW-001",
@@ -854,9 +989,11 @@
       "component": "browser",
       "file": "app/browser/native_bridge.py",
       "symbol": "NativeMessageBridge",
-      "test_id": "test_native_messaging_framing_and_size_limit",
       "acceptance_evidence": "Host communicates via 4-byte framed JSON; Project H enforces 1MB cap",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_native_messaging_framing_and_size_limit"
+      ]
     },
     {
       "id": "REQ-BROW-002",
@@ -867,9 +1004,11 @@
       "component": "browser",
       "file": "app/browser/native_bridge.py",
       "symbol": "NativeMessageBridge.send_command",
-      "test_id": "test_browser_unlisted_domain_denied",
       "acceptance_evidence": "Commands targeting domains not in allowlist are rejected at gateway",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_browser_unlisted_domain_denied"
+      ]
     },
     {
       "id": "REQ-BROW-003",
@@ -880,9 +1019,11 @@
       "component": "browser",
       "file": "extension/firefox/native.js",
       "symbol": "verifyTabOrigin",
-      "test_id": "test_browser_origin_mismatch_denied",
       "acceptance_evidence": "Navigating away from approved origin triggers instant execution abort",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_browser_origin_mismatch_denied"
+      ]
     },
     {
       "id": "REQ-BROW-004",
@@ -893,9 +1034,11 @@
       "component": "browser",
       "file": "extension/firefox/generic.js",
       "symbol": "extractVisibleText",
-      "test_id": "test_password_and_secret_fields_not_extracted",
       "acceptance_evidence": "Input type='password', auth tokens, and session cookies strictly omitted",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_password_and_secret_fields_not_extracted"
+      ]
     },
     {
       "id": "REQ-BROW-PERM-001",
@@ -906,9 +1049,11 @@
       "component": "browser",
       "file": "extension/firefox/native.js",
       "symbol": "verifyHostPermission",
-      "test_id": "test_browser_ungranted_host_permission_denied",
       "acceptance_evidence": "Missing WebExtension host permission produces clear authorization error",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_browser_ungranted_host_permission_denied"
+      ]
     },
     {
       "id": "REQ-PLAN-PH110-001",
@@ -919,9 +1064,11 @@
       "component": "browser",
       "file": "app/browser/native_bridge.py",
       "symbol": "NativeMessageBridge",
-      "test_id": "test_browser_bridge_uds_peercred_auth",
       "acceptance_evidence": "UDS socket rejects connections from foreign UIDs",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_browser_bridge_uds_peercred_auth"
+      ]
     },
     {
       "id": "REQ-EXEC-BROW-001",
@@ -932,9 +1079,11 @@
       "component": "browser",
       "file": "extension/firefox/manifest.json",
       "symbol": "manifest",
-      "test_id": "test_browser_extension_message_validation",
       "acceptance_evidence": "Firefox manifest declares nativeMessaging permission and allowed extension ID",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_browser_extension_message_validation"
+      ]
     },
     {
       "id": "REQ-ADPT-001",
@@ -945,9 +1094,11 @@
       "component": "adapters",
       "file": "extension/firefox/adapters/google.js",
       "symbol": "GoogleAdapter.extract",
-      "test_id": "test_site_adapters_semantic_extraction",
       "acceptance_evidence": "Adapters for Google, Amazon, ChatGPT, Claude, Gemini extract clean text",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_site_adapters_semantic_extraction"
+      ]
     },
     {
       "id": "REQ-ADPT-SMOKE-001",
@@ -958,9 +1109,11 @@
       "component": "adapters",
       "file": "extension/firefox/adapters/base.js",
       "symbol": "BaseAdapter",
-      "test_id": "test_site_adapters_live_smoke",
       "acceptance_evidence": "Adapters execute successfully against realistic HTML test fixtures",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_site_adapters_live_smoke"
+      ]
     },
     {
       "id": "REQ-PLAN-PH120-001",
@@ -971,9 +1124,11 @@
       "component": "adapters",
       "file": "extension/firefox/adapters/base.js",
       "symbol": "BaseAdapter.extract",
-      "test_id": "test_outdated_adapter_fails_safely",
       "acceptance_evidence": "Adapter DOM extraction error falls back safely without crashing native host",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_outdated_adapter_fails_safely"
+      ]
     },
     {
       "id": "REQ-DASH-001",
@@ -984,9 +1139,11 @@
       "component": "dashboard",
       "file": "app/api/app.py",
       "symbol": "create_dashboard_app",
-      "test_id": "test_dashboard_cors_and_localhost_binding",
       "acceptance_evidence": "Dashboard binds to loopback IPv4 only and denies foreign Host/Origin",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_dashboard_cors_and_localhost_binding"
+      ]
     },
     {
       "id": "REQ-DASH-002",
@@ -997,9 +1154,11 @@
       "component": "dashboard",
       "file": "app/api/routes_config.py",
       "symbol": "update_config",
-      "test_id": "test_dashboard_config_crud_transactionality",
       "acceptance_evidence": "Config update validates Pydantic model before atomically writing to disk",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_dashboard_config_crud_transactionality"
+      ]
     },
     {
       "id": "REQ-DASH-CRUD-001",
@@ -1010,9 +1169,11 @@
       "component": "dashboard",
       "file": "app/api/routes_actions.py",
       "symbol": "get_actions",
-      "test_id": "test_dashboard_action_crud",
       "acceptance_evidence": "Dashboard routes support listing and modifying action pack definitions",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_dashboard_action_crud"
+      ]
     },
     {
       "id": "REQ-DASH-AGNT-001",
@@ -1023,9 +1184,11 @@
       "component": "dashboard",
       "file": "app/api/routes_agents.py",
       "symbol": "cancel_agent",
-      "test_id": "test_dashboard_agent_controls",
       "acceptance_evidence": "Dashboard endpoint cancels active agent task safely and returns status",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_dashboard_agent_controls"
+      ]
     },
     {
       "id": "REQ-DASH-EVENT-001",
@@ -1036,9 +1199,11 @@
       "component": "dashboard",
       "file": "app/api/routes_state.py",
       "symbol": "stream_state",
-      "test_id": "test_dashboard_event_stream_sse",
       "acceptance_evidence": "State changes stream to connected browser client over text/event-stream",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_dashboard_event_stream_sse"
+      ]
     },
     {
       "id": "REQ-HIST-001",
@@ -1049,9 +1214,11 @@
       "component": "dashboard",
       "file": "app/api/routes_audit.py",
       "symbol": "get_audit_log",
-      "test_id": "test_dashboard_audit_pagination",
       "acceptance_evidence": "Audit queries enforce maximum page size limit=100 preventing memory spikes",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_dashboard_audit_pagination"
+      ]
     },
     {
       "id": "REQ-STOR-SQLITE-001",
@@ -1062,9 +1229,11 @@
       "component": "storage",
       "file": "app/storage/sqlite.py",
       "symbol": "SQLiteStorage",
-      "test_id": "test_sqlite_wal_and_serialized_worker",
       "acceptance_evidence": "Database operations execute through serialized worker thread with WAL journal",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_sqlite_wal_and_serialized_worker"
+      ]
     },
     {
       "id": "REQ-PLAN-PH130-001",
@@ -1075,9 +1244,11 @@
       "component": "storage",
       "file": "app/storage/sqlite.py",
       "symbol": "SQLiteStorage",
-      "test_id": "test_dashboard_storage_degraded_fallback",
       "acceptance_evidence": "Disk write failures switch storage to degraded mode without dropping memory events",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_dashboard_storage_degraded_fallback"
+      ]
     },
     {
       "id": "REQ-DASH-003",
@@ -1088,9 +1259,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "index.html",
-      "test_id": "test_frontend_assets_local_and_no_node_runtime",
       "acceptance_evidence": "Static HTML, CSS, and vanilla JS served directly without npm or CDN",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_frontend_assets_local_and_no_node_runtime"
+      ]
     },
     {
       "id": "REQ-UI-TECH-001",
@@ -1101,9 +1274,11 @@
       "component": "ui",
       "file": "app/web/js/app.js",
       "symbol": "app.js",
-      "test_id": "test_ui_vanilla_tech_stack",
       "acceptance_evidence": "Zero external npm dependencies, frameworks, or bundlers in frontend",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_vanilla_tech_stack"
+      ]
     },
     {
       "id": "REQ-UI-PERF-001",
@@ -1114,9 +1289,11 @@
       "component": "ui",
       "file": "app/web/css/app.css",
       "symbol": "app.css",
-      "test_id": "test_ui_asset_performance_budget",
       "acceptance_evidence": "Total CSS and JS bundle sizes comply with performance budget limits",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_asset_performance_budget"
+      ]
     },
     {
       "id": "REQ-UI-VIS-001",
@@ -1127,9 +1304,11 @@
       "component": "ui",
       "file": "app/web/css/app.css",
       "symbol": ":root",
-      "test_id": "test_ui_visual_system_tokens",
       "acceptance_evidence": "CSS variables define complete theme color palette and border radiuses",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_visual_system_tokens"
+      ]
     },
     {
       "id": "REQ-UI-TOKENS-001",
@@ -1140,9 +1319,11 @@
       "component": "ui",
       "file": "app/web/css/app.css",
       "symbol": "tokens",
-      "test_id": "test_ui_color_tokens",
       "acceptance_evidence": "Theme tokens support high contrast and consistent dark mode styling",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_color_tokens"
+      ]
     },
     {
       "id": "REQ-UI-TYPO-001",
@@ -1153,9 +1334,11 @@
       "component": "ui",
       "file": "app/web/css/app.css",
       "symbol": "typography",
-      "test_id": "test_ui_typography_stack",
       "acceptance_evidence": "Font stack specifies local system fonts avoiding external web fonts",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_typography_stack"
+      ]
     },
     {
       "id": "REQ-UI-BORDER-001",
@@ -1166,9 +1349,11 @@
       "component": "ui",
       "file": "app/web/css/app.css",
       "symbol": "borders",
-      "test_id": "test_ui_radius_and_border",
       "acceptance_evidence": "Cards and modal dialogs conform to specified border radius geometry",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_radius_and_border"
+      ]
     },
     {
       "id": "REQ-UI-BG-001",
@@ -1179,9 +1364,11 @@
       "component": "ui",
       "file": "app/web/css/app.css",
       "symbol": "background",
-      "test_id": "test_ui_background_gradient",
       "acceptance_evidence": "Pure CSS background gradient used; zero heavy image downloads",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_background_gradient"
+      ]
     },
     {
       "id": "REQ-UI-AICORE-001",
@@ -1192,9 +1379,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "svg#ai-core",
-      "test_id": "test_ui_aicore_animation",
       "acceptance_evidence": "AI Core visual state reflects READY_WAKE, THINKING, EXECUTING, and ERROR",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_aicore_animation"
+      ]
     },
     {
       "id": "REQ-UI-AICORE-IMPL-001",
@@ -1205,9 +1394,11 @@
       "component": "ui",
       "file": "app/web/css/app.css",
       "symbol": "ai-core-keyframes",
-      "test_id": "test_ui_aicore_svg_keyframes",
       "acceptance_evidence": "SVG keyframe animation consumes minimal CPU/GPU during idle",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_aicore_svg_keyframes"
+      ]
     },
     {
       "id": "REQ-UI-SHELL-001",
@@ -1218,9 +1409,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "nav.sidebar",
-      "test_id": "test_ui_desktop_shell_layout",
       "acceptance_evidence": "Sidebar navigation switches between active screens without page reload",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_desktop_shell_layout"
+      ]
     },
     {
       "id": "REQ-UI-TOPBAR-001",
@@ -1231,9 +1424,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "header.topbar",
-      "test_id": "test_ui_global_topbar",
       "acceptance_evidence": "Top bar updates status pill in sync with daemon SSE state stream",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_global_topbar"
+      ]
     },
     {
       "id": "REQ-UI-VIEW-HOME-001",
@@ -1244,9 +1439,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#screen-home",
-      "test_id": "test_ui_view_home",
       "acceptance_evidence": "Home screen renders quick action buttons and AI Core visualizer",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_view_home"
+      ]
     },
     {
       "id": "REQ-UI-HOME-CONTENT-001",
@@ -1257,9 +1454,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#home-content",
-      "test_id": "test_ui_home_content_panel",
       "acceptance_evidence": "Activity panel renders recent audit events and action status items",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_home_content_panel"
+      ]
     },
     {
       "id": "REQ-UI-HOME-AICORE-001",
@@ -1270,9 +1469,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#home-aicore",
-      "test_id": "test_ui_home_aicore_panel",
       "acceptance_evidence": "AI Core container displays state orb and active listening cues",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_home_aicore_panel"
+      ]
     },
     {
       "id": "REQ-UI-HOME-COMPOSER-001",
@@ -1283,9 +1484,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#home-composer",
-      "test_id": "test_ui_home_bottom_composer",
       "acceptance_evidence": "Composer input submits commands to daemon with voice mic shortcut",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_home_bottom_composer"
+      ]
     },
     {
       "id": "REQ-UI-VIEW-CHAT-001",
@@ -1296,9 +1499,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#screen-chat",
-      "test_id": "test_ui_view_chat",
       "acceptance_evidence": "Chat timeline renders user and assistant turns with streaming updates",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_view_chat"
+      ]
     },
     {
       "id": "REQ-UI-VIEW-TASKS-001",
@@ -1309,9 +1514,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#screen-tasks",
-      "test_id": "test_ui_view_tasks_agents",
       "acceptance_evidence": "Tasks screen displays task execution cards and agent parameters drawer",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_view_tasks_agents"
+      ]
     },
     {
       "id": "REQ-UI-TASKS-LIST-001",
@@ -1322,9 +1529,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#tasks-list",
-      "test_id": "test_ui_tasks_list_component",
       "acceptance_evidence": "Task list displays active step progress and completion badges",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_tasks_list_component"
+      ]
     },
     {
       "id": "REQ-UI-TASKS-DRAWER-001",
@@ -1335,9 +1544,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#agent-drawer",
-      "test_id": "test_ui_agent_settings_drawer",
       "acceptance_evidence": "Drawer form updates max_steps and budget_calls via config API",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_agent_settings_drawer"
+      ]
     },
     {
       "id": "REQ-UI-VIEW-BROWSER-001",
@@ -1348,9 +1559,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#screen-browser",
-      "test_id": "test_ui_view_browser",
       "acceptance_evidence": "Browser screen displays allowlist table, bridge status, and adapters",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_view_browser"
+      ]
     },
     {
       "id": "REQ-UI-BROWSER-DOMAINS-001",
@@ -1361,9 +1574,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#domains-table",
-      "test_id": "test_ui_browser_domain_table",
       "acceptance_evidence": "Allowlist table allows adding and removing domains with validation",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_browser_domain_table"
+      ]
     },
     {
       "id": "REQ-UI-BROWSER-STATUS-001",
@@ -1374,9 +1589,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#bridge-status",
-      "test_id": "test_ui_browser_bridge_status",
       "acceptance_evidence": "Bridge card shows whether native host is connected and extension is active",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_browser_bridge_status"
+      ]
     },
     {
       "id": "REQ-UI-BROWSER-ADAPTERS-001",
@@ -1387,9 +1604,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#adapter-cards",
-      "test_id": "test_ui_browser_adapter_cards",
       "acceptance_evidence": "Cards display status for Google, Amazon, ChatGPT, Claude, and Gemini",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_browser_adapter_cards"
+      ]
     },
     {
       "id": "REQ-UI-VIEW-VOICE-001",
@@ -1400,9 +1619,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#screen-voice",
-      "test_id": "test_ui_view_voice",
       "acceptance_evidence": "Voice screen controls identity, always-listening, and privacy card",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_view_voice"
+      ]
     },
     {
       "id": "REQ-UI-VOICE-IDENTITY-001",
@@ -1413,9 +1634,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#voice-identity",
-      "test_id": "test_ui_voice_identity",
       "acceptance_evidence": "Identity setting updates assistant name with immediate UI feedback",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_voice_identity"
+      ]
     },
     {
       "id": "REQ-UI-VOICE-LISTEN-001",
@@ -1426,9 +1649,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#voice-listening",
-      "test_id": "test_ui_voice_listening_controls",
       "acceptance_evidence": "Listening card toggles always_listen and displays wake model status",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_voice_listening_controls"
+      ]
     },
     {
       "id": "REQ-UI-VOICE-STT-001",
@@ -1439,9 +1664,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#voice-stt",
-      "test_id": "test_ui_voice_stt_controls",
       "acceptance_evidence": "STT section displays provider, model, and language configuration",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_voice_stt_controls"
+      ]
     },
     {
       "id": "REQ-UI-VOICE-PRIVACY-001",
@@ -1452,9 +1679,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#voice-privacy-card",
-      "test_id": "test_ui_voice_privacy_card",
       "acceptance_evidence": "Privacy card prominently displays offline wake guarantee and privacy contract",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_voice_privacy_card"
+      ]
     },
     {
       "id": "REQ-UI-VOICE-TTS-001",
@@ -1465,9 +1694,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#voice-tts",
-      "test_id": "test_ui_voice_tts_controls",
       "acceptance_evidence": "TTS section provides enable toggle and speech playback preferences",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_voice_tts_controls"
+      ]
     },
     {
       "id": "REQ-UI-VIEW-ACTIONS-001",
@@ -1478,9 +1709,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#screen-actions",
-      "test_id": "test_ui_view_actions",
       "acceptance_evidence": "Actions screen displays packs, triggers, and execution parameters",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_view_actions"
+      ]
     },
     {
       "id": "REQ-UI-VIEW-PERMS-001",
@@ -1491,9 +1724,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#screen-permissions",
-      "test_id": "test_ui_view_permissions",
       "acceptance_evidence": "Permissions screen displays terminal preapprovals, roots, and browser rules",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_view_permissions"
+      ]
     },
     {
       "id": "REQ-UI-PERMS-TERM-001",
@@ -1504,9 +1739,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#perms-terminal",
-      "test_id": "test_ui_perms_terminal",
       "acceptance_evidence": "Terminal panel displays preapproved rules and risk classification criteria",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_perms_terminal"
+      ]
     },
     {
       "id": "REQ-UI-PERMS-FILES-001",
@@ -1517,9 +1754,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#perms-files",
-      "test_id": "test_ui_perms_files",
       "acceptance_evidence": "Files panel lists allowed directory roots and read/write capabilities",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_perms_files"
+      ]
     },
     {
       "id": "REQ-UI-PERMS-BROWSER-001",
@@ -1530,9 +1769,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#perms-browser",
-      "test_id": "test_ui_perms_browser",
       "acceptance_evidence": "Browser permissions panel provides quick domain management controls",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_perms_browser"
+      ]
     },
     {
       "id": "REQ-UI-VIEW-WORKSPACES-001",
@@ -1543,9 +1784,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#screen-workspaces",
-      "test_id": "test_ui_view_workspaces",
       "acceptance_evidence": "Workspaces screen manages project directory roots and active workspaces",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_view_workspaces"
+      ]
     },
     {
       "id": "REQ-UI-VIEW-DEV-001",
@@ -1556,9 +1799,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#screen-developer",
-      "test_id": "test_ui_view_developer",
       "acceptance_evidence": "Developer screen configures git repositories, VS Code, and coding defaults",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_view_developer"
+      ]
     },
     {
       "id": "REQ-UI-DEV-REPOS-001",
@@ -1569,9 +1814,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#dev-repos",
-      "test_id": "test_ui_dev_repositories",
       "acceptance_evidence": "Repositories list shows path, active branch, and git status summary",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_dev_repositories"
+      ]
     },
     {
       "id": "REQ-UI-DEV-VSCODE-001",
@@ -1582,9 +1829,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#dev-vscode",
-      "test_id": "test_ui_dev_vscode",
       "acceptance_evidence": "VS Code panel detects code executable and launches verified workspaces",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_dev_vscode"
+      ]
     },
     {
       "id": "REQ-UI-DEV-AGENT-001",
@@ -1595,9 +1844,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#dev-agent-defaults",
-      "test_id": "test_ui_dev_agent_defaults",
       "acceptance_evidence": "Agent defaults panel shows auto-commit disabled by default and step limits",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_dev_agent_defaults"
+      ]
     },
     {
       "id": "REQ-UI-VIEW-SETTINGS-001",
@@ -1608,9 +1859,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#screen-settings",
-      "test_id": "test_ui_view_settings",
       "acceptance_evidence": "Settings screen organizes settings into clean categorized panels",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_view_settings"
+      ]
     },
     {
       "id": "REQ-UI-SETTINGS-GEN-001",
@@ -1621,9 +1874,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#settings-general",
-      "test_id": "test_ui_settings_general",
       "acceptance_evidence": "General panel configures assistant name, language, and start on boot",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_settings_general"
+      ]
     },
     {
       "id": "REQ-UI-SETTINGS-AI-001",
@@ -1634,9 +1889,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#settings-ai",
-      "test_id": "test_ui_settings_ai",
       "acceptance_evidence": "AI settings panel manages Nemotron model selection and timeout values",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_settings_ai"
+      ]
     },
     {
       "id": "REQ-UI-SETTINGS-VOICE-001",
@@ -1647,9 +1904,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#settings-voice-shortcut",
-      "test_id": "test_ui_settings_voice",
       "acceptance_evidence": "Voice shortcut navigates directly to the dedicated Voice screen",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_settings_voice"
+      ]
     },
     {
       "id": "REQ-UI-SETTINGS-BROWSER-001",
@@ -1660,9 +1919,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#settings-browser-shortcut",
-      "test_id": "test_ui_settings_browser",
       "acceptance_evidence": "Browser shortcut navigates directly to the dedicated Browser screen",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_settings_browser"
+      ]
     },
     {
       "id": "REQ-UI-SETTINGS-ACTIONS-001",
@@ -1673,9 +1934,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#settings-actions-shortcut",
-      "test_id": "test_ui_settings_actions",
       "acceptance_evidence": "Actions shortcut navigates directly to Actions and Permissions screens",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_settings_actions"
+      ]
     },
     {
       "id": "REQ-UI-SETTINGS-PRIVACY-001",
@@ -1686,9 +1949,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#settings-privacy",
-      "test_id": "test_ui_settings_privacy",
       "acceptance_evidence": "Privacy panel allows viewing data retention policies and clearing history",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_settings_privacy"
+      ]
     },
     {
       "id": "REQ-UI-SETTINGS-RES-001",
@@ -1699,9 +1964,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#settings-resources",
-      "test_id": "test_ui_settings_resources",
       "acceptance_evidence": "Resource limits panel displays current resident RSS and 300MB budget gauge",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_settings_resources"
+      ]
     },
     {
       "id": "REQ-UI-SETTINGS-SYS-001",
@@ -1712,9 +1979,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "#settings-system",
-      "test_id": "test_ui_settings_system",
       "acceptance_evidence": "System panel displays version, uptime, and daemon restart control",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_settings_system"
+      ]
     },
     {
       "id": "REQ-UI-RESPONSIVE-001",
@@ -1725,9 +1994,11 @@
       "component": "ui",
       "file": "app/web/css/app.css",
       "symbol": "media-queries",
-      "test_id": "test_ui_responsive_layout",
       "acceptance_evidence": "Dashboard layout reflows cleanly without horizontal overflow",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_responsive_layout"
+      ]
     },
     {
       "id": "REQ-UI-A11Y-001",
@@ -1738,9 +2009,11 @@
       "component": "ui",
       "file": "app/web/css/app.css",
       "symbol": "accessibility",
-      "test_id": "test_ui_accessibility_and_reduced_motion",
       "acceptance_evidence": "Keyboard focus visible, screen-reader labels present, reduced motion honored",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_accessibility_and_reduced_motion"
+      ]
     },
     {
       "id": "REQ-UI-SETTINGS-INV-001",
@@ -1751,9 +2024,11 @@
       "component": "ui",
       "file": "app/web/js/app.js",
       "symbol": "SettingsManager",
-      "test_id": "test_ui_settings_inventory_binding",
       "acceptance_evidence": "All settings fields map 1-to-1 with backend schema fields",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_settings_inventory_binding"
+      ]
     },
     {
       "id": "REQ-PLAN-PH140-001",
@@ -1764,9 +2039,11 @@
       "component": "ui",
       "file": "app/web/js/app.js",
       "symbol": "StateStreamListener",
-      "test_id": "test_ui_sse_connection_lifecycle",
       "acceptance_evidence": "Frontend attempts backoff reconnection on SSE drop without infinite retry",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_sse_connection_lifecycle"
+      ]
     },
     {
       "id": "REQ-EXEC-UI-001",
@@ -1777,9 +2054,11 @@
       "component": "ui",
       "file": "app/web/index.html",
       "symbol": "index.html",
-      "test_id": "test_ui_no_external_cdns",
       "acceptance_evidence": "HTML and CSS files contain zero external script, font, or style URLs",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_no_external_cdns"
+      ]
     },
     {
       "id": "REQ-DEV-001",
@@ -1790,9 +2069,11 @@
       "component": "developer",
       "file": "app/executors/developer.py",
       "symbol": "DeveloperWorkflowService",
-      "test_id": "test_dev_workflow_git_and_test_under_policy",
       "acceptance_evidence": "Developer workflows route commands through ActionDispatcher as ActionRequest",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_dev_workflow_git_and_test_under_policy"
+      ]
     },
     {
       "id": "REQ-PLAN-PH150-001",
@@ -1803,9 +2084,11 @@
       "component": "developer",
       "file": "app/executors/developer.py",
       "symbol": "DeveloperWorkflowService",
-      "test_id": "test_auto_commit_disabled_by_default",
       "acceptance_evidence": "Git commit workflow requires explicit approval or verified configuration flag",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_auto_commit_disabled_by_default"
+      ]
     },
     {
       "id": "REQ-RES-001",
@@ -1816,9 +2099,11 @@
       "component": "lifecycle",
       "file": "app/lifecycle.py",
       "symbol": "LifecycleManager.monitor_memory",
-      "test_id": "test_resident_cgroup_memory_stress_compliance",
       "acceptance_evidence": "Full concurrency scenario stays within MemoryMax=300M and MemoryHigh=240M",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_resident_cgroup_memory_stress_compliance"
+      ]
     },
     {
       "id": "REQ-RES-CGROUP-001",
@@ -1829,9 +2114,11 @@
       "component": "lifecycle",
       "file": "app/lifecycle.py",
       "symbol": "LifecycleManager.monitor_memory",
-      "test_id": "test_cgroup_memory_accounting_with_children",
       "acceptance_evidence": "Memory monitor reads memory.current from systemd slice covering all subprocesses",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_cgroup_memory_accounting_with_children"
+      ]
     },
     {
       "id": "REQ-PLAN-PH160-001",
@@ -1842,9 +2129,11 @@
       "component": "lifecycle",
       "file": "app/lifecycle.py",
       "symbol": "LifecycleManager.monitor_memory",
-      "test_id": "test_resource_monitor_lifecycle",
       "acceptance_evidence": "Memory threshold alerts trigger internal garbage collection and cache flushes",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_resource_monitor_lifecycle"
+      ]
     },
     {
       "id": "REQ-EXEC-MEM-001",
@@ -1855,9 +2144,11 @@
       "component": "lifecycle",
       "file": "tests/test_resource_hardening.py",
       "symbol": "test_memory_measurement_protocol",
-      "test_id": "test_memory_measurement_protocol",
       "acceptance_evidence": "Resident memory usage verified via /proc/self/statm and cgroup files",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_memory_measurement_protocol"
+      ]
     },
     {
       "id": "REQ-PKG-EXT-001",
@@ -1868,9 +2159,11 @@
       "component": "packaging",
       "file": "extension/firefox/manifest.json",
       "symbol": "manifest",
-      "test_id": "test_packaging_firefox_extension",
       "acceptance_evidence": "Firefox extension package builds cleanly and matches manifest format",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_packaging_firefox_extension"
+      ]
     },
     {
       "id": "REQ-PKG-ICON-001",
@@ -1881,9 +2174,11 @@
       "component": "packaging",
       "file": "packaging/install.sh",
       "symbol": "install.sh",
-      "test_id": "test_packaging_desktop_icons",
       "acceptance_evidence": "Desktop icons installed to ~/.local/share/icons in standard resolutions",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_packaging_desktop_icons"
+      ]
     },
     {
       "id": "REQ-PKG-FIRST-001",
@@ -1894,9 +2189,11 @@
       "component": "packaging",
       "file": "packaging/install.sh",
       "symbol": "install.sh",
-      "test_id": "test_packaging_first_run_config",
       "acceptance_evidence": "Running installation creates ~/.config/project-h/config.toml and action packs",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_packaging_first_run_config"
+      ]
     },
     {
       "id": "REQ-PLAN-PH170-001",
@@ -1907,9 +2204,11 @@
       "component": "packaging",
       "file": "packaging/systemd/maya.service",
       "symbol": "maya.service",
-      "test_id": "test_systemd_service_unit_configuration",
       "acceptance_evidence": "User systemd unit specifies project-hd entrypoint and MemoryMax=300M",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_systemd_service_unit_configuration"
+      ]
     },
     {
       "id": "REQ-UPDATE-TRUST-001",
@@ -1920,9 +2219,11 @@
       "component": "packaging",
       "file": "packaging/uninstall.sh",
       "symbol": "uninstall.sh",
-      "test_id": "test_packaging_uninstall_cleanup",
       "acceptance_evidence": "Uninstall script cleans up systemd unit and native messaging manifests",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_packaging_uninstall_cleanup"
+      ]
     },
     {
       "id": "REQ-EXEC-TERM-001",
@@ -1933,9 +2234,11 @@
       "component": "packaging",
       "file": "packaging/systemd/maya.service",
       "symbol": "maya.service",
-      "test_id": "test_packaging_safe_api_key_environment",
       "acceptance_evidence": "Systemd service manages NVIDIA_API_KEY without exposing secret in command line",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_packaging_safe_api_key_environment"
+      ]
     },
     {
       "id": "REQ-ACCP-REDTEAM-001",
@@ -1946,9 +2249,11 @@
       "component": "acceptance",
       "file": "tests/test_offline_determinism.py",
       "symbol": "test_final_acceptance_permission_red_team",
-      "test_id": "test_final_acceptance_permission_red_team",
       "acceptance_evidence": "Adversarial command injection, path escape, and grant reuse strictly denied",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_final_acceptance_permission_red_team"
+      ]
     },
     {
       "id": "REQ-ACCP-BROWSER-001",
@@ -1959,9 +2264,11 @@
       "component": "acceptance",
       "file": "tests/test_offline_determinism.py",
       "symbol": "test_final_acceptance_browser_allowlist",
-      "test_id": "test_final_acceptance_browser_allowlist",
       "acceptance_evidence": "Cross-origin requests and unlisted domain navigation fail closed",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_final_acceptance_browser_allowlist"
+      ]
     },
     {
       "id": "REQ-ACCP-VOICE-001",
@@ -1972,9 +2279,11 @@
       "component": "acceptance",
       "file": "tests/test_offline_determinism.py",
       "symbol": "test_final_acceptance_voice_privacy",
-      "test_id": "test_final_acceptance_voice_privacy",
       "acceptance_evidence": "Pre-wake audio capture is strictly local with zero network traffic emitted",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_final_acceptance_voice_privacy"
+      ]
     },
     {
       "id": "REQ-ACCP-MEMORY-001",
@@ -1985,9 +2294,11 @@
       "component": "acceptance",
       "file": "tests/test_offline_determinism.py",
       "symbol": "test_final_acceptance_memory_stress",
-      "test_id": "test_final_acceptance_memory_stress",
       "acceptance_evidence": "Daemon memory remains below 300MB RSS across extended stress run",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_final_acceptance_memory_stress"
+      ]
     },
     {
       "id": "REQ-ACCP-INSTALL-001",
@@ -1998,9 +2309,11 @@
       "component": "acceptance",
       "file": "tests/test_offline_determinism.py",
       "symbol": "test_final_acceptance_clean_install",
-      "test_id": "test_final_acceptance_clean_install",
       "acceptance_evidence": "Package installs into fresh virtualenv and starts daemon successfully",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_final_acceptance_clean_install"
+      ]
     },
     {
       "id": "REQ-ACCP-AUTOSTART-001",
@@ -2011,9 +2324,11 @@
       "component": "acceptance",
       "file": "tests/test_offline_determinism.py",
       "symbol": "test_final_acceptance_autostart",
-      "test_id": "test_final_acceptance_autostart",
       "acceptance_evidence": "Systemd user service triggers daemon autostart on session activation",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_final_acceptance_autostart"
+      ]
     },
     {
       "id": "REQ-ACCP-PACKAGING-001",
@@ -2024,9 +2339,11 @@
       "component": "acceptance",
       "file": "tests/test_offline_determinism.py",
       "symbol": "test_final_acceptance_packaging",
-      "test_id": "test_final_acceptance_packaging",
       "acceptance_evidence": "Installed files have 0600/0700 permissions with no world-writable assets",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_final_acceptance_packaging"
+      ]
     },
     {
       "id": "REQ-ACCP-EVIDENCE-001",
@@ -2037,9 +2354,11 @@
       "component": "acceptance",
       "file": "Docs/Current/PH180_FINAL_ACCEPTANCE_REPORT.md",
       "symbol": "report",
-      "test_id": "test_final_acceptance_target_ubuntu_evidence",
       "acceptance_evidence": "Final acceptance report records manual test results on target Ubuntu desktop",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_final_acceptance_target_ubuntu_evidence"
+      ]
     },
     {
       "id": "REQ-PLAN-PH180-001",
@@ -2050,9 +2369,11 @@
       "component": "acceptance",
       "file": "tests/test_offline_determinism.py",
       "symbol": "test_offline_deterministic_actions_succeed",
-      "test_id": "test_offline_deterministic_actions_succeed",
       "acceptance_evidence": "Offline deterministic commands succeed with verified network call count = 0",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_offline_deterministic_actions_succeed"
+      ]
     },
     {
       "id": "REQ-ARCH-FAIL-001",
@@ -2063,9 +2384,11 @@
       "component": "acceptance",
       "file": "tests/test_offline_determinism.py",
       "symbol": "test_final_acceptance_failure_fail_closed",
-      "test_id": "test_final_acceptance_failure_fail_closed",
       "acceptance_evidence": "Any component failure (wake, STT, provider, bridge) results in fail-closed stop",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_final_acceptance_failure_fail_closed"
+      ]
     },
     {
       "id": "REQ-EXEC-TDD-001",
@@ -2076,22 +2399,26 @@
       "component": "acceptance",
       "file": "tests/test_offline_determinism.py",
       "symbol": "test_final_acceptance_tdd_compliance",
-      "test_id": "test_final_acceptance_tdd_compliance",
       "acceptance_evidence": "Full test suite passes with zero regressions across entire codebase",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_final_acceptance_tdd_compliance"
+      ]
     },
     {
       "id": "REQ-TTS-001",
       "source": "Docs/DOCS.md",
       "category": "voice",
-      "description": "Text-to-speech audio feedback is optional, independently toggleable (default off), triggered remotely only after completed command response, and forbidden from holding heavy resident synthesis engines in memory.",
-      "phase": "PH080",
-      "component": "voice",
-      "file": "app/voice/tts.py",
-      "symbol": "TTSController",
-      "test_id": "test_tts_toggle_and_resource_safety",
-      "acceptance_evidence": "TTS toggle is respected; disabled by default; non-resident remote execution only",
-      "out_of_v1_rationale": null
+      "description": "Text-to-speech audio feedback is optional and default disabled in V1 to respect 240M memory ceiling; Voice Output toggle is rendered disabled/read-only with explanatory memory notice.",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#voice-output-toggle",
+      "acceptance_evidence": "Voice Output toggle is disabled/read-only; no resident TTS synthesis engine loaded",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_tts_toggle_disabled_in_v1"
+      ]
     },
     {
       "id": "REQ-EXEC-PROC-BOUNDED-001",
@@ -2102,9 +2429,11 @@
       "component": "executors",
       "file": "tests/test_executors.py",
       "symbol": "ProcessExecutor._read_stream",
-      "test_id": "test_process_bounded_output",
       "acceptance_evidence": "Process output exceeding 100 KB is truncated with flag set",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_process_bounded_output"
+      ]
     },
     {
       "id": "REQ-EXEC-PROC-STDIN-001",
@@ -2115,9 +2444,11 @@
       "component": "executors",
       "file": "tests/test_executors.py",
       "symbol": "ProcessExecutor.execute",
-      "test_id": "test_process_stdin_unavailable",
       "acceptance_evidence": "Child process stdin is connected to DEVNULL preventing interactive lockup",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_process_stdin_unavailable"
+      ]
     },
     {
       "id": "REQ-EXEC-PROC-ENV-001",
@@ -2128,9 +2459,11 @@
       "component": "executors",
       "file": "tests/test_executors.py",
       "symbol": "ProcessExecutor._build_environment",
-      "test_id": "test_process_controlled_env_and_dangerous_rejected",
       "acceptance_evidence": "Dangerous environment variables (LD_PRELOAD, PYTHONPATH) are stripped",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_process_controlled_env_and_dangerous_rejected"
+      ]
     },
     {
       "id": "REQ-EXEC-PROC-HIJACK-001",
@@ -2141,9 +2474,11 @@
       "component": "executors",
       "file": "tests/test_executors.py",
       "symbol": "resolve_trusted_executable",
-      "test_id": "test_process_path_hijack_cannot_change_preapproved_executable",
       "acceptance_evidence": "Executable resolved via canonical absolute path only",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_process_path_hijack_cannot_change_preapproved_executable"
+      ]
     },
     {
       "id": "REQ-EXEC-PROC-NONET-001",
@@ -2154,9 +2489,11 @@
       "component": "executors",
       "file": "tests/test_executors.py",
       "symbol": "ProcessExecutor.execute",
-      "test_id": "test_process_no_fake_network_allowed_enforcement",
       "acceptance_evidence": "Executors fail closed if network requirements are contradictory",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_process_no_fake_network_allowed_enforcement"
+      ]
     },
     {
       "id": "REQ-EXEC-FILE-SYMLINK-001",
@@ -2167,9 +2504,11 @@
       "component": "executors",
       "file": "tests/test_executors.py",
       "symbol": "FileExecutor._resolve_safe_path",
-      "test_id": "test_file_symlink_escape_denied",
       "acceptance_evidence": "Symlinks targeting outside allowed root are rejected with security error",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_file_symlink_escape_denied"
+      ]
     },
     {
       "id": "REQ-EXEC-FILE-ATOMIC-001",
@@ -2180,9 +2519,11 @@
       "component": "executors",
       "file": "tests/test_executors.py",
       "symbol": "FileExecutor._write_atomic",
-      "test_id": "test_file_atomic_write_success",
       "acceptance_evidence": "File writes complete via atomic rename, preserving file on failure",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_file_atomic_write_success"
+      ]
     },
     {
       "id": "REQ-EXEC-FILE-SYMLINK-WRITE-001",
@@ -2193,9 +2534,11 @@
       "component": "executors",
       "file": "tests/test_executors.py",
       "symbol": "FileExecutor._resolve_safe_path",
-      "test_id": "test_file_write_through_symlink_rejected",
       "acceptance_evidence": "Writing to an existing symlink path fails closed",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_file_write_through_symlink_rejected"
+      ]
     },
     {
       "id": "REQ-EXEC-FILE-DELETE-001",
@@ -2206,9 +2549,11 @@
       "component": "executors",
       "file": "tests/test_executors.py",
       "symbol": "FileExecutor._delete_file",
-      "test_id": "test_file_delete_does_not_auto_execute",
       "acceptance_evidence": "File deletion performs unlink only without triggering execution hooks",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_file_delete_does_not_auto_execute"
+      ]
     },
     {
       "id": "REQ-EXEC-XDG-BROWSER-001",
@@ -2219,9 +2564,11 @@
       "component": "executors",
       "file": "tests/test_executors.py",
       "symbol": "XdgExecutor.execute",
-      "test_id": "test_xdg_cannot_bypass_browser_url_policy",
       "acceptance_evidence": "XDG executor rejects http/https schemes, enforcing local file targets only",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_xdg_cannot_bypass_browser_url_policy"
+      ]
     },
     {
       "id": "REQ-EXEC-XDG-AMBIENT-001",
@@ -2232,9 +2579,11 @@
       "component": "executors",
       "file": "tests/test_executors.py",
       "symbol": "XdgExecutor._resolve_xdg_binary",
-      "test_id": "test_xdg_no_ambient_shutil_which_fallback",
       "acceptance_evidence": "xdg-open is resolved strictly from trusted system paths (/usr/bin/xdg-open)",
-      "out_of_v1_rationale": null
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_xdg_no_ambient_shutil_which_fallback"
+      ]
     }
   ]
 }

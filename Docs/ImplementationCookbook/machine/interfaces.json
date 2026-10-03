@@ -39,6 +39,10 @@
         "ApprovalTimeoutError",
         "ApprovalDeniedError",
         "ApprovalBackendError"
+      ],
+      "resource_bound_ids": [
+        "RB-APPROVAL-PENDING",
+        "RB-APPROVAL-TIMEOUT"
       ]
     },
     {
@@ -74,6 +78,9 @@
       "errors": [
         "GrantAlreadyConsumedError",
         "InvalidGrantError"
+      ],
+      "resource_bound_ids": [
+        "RB-APPROVAL-GRANTS"
       ]
     },
     {
@@ -111,6 +118,10 @@
         "ProviderTimeoutError",
         "ProviderAPIError",
         "ProviderRateLimitError"
+      ],
+      "resource_bound_ids": [
+        "RB-AI-OUTPUT-TOKENS",
+        "RB-AI-TIMEOUT"
       ]
     },
     {
@@ -146,6 +157,10 @@
       "errors": [
         "ProviderStreamError",
         "ProviderTimeoutError"
+      ],
+      "resource_bound_ids": [
+        "RB-AI-OUTPUT-TOKENS",
+        "RB-AI-TIMEOUT"
       ]
     },
     {
@@ -181,6 +196,9 @@
       "errors": [
         "RoutingAmbiguityError",
         "CommandParsingError"
+      ],
+      "resource_bound_ids": [
+        "RB-ROUTER-TIMEOUT"
       ]
     },
     {
@@ -214,6 +232,12 @@
         "AgentStepLimitExceeded",
         "AgentBudgetExceeded",
         "AgentPolicyViolation"
+      ],
+      "resource_bound_ids": [
+        "RB-AGENT-STEPS",
+        "RB-AGENT-API-CALLS",
+        "RB-AGENT-TIMEOUT",
+        "RB-AGENT-TRANSCRIPT-BYTES"
       ]
     },
     {
@@ -244,6 +268,9 @@
       "audit_code": "SEC-VOIC-WAKE",
       "errors": [
         "WakeInferenceError"
+      ],
+      "resource_bound_ids": [
+        "RB-VOICE-FRAME"
       ]
     },
     {
@@ -274,6 +301,11 @@
       "audit_code": "AUD-VOIC-READ",
       "errors": [
         "AudioStreamClosedError"
+      ],
+      "resource_bound_ids": [
+        "RB-VOICE-QUEUE",
+        "RB-VOICE-FRAME",
+        "RB-STT-AUDIO"
       ]
     },
     {
@@ -307,6 +339,11 @@
         "STTTimeoutError",
         "STTRecognitionError",
         "STTNetworkError"
+      ],
+      "resource_bound_ids": [
+        "RB-STT-AUDIO",
+        "RB-STT-BUFFER",
+        "RB-STT-TIMEOUT"
       ]
     },
     {
@@ -336,6 +373,10 @@
       "audit_code": "AUD-TRAY-STATE",
       "errors": [
         "DBusCommunicationError"
+      ],
+      "resource_bound_ids": [
+        "RB-STATE-SUBSCRIBERS",
+        "RB-STATE-QUEUE"
       ]
     },
     {
@@ -369,6 +410,10 @@
         "BrowserBridgeDisconnectedError",
         "BrowserCommandTimeoutError",
         "DomainNotAllowedError"
+      ],
+      "resource_bound_ids": [
+        "RB-BROWSER-UDS-FRAME",
+        "RB-BROWSER-TIMEOUT"
       ]
     },
     {
@@ -398,6 +443,9 @@
       "audit_code": "SEC-ADPT-EXTRACT",
       "errors": [
         "DOMSelectorNotFoundError"
+      ],
+      "resource_bound_ids": [
+        "RB-ADAPTER-TIMEOUT"
       ]
     },
     {
@@ -431,12 +479,17 @@
       "audit_code": "SEC-API-CREATE",
       "errors": [
         "AppFactoryError"
+      ],
+      "resource_bound_ids": [
+        "RB-DB-QUEUE",
+        "RB-SSE-CLIENTS",
+        "RB-SSE-QUEUE"
       ]
     },
     {
       "name": "DeveloperWorkflowService.run_workflow",
       "owning_phase": "PH150",
-      "file": "app/executors/developer.py",
+      "file": "app/developer/workflow.py",
       "signature": "async def run_workflow(self, workflow_name: str, parameters: dict[str, Any]) -> WorkflowResult",
       "inputs": [
         {
@@ -467,6 +520,10 @@
       "errors": [
         "GitExecutionError",
         "TestExecutionFailedError"
+      ],
+      "resource_bound_ids": [
+        "RB-DEV-WORKFLOW-OUTPUT",
+        "RB-DEV-WORKFLOW-TIMEOUT"
       ]
     },
     {
@@ -491,6 +548,10 @@
       "audit_code": "AUD-RES-MONITOR",
       "errors": [
         "ProcfsReadError"
+      ],
+      "resource_bound_ids": [
+        "RB-MEMORY-HIGH",
+        "RB-MEMORY-MAX"
       ]
     },
     {
@@ -513,42 +574,8 @@
       "cancellation": "Immediate cancellation of pending socket closes",
       "idempotent": true,
       "audit_code": "AI-PROV-CLOSE",
-      "errors": []
-    },
-    {
-      "name": "TTSController.speak_response",
-      "owning_phase": "PH080",
-      "file": "app/voice/tts.py",
-      "signature": "async def speak_response(self, text: str, enabled: bool) -> None",
-      "inputs": [
-        {
-          "name": "text",
-          "type": "str"
-        },
-        {
-          "name": "enabled",
-          "type": "bool"
-        }
-      ],
-      "output": "None",
-      "preconditions": [
-        "text is sanitized ASCII/UTF-8 string under 4096 characters",
-        "enabled toggle must be True to initiate playback"
-      ],
-      "postconditions": [
-        "audio synthesized remotely or discarded; zero resident memory retained"
-      ],
-      "is_security_boundary": false,
-      "security_test_id": null,
-      "bounds": "Non-resident remote invocation only; strictly no heavy resident synthesis engine in memory",
-      "timeout_seconds": 15.0,
-      "cancellation": "Immediate cancellation stops audio playback buffer",
-      "idempotent": true,
-      "audit_code": "VOICE-TTS-PLAY",
-      "errors": [
-        "TTSTimeoutError",
-        "TTSPlaybackError"
-      ]
+      "errors": [],
+      "resource_bound_ids": []
     }
   ]
 }
