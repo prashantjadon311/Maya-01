@@ -73,4 +73,11 @@ Every file in the Maya repository (both existing PH-000..PH-040 files and future
 | `tests/test_packaging.py` | PH170 | — | Packaging verification test suite | Manifest & service file syntax tests | System-wide modifications |
 | `tests/test_offline_determinism.py` | PH180 | — | Offline determinism acceptance suite | Offline test cases | Live external network calls |
 | `Docs/Current/PH180_FINAL_ACCEPTANCE_REPORT.md` | PH180 | — | Final V1 acceptance and verification report | Verification tables, test results | Unverified claims |
-
+| `app/actions/matcher.py` | PH030 | — | Template matching & regex phrase slot extraction | `PhraseMatcher` class, slot extraction | Arbitrary execution |
+| `app/actions/schema.py` | PH030 | — | Action pack Pydantic schemas and models | `ActionPack`, `ActionDefinition` | Runtime execution logic |
+| `app/core/events.py` | PH000 | — | Application event types and bus definitions | `Event`, `EventType`, `EventBus` | Blocking I/O, subprocess calls |
+| `app/executors/base.py` | PH040 | — | Base abstract interface for action executors | `BaseExecutor` abstract class | Direct process execution |
+| `app/main.py` | PH000 | PH170 | Daemon CLI entrypoint and signal handling | `main` function, CLI argument parsing | Unbounded execution |
+| `app/policy/approvals.py` | PH020 | — | Approval rule definitions and classification | `ApprovalRequirement`, `ApprovalType` | Persistent state |
+| `app/policy/paths.py` | PH020 | — | Path policy evaluation and sandboxing helper | `validate_path`, containment checks | Filesystem mutations |
+| `app/policy/risk.py` | PH020 | — | Risk assessment schemas and classifications | `RiskLevel` enum, `RiskAssessment` | Subprocess calls |

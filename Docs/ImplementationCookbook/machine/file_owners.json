@@ -926,6 +926,120 @@
         "unverified claims",
         "modifying production requirements"
       ]
+    },
+    {
+      "path": "app/actions/matcher.py",
+      "owner_phase": "PH030",
+      "secondary_modifiers": [],
+      "purpose": "Template matching and regex phrase slot extraction",
+      "allowed_contents": [
+        "PhraseMatcher class",
+        "regex compilation",
+        "slot extraction"
+      ],
+      "forbidden_contents": [
+        "arbitrary execution",
+        "file modification"
+      ]
+    },
+    {
+      "path": "app/actions/schema.py",
+      "owner_phase": "PH030",
+      "secondary_modifiers": [],
+      "purpose": "Action pack Pydantic schemas and models",
+      "allowed_contents": [
+        "ActionPack",
+        "ActionDefinition",
+        "ArgumentDefinition"
+      ],
+      "forbidden_contents": [
+        "runtime execution",
+        "state mutation"
+      ]
+    },
+    {
+      "path": "app/core/events.py",
+      "owner_phase": "PH000",
+      "secondary_modifiers": [],
+      "purpose": "Application event types and bus definitions",
+      "allowed_contents": [
+        "Event",
+        "EventType enum",
+        "EventBus"
+      ],
+      "forbidden_contents": [
+        "blocking I/O",
+        "subprocess calls"
+      ]
+    },
+    {
+      "path": "app/executors/base.py",
+      "owner_phase": "PH040",
+      "secondary_modifiers": [],
+      "purpose": "Base abstract interface for action executors",
+      "allowed_contents": [
+        "BaseExecutor abstract class",
+        "execute abstractmethod"
+      ],
+      "forbidden_contents": [
+        "direct process execution"
+      ]
+    },
+    {
+      "path": "app/main.py",
+      "owner_phase": "PH000",
+      "secondary_modifiers": [
+        "PH170"
+      ],
+      "purpose": "Daemon CLI entrypoint and signal handling",
+      "allowed_contents": [
+        "main function",
+        "CLI argument parsing",
+        "daemon bootstrap"
+      ],
+      "forbidden_contents": [
+        "business logic",
+        "unbounded execution"
+      ]
+    },
+    {
+      "path": "app/policy/approvals.py",
+      "owner_phase": "PH020",
+      "secondary_modifiers": [],
+      "purpose": "Approval rule definitions and classification",
+      "allowed_contents": [
+        "ApprovalRequirement",
+        "ApprovalType enum"
+      ],
+      "forbidden_contents": [
+        "persistent state"
+      ]
+    },
+    {
+      "path": "app/policy/paths.py",
+      "owner_phase": "PH020",
+      "secondary_modifiers": [],
+      "purpose": "Path policy evaluation and sandboxing helper",
+      "allowed_contents": [
+        "validate_path",
+        "is_within_allowed_roots"
+      ],
+      "forbidden_contents": [
+        "direct filesystem mutations"
+      ]
+    },
+    {
+      "path": "app/policy/risk.py",
+      "owner_phase": "PH020",
+      "secondary_modifiers": [],
+      "purpose": "Risk assessment schemas and risk level classifications",
+      "allowed_contents": [
+        "RiskLevel enum",
+        "RiskAssessment model"
+      ],
+      "forbidden_contents": [
+        "subprocess calls"
+      ]
     }
   ]
 }

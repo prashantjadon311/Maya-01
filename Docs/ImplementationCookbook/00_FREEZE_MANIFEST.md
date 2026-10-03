@@ -1,8 +1,9 @@
 # Maya Implementation Cookbook — Freeze Manifest
 
 - **Cookbook Version:** `1.0.0`
-- **Status:** `DRAFT`
+- **Status:** `FROZEN`
 - **Repository:** `prashantjadon311/Maya-01`
+
 - **Cookbook Work Base SHA:** `d603173624ddc9285b32ee00f33c10be2ecc9b58`
 - **Product Code Base SHA:** `ef00714c86d3d7b5684d693da35aa82595a088d4`
 - **CI Baseline Run:** `37107781413` (Green on base SHA)
@@ -55,8 +56,6 @@ GUESS_REQUIRED_IMPLEMENTATION_ITEMS = 0
 ---
 
 ## 4. Canonical Fingerprints
-
-Will be generated upon final freeze:
-- `INTERFACE_HASH`: `PENDING_FREEZE`
-- `REQUIREMENT_MAP_HASH`: `PENDING_FREEZE`
-- `PHASE_MANIFEST_HASH`: `PENDING_FREEZE`
+- `INTERFACE_HASH`: `292b708a255e68139ed519804ea3d1cee3286678867e84d3c71475c8d05ed0d3`
+- `REQUIREMENT_MAP_HASH`: `d324fe6804d8057a01b2534200a0babb439115bc449e561b0cd1928515656274`
+- `PHASE_MANIFEST_HASH`: `333541a149349fcbef615e723a22cc67f29128dd9d23e7a7c0a58679c40c699b`

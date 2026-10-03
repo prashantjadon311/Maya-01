@@ -1,6 +1,6 @@
 {
   "cookbook_version": "1.0.0",
-  "status": "DRAFT",
+  "status": "FROZEN",
   "cookbook_work_base_sha": "d603173624ddc9285b32ee00f33c10be2ecc9b58",
   "product_code_base_sha": "ef00714c86d3d7b5684d693da35aa82595a088d4",
   "base_sha": "ef00714c86d3d7b5684d693da35aa82595a088d4",
@@ -27,5 +27,8 @@
     "Docs/TASKS.md": "f2b8f60c28f023946a3e3c4376c0bba14f585902",
     "Docs/EXECUTION.md": "4a41e269f1a46146e87b83829560294b85890563",
     "Docs/SKILL.md": "3ee7bf617703e36bda264096154bc2609950deea"
-  }
+  },
+  "interface_hash": "292b708a255e68139ed519804ea3d1cee3286678867e84d3c71475c8d05ed0d3",
+  "requirement_map_hash": "d324fe6804d8057a01b2534200a0babb439115bc449e561b0cd1928515656274",
+  "phase_manifest_hash": "333541a149349fcbef615e723a22cc67f29128dd9d23e7a7c0a58679c40c699b"
 }

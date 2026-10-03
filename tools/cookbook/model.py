@@ -24,6 +24,9 @@ class AuthorityModel(BaseModel):
     target_os: str
     authority_order: list[str]
     blob_shas: dict[str, str]
+    interface_hash: str | None = None
+    requirement_map_hash: str | None = None
+    phase_manifest_hash: str | None = None
 
 
 class RequirementItem(BaseModel):
