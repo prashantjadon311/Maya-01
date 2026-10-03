@@ -10,22 +10,27 @@
 
 You must execute a continuous internal execution loop iterating through phases **PH-050 → PH-060 → PH-070 → PH-080 → PH-090 → PH-100 → PH-110 → PH-120 → PH-130 → PH-140 → PH-150 → PH-160 → PH-170 → PH-180**.
 
-**CRITICAL:** Do NOT stop or ask for user confirmation between successful phases. Once a phase passes all tests, review gates, and checkpoint requirements, immediately and automatically continue to the next phase in the loop.
+### Pre-requisites & Implementation Safety:
+1. **Dedicated Branch:** Create and check out `maya-v1-implementation` branch from exact merged frozen `main`. **NEVER implement directly on main.**
+2. **Cookbook Immutability:** `Docs/ImplementationCookbook/**` is strictly read-only during phase implementation. Any discovery of a cookbook defect or missing specification must immediately trigger a hard stop with error code `COOKBOOK_DEFECT_BLOCKER`.
+3. **Continuous Progression:** Do NOT stop or ask for user confirmation between successful phases. Once a phase passes all tests, review gates, and checkpoint requirements, immediately and automatically continue to the next phase in the loop.
 
 For each phase `PHxxx`:
 
 1. **MINIMAL TOKEN READS (PHASE ISOLATION):**
    Load only the minimal phase-local context:
    - `Docs/SKILL.md`
-   - Current phase entry in `Docs/ImplementationCookbook/machine/phase_manifest.json`
+   - Phase `required_reads` declared in `Docs/ImplementationCookbook/machine/phase_manifest.json`
+   - Relevant interfaces and resource bounds in `Docs/ImplementationCookbook/machine/`
    - Current phase packet: `Docs/ImplementationCookbook/phases/PHxxx.md`
-   - Phase-relevant entries in `Docs/ImplementationCookbook/machine/interfaces.json` and `17_REFERENCE_CODE_CAPSULES.md`
+   - Prior phase checkpoint from `.planning/` or checkpoint ledger
    - The exact source files declared in `files_created` or `files_modified`.
 
 2. **PRE-PHASE DELTA-CHECK:**
    Execute the verification steps from `Docs/ImplementationCookbook/execution/DELTA_CHECK.md`:
    - Verify working tree is clean: `git status --short`.
    - Verify canonical interface and manifest fingerprints: `python -m tools.cookbook.fingerprint ... --expect <hash>`.
+   - Verify AST source interfaces: `python -m tools.cookbook.verify_source_interfaces Docs/ImplementationCookbook/machine/source_interfaces.json`.
    - Verify cookbook integrity: `PYTHONPATH=. python -m tools.cookbook.validate Docs/ImplementationCookbook`.
    - Verify preceding test baseline is green.
 
@@ -52,7 +57,9 @@ For each phase `PHxxx`:
    - **Gate D (Token & Memory):** Clean code, no dangling debug code, memory bounds respected.
 
 7. **ATOMIC GIT COMMIT:**
-   Stage modified and created files for the phase:
+   - Verify changed files strictly match `files_created` and `files_modified` in `phase_manifest.json`.
+   - Run `git diff --check` to ensure no whitespace errors or merge conflict markers.
+   - Stage modified and created files for the phase:
    `git commit -m "feat(<subsystem>): implement PH-xxx <title>"`
 
 8. **DURABLE CHECKPOINT CREATION:**

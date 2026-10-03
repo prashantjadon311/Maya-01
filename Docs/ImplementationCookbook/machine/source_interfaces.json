@@ -1,0 +1,585 @@
+{
+  "app/actions/matcher.py": {
+    "classes": {},
+    "constants": [
+      "MAX_PHRASE_CHARS",
+      "SLOT_ID_PATTERN",
+      "SLOT_PLACEHOLDER_PATTERN"
+    ],
+    "functions": [
+      "extract_argument_slots",
+      "normalize_text",
+      "parse_phrase_template",
+      "substitute_arguments"
+    ]
+  },
+  "app/actions/registry.py": {
+    "classes": {
+      "ActionRegistry": {
+        "fields": [],
+        "methods": [
+          "__init__",
+          "_load_pack_file",
+          "get_definition",
+          "reload",
+          "resolve",
+          "snapshot_version"
+        ]
+      },
+      "RegistryAmbiguity": {
+        "fields": [
+          "action_ids"
+        ],
+        "methods": [
+          "__post_init__"
+        ]
+      },
+      "RegistryMatch": {
+        "fields": [
+          "action_id",
+          "captured_slots",
+          "snapshot_version"
+        ],
+        "methods": [
+          "__post_init__"
+        ]
+      },
+      "_RegistrySnapshot": {
+        "fields": [
+          "actions",
+          "matchers",
+          "packs"
+        ],
+        "methods": []
+      }
+    },
+    "constants": [
+      "MAX_COMMAND_CHARS",
+      "MAX_PACK_BYTES",
+      "MAX_PACK_FILES",
+      "MAX_PHRASES_PER_ACTION",
+      "MAX_PHRASE_CHARS",
+      "MAX_TOTAL_ACTIONS",
+      "MAX_TOTAL_PHRASES"
+    ],
+    "functions": [
+      "_check_composite_cycles",
+      "_reject_duplicate_keys"
+    ]
+  },
+  "app/actions/schema.py": {
+    "classes": {
+      "ActionDefinition": {
+        "fields": [
+          "approval",
+          "arguments",
+          "enabled",
+          "executor",
+          "id",
+          "model_config",
+          "phrases",
+          "risk",
+          "timeout_seconds"
+        ],
+        "methods": [
+          "validate_json_args",
+          "validate_security_contract"
+        ]
+      },
+      "ActionPack": {
+        "fields": [
+          "actions",
+          "label",
+          "model_config",
+          "pack_id",
+          "schema_version"
+        ],
+        "methods": [
+          "validate_label",
+          "validate_unique_ids"
+        ]
+      },
+      "ActionRequest": {
+        "fields": [
+          "agent_id",
+          "arguments",
+          "id",
+          "model_config",
+          "reason",
+          "request_id",
+          "risk_hint",
+          "tool",
+          "workspace"
+        ],
+        "methods": [
+          "to_canonical_bytes",
+          "to_canonical_json",
+          "validate_json_args"
+        ]
+      },
+      "ActionResult": {
+        "fields": [
+          "error",
+          "model_config",
+          "output",
+          "success"
+        ],
+        "methods": []
+      }
+    },
+    "constants": [],
+    "functions": [
+      "validate_canonical_json"
+    ]
+  },
+  "app/browser/protocol.py": {
+    "classes": {
+      "BrowserBridge": {
+        "fields": [],
+        "methods": [
+          "execute"
+        ]
+      }
+    },
+    "constants": [],
+    "functions": []
+  },
+  "app/core/config.py": {
+    "classes": {
+      "AIConfig": {
+        "fields": [
+          "api_key_env",
+          "base_url",
+          "max_output_tokens",
+          "model",
+          "model_config",
+          "provider",
+          "reasoning_budget",
+          "reasoning_effort",
+          "timeout_seconds"
+        ],
+        "methods": []
+      },
+      "AgentsConfig": {
+        "fields": [
+          "default_timeout_minutes",
+          "max_active",
+          "max_api_calls_per_task",
+          "max_steps",
+          "model_config"
+        ],
+        "methods": []
+      },
+      "AssistantConfig": {
+        "fields": [
+          "display_name",
+          "language",
+          "model_config",
+          "start_on_login",
+          "wake_phrase"
+        ],
+        "methods": [
+          "validate_identity"
+        ]
+      },
+      "BrowserConfig": {
+        "fields": [
+          "domains",
+          "model_config"
+        ],
+        "methods": []
+      },
+      "BrowserDomainConfig": {
+        "fields": [
+          "adapter",
+          "capabilities",
+          "enabled",
+          "model_config",
+          "pattern"
+        ],
+        "methods": []
+      },
+      "Config": {
+        "fields": [
+          "agents",
+          "ai",
+          "assistant",
+          "browser",
+          "dashboard",
+          "files",
+          "model_config",
+          "privacy",
+          "resources",
+          "stt",
+          "voice"
+        ],
+        "methods": []
+      },
+      "DashboardConfig": {
+        "fields": [
+          "host",
+          "model_config",
+          "open_browser",
+          "port"
+        ],
+        "methods": []
+      },
+      "FileRootConfig": {
+        "fields": [
+          "delete",
+          "model_config",
+          "path",
+          "read",
+          "write"
+        ],
+        "methods": []
+      },
+      "FilesConfig": {
+        "fields": [
+          "model_config",
+          "roots"
+        ],
+        "methods": []
+      },
+      "PrivacyConfig": {
+        "fields": [
+          "log_prompt_content",
+          "log_response_content",
+          "model_config",
+          "retain_audio",
+          "store_action_audit",
+          "store_chat_history"
+        ],
+        "methods": []
+      },
+      "ResourcesConfig": {
+        "fields": [
+          "max_audio_command_seconds",
+          "max_event_queue",
+          "memory_high_mb",
+          "memory_max_mb",
+          "model_config"
+        ],
+        "methods": [
+          "validate_memory_limits"
+        ]
+      },
+      "STTConfig": {
+        "fields": [
+          "api_key_env",
+          "default_language",
+          "model",
+          "model_config",
+          "provider"
+        ],
+        "methods": []
+      },
+      "VoiceConfig": {
+        "fields": [
+          "always_listen",
+          "enabled",
+          "max_command_seconds",
+          "model_config",
+          "push_to_talk_hotkey",
+          "retain_command_audio",
+          "vad_enabled",
+          "wake_engine",
+          "wake_model",
+          "wake_threshold"
+        ],
+        "methods": []
+      }
+    },
+    "constants": [],
+    "functions": [
+      "load_config",
+      "parse_config_toml"
+    ]
+  },
+  "app/core/dispatcher.py": {
+    "classes": {
+      "ActionDispatcher": {
+        "fields": [],
+        "methods": [
+          "__init__",
+          "_definition_container_gate",
+          "_dispatch_composite",
+          "_dispatch_with_policy",
+          "_emit_audit",
+          "_map_executor_to_tool",
+          "_sanitize_error_code",
+          "dispatch_match",
+          "dispatch_request",
+          "recent_audits"
+        ]
+      },
+      "_CompositeBudget": {
+        "fields": [],
+        "methods": [
+          "__init__"
+        ]
+      }
+    },
+    "constants": [
+      "MAX_COMPOSITE_DEPTH",
+      "MAX_COMPOSITE_STEPS",
+      "MAX_COMPOSITE_TOTAL_STEPS"
+    ],
+    "functions": []
+  },
+  "app/core/state.py": {
+    "classes": {
+      "AppState": {
+        "fields": [
+          "active_task_id",
+          "always_listen",
+          "metadata",
+          "model_config",
+          "pending_approval",
+          "status",
+          "voice_output"
+        ],
+        "methods": [
+          "get_state",
+          "update"
+        ]
+      }
+    },
+    "constants": [],
+    "functions": []
+  },
+  "app/executors/base.py": {
+    "classes": {
+      "BaseExecutor": {
+        "fields": [],
+        "methods": [
+          "execute"
+        ]
+      },
+      "FileDeleteArgs": {
+        "fields": [
+          "model_config",
+          "path"
+        ],
+        "methods": [
+          "validate_path"
+        ]
+      },
+      "FileListArgs": {
+        "fields": [
+          "max_entries",
+          "model_config",
+          "path"
+        ],
+        "methods": [
+          "validate_path"
+        ]
+      },
+      "FileReadArgs": {
+        "fields": [
+          "max_bytes",
+          "model_config",
+          "path"
+        ],
+        "methods": [
+          "validate_path"
+        ]
+      },
+      "FileWriteArgs": {
+        "fields": [
+          "content",
+          "encoding",
+          "model_config",
+          "path"
+        ],
+        "methods": [
+          "validate_content_size",
+          "validate_path"
+        ]
+      },
+      "ProcessArgs": {
+        "fields": [
+          "argv",
+          "cwd",
+          "env",
+          "model_config"
+        ],
+        "methods": [
+          "validate_argv",
+          "validate_cwd",
+          "validate_env"
+        ]
+      },
+      "XdgOpenArgs": {
+        "fields": [
+          "model_config",
+          "target"
+        ],
+        "methods": [
+          "validate_target"
+        ]
+      }
+    },
+    "constants": [
+      "MAX_ARGV_COUNT",
+      "MAX_ARG_CHARS",
+      "MAX_DIR_LIST_ENTRIES",
+      "MAX_ENV_COUNT",
+      "MAX_ENV_KEY_CHARS",
+      "MAX_ENV_VAL_CHARS",
+      "MAX_FILE_BYTES"
+    ],
+    "functions": []
+  },
+  "app/executors/files.py": {
+    "classes": {
+      "FileExecutor": {
+        "fields": [],
+        "methods": [
+          "__init__",
+          "_verify_path_security",
+          "execute",
+          "execute_delete",
+          "execute_list",
+          "execute_read",
+          "execute_write"
+        ]
+      }
+    },
+    "constants": [],
+    "functions": [
+      "_open_dirfd_under_root",
+      "_open_parent_dirfd"
+    ]
+  },
+  "app/executors/process.py": {
+    "classes": {
+      "ProcessExecutor": {
+        "fields": [],
+        "methods": [
+          "__init__",
+          "execute"
+        ]
+      }
+    },
+    "constants": [
+      "DANGEROUS_ENV_VARS",
+      "DEFAULT_SAFE_ENV_PATH",
+      "MAX_PROCESS_OUTPUT_BYTES"
+    ],
+    "functions": [
+      "_read_stream_bounded"
+    ]
+  },
+  "app/executors/xdg.py": {
+    "classes": {
+      "XdgExecutor": {
+        "fields": [],
+        "methods": [
+          "__init__",
+          "execute"
+        ]
+      }
+    },
+    "constants": [],
+    "functions": []
+  },
+  "app/main.py": {
+    "classes": {
+      "Daemon": {
+        "fields": [],
+        "methods": [
+          "__init__",
+          "start",
+          "stop"
+        ]
+      }
+    },
+    "constants": [],
+    "functions": [
+      "main"
+    ]
+  },
+  "app/policy/engine.py": {
+    "classes": {
+      "PolicyDecision": {
+        "fields": [
+          "ALLOW_PREAPPROVED",
+          "ASK_USER",
+          "DENY"
+        ],
+        "methods": []
+      },
+      "PolicyEngine": {
+        "fields": [],
+        "methods": [
+          "__init__",
+          "assess_risk",
+          "evaluate",
+          "evaluate_detailed"
+        ]
+      },
+      "PolicyEvaluation": {
+        "fields": [
+          "decision",
+          "matched_preapproval_rule",
+          "resolved_executable",
+          "trusted_risk"
+        ],
+        "methods": []
+      },
+      "PreapprovalRule": {
+        "fields": [
+          "approval",
+          "argv_prefix",
+          "env_allowlist",
+          "executable",
+          "id",
+          "model_config",
+          "network_allowed",
+          "risk",
+          "timeout_seconds",
+          "working_roots"
+        ],
+        "methods": [
+          "validate_executable",
+          "validate_nonempty",
+          "validate_roots"
+        ]
+      }
+    },
+    "constants": [
+      "DEFAULT_SENSITIVE_PATHS",
+      "SUPPORTED_TOOLS"
+    ],
+    "functions": [
+      "resolve_trusted_executable"
+    ]
+  },
+  "app/policy/paths.py": {
+    "classes": {},
+    "constants": [],
+    "functions": [
+      "canonical_path"
+    ]
+  },
+  "app/policy/risk.py": {
+    "classes": {
+      "RiskLevel": {
+        "fields": [
+          "CRITICAL",
+          "HIGH",
+          "LOW",
+          "MEDIUM"
+        ],
+        "methods": []
+      }
+    },
+    "constants": [
+      "NEVER_PREAPPROVE_EXECUTABLES"
+    ],
+    "functions": [
+      "assess_risk"
+    ]
+  }
+}

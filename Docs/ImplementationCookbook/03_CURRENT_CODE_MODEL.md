@@ -2,7 +2,7 @@
 
 **Baseline SHA:** `d367261e617fb96ca2d353871590c0dc616b8fe0`
 **Product Code Base SHA:** `ef00714c86d3d7b5684d693da35aa82595a088d4`
-**Test Baseline:** 381 passing tests in `tests/`
+**Test Baseline:** 409 passing tests in `tests/`
 **CI Run Baseline:** `37107781413`
 
 This document details the architectural reality of the existing Maya implementation as of PH-040 security closure, serving as the immutable foundation upon which PH-050 through PH-180 are built. All symbols, signatures, and limits documented here reflect actual source code in `app/`.
@@ -26,7 +26,7 @@ This document details the architectural reality of the existing Maya implementat
   - `get_state() -> dict[str, Any]`
   - `update(key: str, value: Any) -> None`
 - **Ground Truth Invariants:**
-  - Status is typed via `Literal` strings; there is **no `SystemState` enum**.
+  - Status is typed via `Literal` strings; there is **no `SystemState` enum** in current source.
   - There are currently **no listeners, no thread locks, no transition history, and no `transition_to()` method**.
   - `model_config = ConfigDict(extra="forbid", validate_assignment=True)`.
 
@@ -78,21 +78,22 @@ This document details the architectural reality of the existing Maya implementat
 ### 1.4 `app/core/config.py` — Configuration Models
 
 - **Primary Symbols:**
-  - `AssistantConfig` (name, identity)
-  - `VoiceConfig` (wake_model, wake_threshold, max_command_seconds, sample_rate)
-  - `STTConfig` (model="nvidia/parakeet-1_1b-rnnt-multilingual-asr", endpoint, language, timeout_seconds)
-  - `AIConfig` (model="nvidia/nemotron-3-ultra-550b-a55b", api_key_env, base_url, timeout_seconds, max_output_tokens, streaming)
-  - `DashboardConfig` (host="127.0.0.1", port=8443, allowed_origins)
-  - `AgentsConfig` (max_active_tasks, default_budget_usd, max_steps_per_task)
-  - `ResourcesConfig` (max_resident_memory_mb, max_child_processes, max_audio_command_seconds)
-  - `PrivacyConfig` (local_wake_only, log_audio_recordings, mask_audit_secrets)
-  - `BrowserDomainConfig`, `BrowserConfig` (enabled, allowed_domains, frame_size_limit_bytes, connect_timeout_seconds)
-  - `FileRootConfig` (name, path, read_only, allow_hidden), `FilesConfig` (roots)
-  - `Config` (root configuration container aggregating the above)
+  - `AssistantConfig`: `name`, `identity` (non-empty, trimmed strings)
+  - `VoiceConfig`: `enabled`, `always_listen`, `push_to_talk_hotkey`, `wake_engine`, `wake_model`, `wake_threshold=0.55`, `vad_enabled`, `max_command_seconds=30`, `retain_command_audio`. (Note: **no `sample_rate`** in current code model).
+  - `STTConfig`: `provider`, `model`, `api_key_env`, `default_language`. (Note: **no `endpoint` or `timeout`** in current code model).
+  - `AIConfig`: `provider`, `base_url`, `model`, `api_key_env`, `timeout_seconds=120`, `reasoning_effort`, `reasoning_budget`, `max_output_tokens=8192`. (Note: **no `streaming`** in current code model).
+  - `DashboardConfig`: `host="127.0.0.1"`, `port=8765`, `open_browser=True`. (Note: **no 8443 or `allowed_origins`** in current code model).
+  - `AgentsConfig`: `max_active=1`, `max_steps=30`, `max_api_calls_per_task=20`, `default_timeout_minutes=30`.
+  - `ResourcesConfig`: `memory_high_mb=240`, `memory_max_mb=300`, `max_event_queue=256`, `max_audio_command_seconds=30`.
+  - `PrivacyConfig`: `store_chat_history`, `store_action_audit`, `log_prompt_content`, `log_response_content`, `retain_audio`.
+  - `BrowserDomainConfig`: `pattern`, `enabled`, `capabilities`, `adapter`.
+  - `BrowserConfig`: `domains: list[BrowserDomainConfig]`. (Note: **no `allowed_domains`** in current code model).
+  - `FileRootConfig`: `path`, `read`, `write`, `delete`.
+  - `FilesConfig`: `roots: list[FileRootConfig]`.
+  - `Config`: Root configuration aggregating all subsystem models.
 - **Ground Truth Invariants:**
-  - Root config object contains: `assistant`, `voice`, `stt`, `ai`, `dashboard`, `agents`, `resources`, `privacy`, `browser`, `files`.
   - Allowed file roots are accessed via `config.files.roots`.
-  - There is **no `config.storage`**, **no `config.policy`**, **no `config.approval`**, **no `config.security`**, and **no `config.nvidia`** in the existing codebase.
+  - There is **no `config.storage`**, **no `config.policy`**, **no `config.approval`**, **no `config.security`**, and **no `config.nvidia`** in the current codebase.
 
 ---
 
@@ -101,12 +102,12 @@ This document details the architectural reality of the existing Maya implementat
 - **Primary Symbols:**
   - `PolicyEngine` (`app/policy/engine.py`): `evaluate(action: ActionRequest) -> PolicyDecision`, `evaluate_detailed(action: ActionRequest) -> PolicyEvaluation`, `assess_risk(action: ActionRequest) -> RiskLevel`.
   - `PreapprovalRule`, `PolicyDecision` (`ALLOW_PREAPPROVED`, `ASK_USER`, `DENY`), `PolicyEvaluation`.
-  - `RiskLevel` (`LOW`, `MEDIUM`, `HIGH`) in `app/policy/risk.py`.
+  - `RiskLevel`: Four levels: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL` in `app/policy/risk.py`.
   - `canonical_path`, `is_contained_in` in `app/policy/paths.py`.
 - **Ground Truth Invariants:**
   - The codebase contains **no `RiskClassifier`**, **no `PathValidator`**, and **no `ApprovalStore`** classes.
   - Risk assessment is performed via functions `assess_command_risk`, `assess_file_risk`, and method `PolicyEngine.assess_risk`.
-  - Path containment is verified via `canonical_path()` and `is_contained_in()` against `FileRootConfig` objects in `allowed_file_roots`.
+  - Path containment is verified via `canonical_path()` and `is_contained_in()` against `FileRootConfig` objects in `config.files.roots`.
 
 ---
 
@@ -117,13 +118,15 @@ This document details the architectural reality of the existing Maya implementat
     - Signature: `async def execute(self, action: ActionRequest, context: Any = None) -> ActionResult`
     - Requires valid `PolicyEvaluation` context with `decision == PolicyDecision.ALLOW_PREAPPROVED`, matching `matched_preapproval_rule` and `resolved_executable`.
     - Never accepts raw `(argv, cwd=...)` directly from unauthenticated callers.
-    - Uses continuous stream draining tasks (`_read_stream_bounded`) to capture at most `MAX_PROCESS_OUTPUT_BYTES = 1_048_576` bytes per stream.
+    - Uses continuous stream draining tasks to capture stdout/stderr bounded by `MAX_PROCESS_OUTPUT_BYTES = 102_400` (100 KB) in `app/executors/base.py`.
     - Escalates process termination on timeout: `terminate() -> wait(0.5s) -> kill() -> wait()`.
   - `FileExecutor` (`app/executors/files.py`):
     - Signature: `async def execute(self, action: ActionRequest, context: Any = None) -> ActionResult`
-    - Enforces root containment against `allowed_roots`, rejecting traversal (`../`), symlinks outside roots, and size bounds (1 MiB read, 5 MiB write).
+    - Enforces root containment against `allowed_roots`, rejecting traversal (`../`), symlinks outside roots.
+    - Bounded by `MAX_FILE_BYTES = 10_485_760` (10 MiB) in `app/executors/base.py`.
   - `XdgExecutor` (`app/executors/xdg.py`):
-    - Safe desktop application and URL launcher using `/usr/bin/xdg-open` with `http`/`https` scheme validation.
+    - Opens **LOCAL FILE targets only**; strictly rejects URL schemes containing `:` (e.g. `http:`, `https:`).
+    - Resolves `/usr/bin/xdg-open` strictly without ambient `shutil.which` PATH fallbacks.
 
 ---
 

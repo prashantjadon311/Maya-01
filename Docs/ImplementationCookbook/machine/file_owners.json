@@ -42,8 +42,8 @@
       "secondary_modifiers": [
         "PH060",
         "PH080",
-        "PH130",
-        "PH090"
+        "PH090",
+        "PH130"
       ],
       "purpose": "Configuration schemas and TOML loading",
       "allowed_contents": [
@@ -547,20 +547,6 @@
       ],
       "forbidden_contents": [
         "raising MemoryMax limit"
-      ]
-    },
-    {
-      "path": "packaging/systemd/maya.service",
-      "owner_phase": "PH170",
-      "secondary_modifiers": [],
-      "purpose": "User systemd unit definition with cgroup resource limits",
-      "allowed_contents": [
-        "systemd unit file",
-        "MemoryHigh=240M",
-        "MemoryMax=300M"
-      ],
-      "forbidden_contents": [
-        "root service installation"
       ]
     },
     {
@@ -1142,6 +1128,96 @@
       "forbidden_contents": [
         "direct SQL execution bypassing storage",
         "wildcard CORS"
+      ]
+    },
+    {
+      "path": "app/browser/native_host.py",
+      "owner_phase": "PH110",
+      "secondary_modifiers": [
+        "PH170"
+      ],
+      "purpose": "WebExtension Native Messaging Host stdio protocol runner",
+      "allowed_contents": [
+        "native host stdio framing",
+        "UDS bridge client dispatch",
+        "main entrypoint"
+      ],
+      "forbidden_contents": [
+        "raw shell calls",
+        "unauthenticated UDS sockets"
+      ]
+    },
+    {
+      "path": "app/policy/broker_schema.py",
+      "owner_phase": "PH050",
+      "secondary_modifiers": [],
+      "purpose": "Approval broker schemas, grant models, and popup decisions",
+      "allowed_contents": [
+        "PendingApproval",
+        "ApprovalGrant",
+        "PopupDecision",
+        "ApprovalOutcome",
+        "ApprovalDisplay"
+      ],
+      "forbidden_contents": [
+        "business logic",
+        "file IO"
+      ]
+    },
+    {
+      "path": "app/storage/schema.py",
+      "owner_phase": "PH130",
+      "secondary_modifiers": [],
+      "purpose": "SQLite audit and settings data models",
+      "allowed_contents": [
+        "AuditLogEntry",
+        "SessionRecord",
+        "Pydantic database schemas"
+      ],
+      "forbidden_contents": [
+        "network calls"
+      ]
+    },
+    {
+      "path": "app/voice/tts.py",
+      "owner_phase": "PH080",
+      "secondary_modifiers": [],
+      "purpose": "Optional text-to-speech audio feedback controller",
+      "allowed_contents": [
+        "TTSController class",
+        "toggle verification",
+        "remote audio stream playback"
+      ],
+      "forbidden_contents": [
+        "resident piper/heavy neural synthesis models"
+      ]
+    },
+    {
+      "path": "app/web/css/bootstrap.min.css",
+      "owner_phase": "PH140",
+      "secondary_modifiers": [],
+      "purpose": "Offline vendor Bootstrap 5.3 CSS stylesheet",
+      "allowed_contents": [
+        "minified vendor CSS styles"
+      ],
+      "forbidden_contents": [
+        "executable JavaScript",
+        "external CDN links"
+      ]
+    },
+    {
+      "path": "packaging/systemd/project-hd.service",
+      "owner_phase": "PH170",
+      "secondary_modifiers": [],
+      "purpose": "Systemd user unit configuration for project-hd background service",
+      "allowed_contents": [
+        "Unit",
+        "Service",
+        "Install sections",
+        "ExecStart=%h/.local/share/project-h/venv/bin/project-hd"
+      ],
+      "forbidden_contents": [
+        "root privilege escalation"
       ]
     }
   ]

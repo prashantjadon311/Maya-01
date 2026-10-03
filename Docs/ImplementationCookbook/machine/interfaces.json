@@ -4,7 +4,7 @@
       "name": "ApprovalBroker.request_decision",
       "owning_phase": "PH050",
       "file": "app/policy/broker.py",
-      "signature": "async def request_decision(self, req: ActionRequest, reason: str, risk: RiskLevel) -> PopupDecision",
+      "signature": "async def request_decision(self, req: ActionRequest, reason: str, risk: RiskLevel) -> ApprovalOutcome",
       "inputs": [
         {
           "name": "req",
@@ -19,7 +19,7 @@
           "type": "RiskLevel"
         }
       ],
-      "output": "PopupDecision",
+      "output": "ApprovalOutcome",
       "preconditions": [
         "req is validated Pydantic model",
         "risk in (RiskLevel.MEDIUM, RiskLevel.HIGH)"
@@ -30,7 +30,7 @@
       ],
       "is_security_boundary": true,
       "security_test_id": "test_approval_popup_transient_display",
-      "bounds": "Max 10 concurrent pending approval requests; fails closed/busy when full",
+      "bounds": "Max 10 concurrent pending approval requests; fails closed/busy when full; 60s timeout",
       "timeout_seconds": 60.0,
       "cancellation": "Cancels popup subprocess immediately and resolves to DENY",
       "idempotent": false,
@@ -102,8 +102,8 @@
       ],
       "is_security_boundary": true,
       "security_test_id": "test_reasoning_trace_not_leaked",
-      "bounds": "Max request context 128KB, max completion tokens 4096",
-      "timeout_seconds": 30.0,
+      "bounds": "Bounded by config.ai.timeout_seconds (120s) and config.ai.max_output_tokens (8192 tokens); input messages capped at 32 items",
+      "timeout_seconds": 120.0,
       "cancellation": "Cancels httpx streaming response immediately",
       "idempotent": false,
       "audit_code": "SEC-AI-COMPLETE",
@@ -138,8 +138,8 @@
       ],
       "is_security_boundary": true,
       "security_test_id": "test_nvidia_streaming_tool_call_parsing",
-      "bounds": "Chunks bounded to 4KB per chunk",
-      "timeout_seconds": 60.0,
+      "bounds": "Bounded by config.ai.timeout_seconds (120s) and config.ai.max_output_tokens (8192 tokens); first chunk timeout 15s",
+      "timeout_seconds": 120.0,
       "cancellation": "Closes HTTP response stream cleanly",
       "idempotent": false,
       "audit_code": "SEC-AI-STREAM",
@@ -190,12 +190,8 @@
       "signature": "async def run_task(self, task: AgentTask) -> AgentTaskResult",
       "inputs": [
         {
-          "name": "objective",
-          "type": "str"
-        },
-        {
-          "name": "workspace_root",
-          "type": "Path"
+          "name": "task",
+          "type": "AgentTask"
         }
       ],
       "output": "AgentTaskResult",
@@ -209,7 +205,7 @@
       ],
       "is_security_boundary": true,
       "security_test_id": "test_agent_cannot_bypass_policy_dispatcher",
-      "bounds": "Single active task at a time; max_steps <= 30; max_budget_calls <= 50",
+      "bounds": "Max 30 execution steps; max 20 tool calls; max 30 minutes total timeout",
       "timeout_seconds": 300.0,
       "cancellation": "Terminates step loop, records partial evidence, aborts subprocesses",
       "idempotent": false,
@@ -241,7 +237,7 @@
       ],
       "is_security_boundary": true,
       "security_test_id": "test_prewake_audio_zero_network_callback",
-      "bounds": "Exact 1280 bytes per chunk, single CPU inference thread",
+      "bounds": "80 ms frame = 1280 samples = 2560 bytes at 16 kHz 16-bit mono PCM",
       "timeout_seconds": 0.05,
       "cancellation": "Synchronous call; non-cancellable",
       "idempotent": true,
@@ -271,7 +267,7 @@
       ],
       "is_security_boundary": false,
       "security_test_id": null,
-      "bounds": "Max ring buffer size 3 seconds (96,000 bytes)",
+      "bounds": "80 ms frame = 1280 samples = 2560 bytes at 16 kHz 16-bit mono PCM",
       "timeout_seconds": 1.0,
       "cancellation": "Interrupts buffer await cleanly",
       "idempotent": false,
@@ -302,9 +298,9 @@
       ],
       "is_security_boundary": true,
       "security_test_id": "test_stt_transcribes_postwake_only",
-      "bounds": "Audio buffer released immediately post-transcription; no persistent retention",
+      "bounds": "Max 30s audio segment = 960,000 bytes at 16 kHz 16-bit mono PCM",
       "timeout_seconds": 10.0,
-      "cancellation": "Aborts HTTP request to STT endpoint and clears audio buffer",
+      "cancellation": "Cancels active gRPC streaming call channel immediately upon timeout or user cancel",
       "idempotent": false,
       "audit_code": "SEC-STT-CALL",
       "errors": [
@@ -438,10 +434,10 @@
       ]
     },
     {
-      "name": "DeveloperToolExecutor.run_workflow",
+      "name": "DeveloperWorkflowService.run_workflow",
       "owning_phase": "PH150",
       "file": "app/executors/developer.py",
-      "signature": "async def run_workflow(self, repo_path: Path, steps: list[DevStep]) -> WorkflowResult",
+      "signature": "async def run_workflow(self, workflow_name: str, parameters: dict[str, Any]) -> WorkflowResult",
       "inputs": [
         {
           "name": "repo_path",
@@ -463,7 +459,7 @@
       ],
       "is_security_boundary": true,
       "security_test_id": "test_auto_commit_disabled_by_default",
-      "bounds": "Max 10 steps per workflow, max diff capture 100KB",
+      "bounds": "Whitelisted workflows only; bounded execution timeout 300s",
       "timeout_seconds": 120.0,
       "cancellation": "Terminates active test or git subprocess cleanly",
       "idempotent": false,
@@ -518,6 +514,41 @@
       "idempotent": true,
       "audit_code": "AI-PROV-CLOSE",
       "errors": []
+    },
+    {
+      "name": "TTSController.speak_response",
+      "owning_phase": "PH080",
+      "file": "app/voice/tts.py",
+      "signature": "async def speak_response(self, text: str, enabled: bool) -> None",
+      "inputs": [
+        {
+          "name": "text",
+          "type": "str"
+        },
+        {
+          "name": "enabled",
+          "type": "bool"
+        }
+      ],
+      "output": "None",
+      "preconditions": [
+        "text is sanitized ASCII/UTF-8 string under 4096 characters",
+        "enabled toggle must be True to initiate playback"
+      ],
+      "postconditions": [
+        "audio synthesized remotely or discarded; zero resident memory retained"
+      ],
+      "is_security_boundary": false,
+      "security_test_id": null,
+      "bounds": "Non-resident remote invocation only; strictly no heavy resident synthesis engine in memory",
+      "timeout_seconds": 15.0,
+      "cancellation": "Immediate cancellation stops audio playback buffer",
+      "idempotent": true,
+      "audit_code": "VOICE-TTS-PLAY",
+      "errors": [
+        "TTSTimeoutError",
+        "TTSPlaybackError"
+      ]
     }
   ]
 }

@@ -132,7 +132,7 @@ class PhaseManifestModel(BaseModel):
 
 
 class TestRecipeItem(BaseModel):
-    model_config = ConfigDict(strict=True, extra="forbid")
+    model_config = ConfigDict(strict=False, extra="forbid")
     test_id: str
     phase: str
     requirement_id: str
@@ -145,7 +145,12 @@ class TestRecipeItem(BaseModel):
     assert_positive: str
     assert_not: str | None = None
     verification_command: str
-    status: Literal["VERIFIED", "PLANNED_FUTURE_TEST", "MANUAL_ACCEPTANCE"] = "PLANNED_FUTURE_TEST"
+    status: Literal["VERIFIED_EXISTING", "PLANNED_FUTURE_TEST", "MANUAL_ACCEPTANCE", "VERIFIED"] = "PLANNED_FUTURE_TEST"
+    test_function: str | None = None
+    pytest_nodeid: str | None = None
+    source_sha256: str | None = None
+    component: str | None = None
+    evidence_kind: str | None = None
 
 
 class TestsModel(BaseModel):
@@ -154,11 +159,13 @@ class TestsModel(BaseModel):
 
 
 class AuthorityCoverageItem(BaseModel):
-    model_config = ConfigDict(strict=True, extra="forbid")
+    model_config = ConfigDict(strict=False, extra="forbid")
     source: str
     heading: str
-    normative: bool
+    classification: Literal["NORMATIVE", "INFORMATIVE", "EXPLICIT_OUT_OF_V1"] = "NORMATIVE"
+    normative: bool | None = None
     requirement_ids: list[str] = Field(default_factory=list)
+    reason: str | None = None
     notes: str | None = None
 
 
@@ -181,6 +188,11 @@ class DependenciesModel(BaseModel):
     forbidden_edges: list[DependencyEdge] = Field(default_factory=list)
 
 
+class ResourceBoundsModel(BaseModel):
+    model_config = ConfigDict(strict=False, extra="allow")
+    bounds: list[dict[str, Any]] | dict[str, Any]
+
+
 class CookbookModel(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
     root_path: Path
@@ -193,6 +205,7 @@ class CookbookModel(BaseModel):
     tests: TestsModel
     dependencies: DependenciesModel
     authority_coverage: AuthorityCoverageModel | None = None
+    resource_bounds: ResourceBoundsModel | None = None
 
 
 def load_cookbook(root: Path) -> CookbookModel:
@@ -238,6 +251,13 @@ def load_cookbook(root: Path) -> CookbookModel:
             cov_data = json.load(f)
         authority_coverage = AuthorityCoverageModel.model_validate(cov_data)
 
+    resource_bounds = None
+    bounds_path = machine_dir / "resource_bounds.json"
+    if bounds_path.exists():
+        with open(bounds_path, "r", encoding="utf-8") as f:
+            bounds_data = json.load(f)
+        resource_bounds = ResourceBoundsModel.model_validate(bounds_data)
+
     return CookbookModel(
         root_path=root,
         authority=authority,
@@ -249,4 +269,5 @@ def load_cookbook(root: Path) -> CookbookModel:
         tests=tests,
         dependencies=dependencies,
         authority_coverage=authority_coverage,
+        resource_bounds=resource_bounds,
     )

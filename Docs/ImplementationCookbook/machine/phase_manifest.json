@@ -11,6 +11,7 @@
       ],
       "files_created": [
         "app/policy/broker.py",
+        "app/policy/broker_schema.py",
         "app/lifecycle.py",
         "tests/test_approval_broker.py",
         "tests/fakes/fake_popup.py"
@@ -173,7 +174,8 @@
         "app/voice/wake.py",
         "app/voice/recorder.py",
         "tests/test_voice_wake.py",
-        "tests/fakes/fake_voice.py"
+        "tests/fakes/fake_voice.py",
+        "app/voice/tts.py"
       ],
       "files_modified": [
         "app/core/config.py",
@@ -199,7 +201,8 @@
         "test_no_stt_before_wake",
         "test_command_segment_begins_after_wake",
         "test_disabling_listen_closes_audio_stream",
-        "test_command_recording_vad_stop"
+        "test_command_recording_vad_stop",
+        "test_tts_toggle_and_resource_safety"
       ],
       "acceptance_criteria": [
         "Pre-wake audio confined to memory-only ring buffer with zero network transmission",
@@ -209,7 +212,8 @@
       ],
       "output_interfaces": [
         "WakeDetector.process_chunk",
-        "AudioSource.read_frames"
+        "AudioSource.read_frames",
+        "TTSController.speak_response"
       ],
       "stop_conditions": [
         "openWakeWord RSS exceeds 100MB",
@@ -323,7 +327,8 @@
         "extension/firefox/native.js",
         "extension/firefox/generic.js",
         "tests/test_browser_bridge.py",
-        "tests/fakes/fake_browser.py"
+        "tests/fakes/fake_browser.py",
+        "app/browser/native_host.py"
       ],
       "files_modified": [
         "app/browser/protocol.py"
@@ -336,7 +341,8 @@
         "PH100"
       ],
       "required_capsules": [
-        "CAP-004"
+        "CAP-004A",
+        "CAP-004B"
       ],
       "tests": [
         "test_native_messaging_framing_and_size_limit",
@@ -427,7 +433,8 @@
         "app/api/routes_agents.py",
         "app/api/schemas.py",
         "app/storage/sqlite.py",
-        "tests/test_dashboard_api.py"
+        "tests/test_dashboard_api.py",
+        "app/storage/schema.py"
       ],
       "files_modified": [
         "app/core/config.py",
@@ -481,7 +488,8 @@
         "app/web/index.html",
         "app/web/css/app.css",
         "app/web/js/app.js",
-        "tests/test_dashboard_frontend.py"
+        "tests/test_dashboard_frontend.py",
+        "app/web/css/bootstrap.min.css"
       ],
       "files_modified": [],
       "files_forbidden_to_modify": [
@@ -594,7 +602,7 @@
         "Auto-commit is strictly disabled by default"
       ],
       "output_interfaces": [
-        "DeveloperToolExecutor.run_workflow"
+        "DeveloperWorkflowService.run_workflow"
       ],
       "stop_conditions": [
         "Auto-commit enabled without human confirmation",
@@ -654,13 +662,16 @@
         "Docs/ImplementationCookbook/14_RESOURCE_BUDGET.md"
       ],
       "files_created": [
-        "packaging/systemd/maya.service",
+        "packaging/systemd/project-hd.service",
         "packaging/native-manifest/project_h_firefox.json",
         "packaging/install.sh",
         "packaging/uninstall.sh",
         "tests/test_packaging.py"
       ],
-      "files_modified": [],
+      "files_modified": [
+        "app/main.py",
+        "app/browser/native_host.py"
+      ],
       "files_forbidden_to_modify": [
         "app/core/dispatcher.py",
         "app/policy/*"

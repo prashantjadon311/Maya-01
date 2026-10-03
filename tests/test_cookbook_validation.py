@@ -29,7 +29,7 @@ def test_cookbook_skeleton_and_authority_metadata_exists():
     assert data["cookbook_work_base_sha"] == "d603173624ddc9285b32ee00f33c10be2ecc9b58"
     assert data["product_code_base_sha"] == "ef00714c86d3d7b5684d693da35aa82595a088d4"
     assert data["base_sha"] == "ef00714c86d3d7b5684d693da35aa82595a088d4"
-    assert data["status"] in ("DRAFT", "FROZEN")
+    assert data["status"] in ("DRAFT", "FROZEN", "BLOCKED")
     assert data["python_floor"] == ">=3.11"
     assert data["target_os"] == "Ubuntu"
 
@@ -214,6 +214,98 @@ def test_fingerprint_cli_print_and_expect(capsys, tmp_path):
     # 3. Expect mismatch
     ret_mismatch = fingerprint_main([str(test_file), "--expect", "0" * 64])
     assert ret_mismatch != 0
+
+
+def test_validator_catches_duplicate_file_owner_path():
+    valid_dir = FIXTURES_ROOT / "valid_minimal"
+    model = load_cookbook(valid_dir)
+    if model.file_owners.files:
+        dup = model.file_owners.files[0].model_copy()
+        model.file_owners.files.append(dup)
+        issues = validate_cookbook(model)
+        codes = [i.code for i in issues]
+        assert "DUPLICATE_FILE_OWNER_PATH" in codes
+
+
+def test_validator_catches_duplicate_phase_id():
+    valid_dir = FIXTURES_ROOT / "valid_minimal"
+    model = load_cookbook(valid_dir)
+    if model.phase_manifest.phases:
+        dup = model.phase_manifest.phases[0].model_copy()
+        model.phase_manifest.phases.append(dup)
+        issues = validate_cookbook(model)
+        codes = [i.code for i in issues]
+        assert "DUPLICATE_PHASE_ID" in codes
+
+
+def test_validator_catches_duplicate_dependency_edge():
+    valid_dir = FIXTURES_ROOT / "valid_minimal"
+    model = load_cookbook(valid_dir)
+    if model.dependencies.edges:
+        dup = model.dependencies.edges[0].model_copy()
+        model.dependencies.edges.append(dup)
+        issues = validate_cookbook(model)
+        codes = [i.code for i in issues]
+        assert "DUPLICATE_DEPENDENCY_EDGE" in codes
+
+
+def test_validator_catches_phase_self_dependency():
+    valid_dir = FIXTURES_ROOT / "valid_minimal"
+    model = load_cookbook(valid_dir)
+    edge_cls = type(model.dependencies.edges[0])
+    model.dependencies.edges.append(edge_cls(**{"from": "PH050", "to": "PH050"}))
+    issues = validate_cookbook(model)
+    codes = [i.code for i in issues]
+    assert "PHASE_SELF_DEPENDENCY" in codes
+
+
+def test_validator_catches_unknown_or_out_of_order_phase_dependency():
+    valid_dir = FIXTURES_ROOT / "valid_minimal"
+    model = load_cookbook(valid_dir)
+    edge_cls = type(model.dependencies.edges[0])
+    # Unknown dependency
+    model.dependencies.edges.append(edge_cls(**{"from": "PH050", "to": "PH999"}))
+    issues = validate_cookbook(model)
+    codes = [i.code for i in issues]
+    assert "UNKNOWN_DEPENDENCY_PHASE" in codes
+
+    # Out of order dependency (PH050 depends on later PH070)
+    model.dependencies.edges = [e for e in model.dependencies.edges if e.to != "PH999"]
+    model.dependencies.edges.append(edge_cls(**{"from": "PH050", "to": "PH070"}))
+    issues2 = validate_cookbook(model)
+    codes2 = [i.code for i in issues2]
+    assert "OUT_OF_ORDER_PHASE_DEPENDENCY" in codes2
+
+
+def test_validator_catches_missing_required_read():
+    valid_dir = FIXTURES_ROOT / "valid_minimal"
+    model = load_cookbook(valid_dir)
+    if model.phase_manifest.phases:
+        model.phase_manifest.phases[0].required_reads.append("nonexistent/ghost_file.md")
+        issues = validate_cookbook(model)
+        codes = [i.code for i in issues]
+        assert "REQUIRED_READ_MISSING" in codes
+
+
+def test_validator_catches_missing_required_capsule():
+    valid_dir = FIXTURES_ROOT / "valid_minimal"
+    model = load_cookbook(valid_dir)
+    if model.phase_manifest.phases:
+        model.phase_manifest.phases[0].required_capsules.append("CAP-999")
+        issues = validate_cookbook(model)
+        codes = [i.code for i in issues]
+        assert "REQUIRED_CAPSULE_MISSING" in codes
+
+
+def test_validator_catches_duplicate_authority_coverage_heading():
+    valid_dir = FIXTURES_ROOT / "valid_minimal"
+    model = load_cookbook(valid_dir)
+    if model.authority_coverage and model.authority_coverage.sections:
+        dup = model.authority_coverage.sections[0].model_copy()
+        model.authority_coverage.sections.append(dup)
+        issues = validate_cookbook(model)
+        codes = [i.code for i in issues]
+        assert "AUTHORITY_COVERAGE_DUPLICATE" in codes
 
 
 def test_actual_cookbook_is_freeze_clean():

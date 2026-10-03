@@ -1,0 +1,109 @@
+{
+  "bounds": {
+    "memory_high_mb": {
+      "limit": 240,
+      "unit": "MiB",
+      "enforcement": "Soft limit, triggers state compaction and background agent pause"
+    },
+    "memory_max_mb": {
+      "limit": 300,
+      "unit": "MiB",
+      "enforcement": "Hard ceiling, triggers emergency garbage collection and fast teardown"
+    },
+    "max_event_queue": {
+      "limit": 256,
+      "unit": "events",
+      "enforcement": "Bounded asyncio.Queue, drops oldest unhandled low-priority event on overflow"
+    },
+    "max_audio_command_seconds": {
+      "limit": 30,
+      "unit": "seconds",
+      "enforcement": "CommandRecorder strictly truncates capture at 30 seconds"
+    },
+    "audio_sample_rate_hz": {
+      "limit": 16000,
+      "unit": "Hz",
+      "enforcement": "Hardware/software capture floor: 16 kHz 16-bit mono PCM"
+    },
+    "audio_frame_ms": {
+      "limit": 80,
+      "unit": "milliseconds",
+      "enforcement": "Fixed audio buffer chunk duration"
+    },
+    "audio_frame_samples": {
+      "limit": 1280,
+      "unit": "samples",
+      "enforcement": "16000 Hz * 0.080s = 1280 samples per frame"
+    },
+    "audio_frame_bytes": {
+      "limit": 2560,
+      "unit": "bytes",
+      "enforcement": "1280 samples * 2 bytes/sample = 2560 bytes per frame"
+    },
+    "audio_command_max_bytes": {
+      "limit": 960000,
+      "unit": "bytes",
+      "enforcement": "30s * 16000 samples/s * 2 bytes = 960,000 bytes maximum STT audio payload"
+    },
+    "max_active_agents": {
+      "limit": 1,
+      "unit": "active_tasks",
+      "enforcement": "Single concurrent agent task runtime ceiling"
+    },
+    "max_steps_per_agent": {
+      "limit": 30,
+      "unit": "steps",
+      "enforcement": "Agent loop terminates with failure if step count exceeds 30"
+    },
+    "max_api_calls_per_task": {
+      "limit": 20,
+      "unit": "calls",
+      "enforcement": "Bounded LLM tool call budget per agent execution"
+    },
+    "default_agent_timeout_minutes": {
+      "limit": 30,
+      "unit": "minutes",
+      "enforcement": "Hard task cancellation if agent does not complete in 30 minutes"
+    },
+    "ai_timeout_seconds": {
+      "limit": 120,
+      "unit": "seconds",
+      "enforcement": "HTTP/gRPC transport timeout on model inference calls"
+    },
+    "ai_max_output_tokens": {
+      "limit": 8192,
+      "unit": "tokens",
+      "enforcement": "Model generation upper token boundary"
+    },
+    "max_file_bytes": {
+      "limit": 10485760,
+      "unit": "bytes",
+      "enforcement": "FileExecutor MAX_FILE_BYTES = 10 MiB read/write bound"
+    },
+    "max_browser_bridge_message_bytes": {
+      "limit": 1048576,
+      "unit": "bytes",
+      "enforcement": "Unix domain socket message frame upper bound = 1 MiB"
+    },
+    "dashboard_host": {
+      "limit": "127.0.0.1",
+      "unit": "IP",
+      "enforcement": "Strict loopback bind only; no external network exposure"
+    },
+    "dashboard_port": {
+      "limit": 8765,
+      "unit": "port",
+      "enforcement": "Fixed local dashboard HTTP port"
+    },
+    "native_popup_timeout_seconds": {
+      "limit": 60,
+      "unit": "seconds",
+      "enforcement": "Zenity native popup fail-closed timeout"
+    },
+    "max_pending_approvals": {
+      "limit": 10,
+      "unit": "requests",
+      "enforcement": "ApprovalBroker rejects additional requests when pending queue reaches 10"
+    }
+  }
+}

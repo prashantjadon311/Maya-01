@@ -15,14 +15,17 @@ git status --short
 # (Check latest entry in .superpowers/sdd/... or phase checkpoint ledger)
 
 # Step 3: Run repository interface fingerprint check against canonical authority
-python -m tools.cookbook.fingerprint Docs/ImplementationCookbook/machine/interfaces.json --expect d5b9c4168389560357308b1d5b42fac213138fe279b11397f65c887b5d054da9
-python -m tools.cookbook.fingerprint Docs/ImplementationCookbook/machine/requirements.json --expect 34514838096946b92258061d314c54ac285d9079f3de13886c2579bc40a157de
-python -m tools.cookbook.fingerprint Docs/ImplementationCookbook/machine/phase_manifest.json --expect e496f3b7ead4c1bd679664bce10e09e54d7d68f435188a556be6f03c7cd65747
+python -m tools.cookbook.fingerprint Docs/ImplementationCookbook/machine/interfaces.json --expect 47cffee38d4c114ba9d503046e73e81d3f3fde34d9c9eab4dd34856db7d50bca
+python -m tools.cookbook.fingerprint Docs/ImplementationCookbook/machine/requirements.json --expect 486727cb5949ae2a4c8bac1f581dd97604bc467390a26e7ae48a2a8bd406203c
+python -m tools.cookbook.fingerprint Docs/ImplementationCookbook/machine/phase_manifest.json --expect d89006d8feb6d05072a25a2ca076ef930921a2d4bd667d25da4012e6d7d1451a
 
-# Step 4: Run cookbook integrity validation
+# Step 4: Run AST source interface verification against live code
+python -m tools.cookbook.verify_source_interfaces Docs/ImplementationCookbook/machine/source_interfaces.json
+
+# Step 5: Run cookbook integrity validation
 PYTHONPATH=. python -m tools.cookbook.validate Docs/ImplementationCookbook
 
-# Step 5: Run focused regression on previously completed phase
+# Step 6: Run focused regression on previously completed phase
 pytest tests/ -q
 ```
 

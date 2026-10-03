@@ -19,6 +19,7 @@ from app.policy.risk import RiskLevel
 from app.policy.broker_schema import (
     ApprovalDisplay,
     ApprovalGrant,
+    ApprovalOutcome,
     PendingApproval,
     PopupDecision,
 )
@@ -53,7 +54,7 @@ class ApprovalBroker:
         req: ActionRequest,
         reason: str,
         risk: RiskLevel,
-    ) -> PopupDecision:
+    ) -> ApprovalOutcome:
         action_hash = self.compute_action_hash(req)
         pending_id = str(uuid.uuid4())
         now = time.monotonic()
@@ -71,7 +72,7 @@ class ApprovalBroker:
         async with self._lock:
             # Capacity guard: fail closed/busy when full; never silently evict active pending approval
             if len(self._pending) >= MAX_PENDING_APPROVALS:
-                return PopupDecision.DENY
+                return ApprovalOutcome(decision=PopupDecision.DENY, grant=None)
             self._pending[pending_id] = pending
 
         display = ApprovalDisplay(
@@ -83,6 +84,7 @@ class ApprovalBroker:
         )
 
         decision = PopupDecision.DENY
+        grant_obj: ApprovalGrant | None = None
         try:
             async with asyncio.timeout(self.timeout_seconds):
                 decision = await self.popup_backend.request_decision(pending, display)
@@ -96,7 +98,7 @@ class ApprovalBroker:
                 # Only explicit ALLOW_ONCE mints a single-use ApprovalGrant
                 if decision == PopupDecision.ALLOW_ONCE:
                     grant_id = str(uuid.uuid4())
-                    grant = ApprovalGrant(
+                    grant_obj = ApprovalGrant(
                         grant_id=grant_id,
                         action_hash=action_hash,
                         created_at=time.monotonic(),
@@ -104,9 +106,9 @@ class ApprovalBroker:
                         risk=risk,
                         source="HUMAN_ALLOW_ONCE",
                     )
-                    self._grants[grant_id] = grant
+                    self._grants[grant_id] = grant_obj
 
-        return decision
+        return ApprovalOutcome(decision=decision, grant=grant_obj)
 
     async def consume_grant(self, grant_id: str, request: ActionRequest) -> bool:
         """Atomically verify and consume a grant in a single critical section."""
@@ -244,13 +246,16 @@ async def run_sandboxed_subprocess(
 
 ---
 
-## Capsule 4: Native Messaging Host Protocol Framing (`CAP-004`)
+## Capsule 4A: Firefox Native Messaging Host (stdio) (`CAP-004A`)
 
 ```python
-# app/browser/native_bridge.py
-import struct
-import json
+# app/browser/native_host.py
 import asyncio
+import json
+import os
+from pathlib import Path
+import struct
+import sys
 
 MAX_MESSAGE_BYTES = 1_048_576  # 1 MiB Project H limit
 
@@ -270,6 +275,94 @@ def write_native_message(writer: asyncio.StreamWriter, message: dict) -> None:
         raise ValueError(f"Outbound message size {len(encoded)} exceeds 1MB limit")
     header = struct.pack("=I", len(encoded))
     writer.write(header + encoded)
+
+
+async def main() -> int:
+    loop = asyncio.get_running_loop()
+    reader = asyncio.StreamReader()
+    protocol = asyncio.StreamReaderProtocol(reader)
+    await loop.connect_read_pipe(lambda: protocol, sys.stdin)
+    w_transport, w_protocol = await loop.connect_write_pipe(asyncio.streams.FlowControlMixin, sys.stdout)
+    writer = asyncio.StreamWriter(w_transport, w_protocol, reader, loop)
+
+    runtime_dir = os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
+    socket_path = Path(runtime_dir) / "project-h" / "browser.sock"
+
+    uds_reader, uds_writer = await asyncio.open_unix_connection(str(socket_path))
+    try:
+        while True:
+            msg = await read_native_message(reader)
+            write_native_message(uds_writer, msg)
+            await uds_writer.drain()
+            resp = await read_native_message(uds_reader)
+            write_native_message(writer, resp)
+            await writer.drain()
+    except (asyncio.IncompleteReadError, ConnectionResetError):
+        return 0
+    finally:
+        uds_writer.close()
+        await uds_writer.wait_closed()
+```
+
+---
+
+## Capsule 4B: Daemon Authenticated UDS Listener (`CAP-004B`)
+
+```python
+# app/browser/native_bridge.py
+import asyncio
+import os
+from pathlib import Path
+import socket
+import struct
+from typing import Callable, Awaitable
+from app.browser.protocol import BrowserCommand, BrowserResponse
+
+MAX_MESSAGE_BYTES = 1_048_576  # 1 MiB Project H limit
+
+
+class NativeMessageBridge:
+    def __init__(self, dispatch_fn: Callable[[BrowserCommand], Awaitable[BrowserResponse]]):
+        self.dispatch_fn = dispatch_fn
+        self.server: asyncio.Server | None = None
+
+    async def start(self) -> None:
+        runtime_dir = Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")) / "project-h"
+        runtime_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+        socket_path = runtime_dir / "browser.sock"
+        if socket_path.exists():
+            socket_path.unlink()
+
+        self.server = await asyncio.start_unix_server(self._handle_client, path=str(socket_path))
+        os.chmod(socket_path, 0o600)
+
+    async def _handle_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        sock = writer.get_extra_info("socket")
+        if sock:
+            creds = sock.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, struct.calcsize("3i"))
+            pid, uid, gid = struct.unpack("3i", creds)
+            if uid != os.getuid():
+                writer.close()
+                await writer.wait_closed()
+                return
+
+        try:
+            while True:
+                raw_len = await reader.readexactly(4)
+                msg_len = struct.unpack("=I", raw_len)[0]
+                if msg_len > MAX_MESSAGE_BYTES:
+                    break
+                payload = await reader.readexactly(msg_len)
+                cmd = BrowserCommand.model_validate_json(payload)
+                resp = await self.dispatch_fn(cmd)
+                encoded = resp.model_dump_json().encode("utf-8")
+                writer.write(struct.pack("=I", len(encoded)) + encoded)
+                await writer.drain()
+        except (asyncio.IncompleteReadError, ConnectionResetError):
+            pass
+        finally:
+            writer.close()
+            await writer.wait_closed()
 ```
 
 ---

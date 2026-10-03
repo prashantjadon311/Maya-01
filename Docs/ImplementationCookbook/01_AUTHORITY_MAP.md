@@ -35,9 +35,9 @@ Additionally, `Docs/SKILL.md` (`3ee7bf617703e36bda264096154bc2609950deea`) acts 
 
 ---
 
-## 4. Comprehensive Authority Coverage (172 Sections)
+## 4. Comprehensive Authority Coverage (193 Sections)
 
-All 172 specification sections from the authority documents are indexed and audited in `Docs/ImplementationCookbook/machine/authority_coverage.json`:
+All 193 specification sections from the authority documents are indexed and audited in `Docs/ImplementationCookbook/machine/authority_coverage.json`:
 
 - **`DOCS.md` (29 sections):** Vision, UX paradigms, hardware tiers, subsystem boundaries, resident memory budget (300MB), offline capabilities, audio pipeline, browser automation, developer workflows, licensing.
 - **`SECURITY.md` (18 sections):** Threat model, prompt injection defense, policy engine, approval broker, hash binding, executor isolation, native messaging bridge security, dashboard CORS/CSRF boundaries, audit logging.
@@ -45,9 +45,10 @@ All 172 specification sections from the authority documents are indexed and audi
 - **`CONFIG.md` (9 sections):** TOML schema, environment variables, validation rules, sensible defaults, configuration reload semantics.
 - **`UI.md` (56 sections):** All 10 views (Home, Chat, Tasks/Agents, Browser, Voice, Actions, Permissions, Files/Workspaces, Developer, Settings), top bar, sidebar, composer, SVG AI Core state animations, responsive breakpoints, reduced motion, a11y keyboard focus, SSE contracts.
 - **`PLAN.md` (23 sections):** Milestone progression (PH000–PH180), acceptance criteria per phase, dependencies, verification suites.
+- **`TASKS.md` (21 sections):** Implementation task progression, phase scope boundaries, and historical checkpoint tracking.
 - **`EXECUTION.md` (15 sections):** Micro-order requirements, gate criteria, testing rigor, checkpoint protocols.
 
-Every normative requirement derived from these 172 sections is tracked with zero gaps.
+Every normative requirement derived from these 193 sections is tracked with zero gaps.
 
 ---
 

@@ -21,7 +21,7 @@ As ruled in the execution charter:
 
 ## 2. Authority Document Hashes & Completeness
 
-All 172 authoritative specification sections across the 8 primary authority documents are fully mapped and tracked with zero gaps in `Docs/ImplementationCookbook/machine/authority_coverage.json`.
+All 193 authoritative specification sections across the 8 primary authority documents are fully mapped and tracked with zero gaps in `Docs/ImplementationCookbook/machine/authority_coverage.json`.
 
 | Authority Document | Precedence | Blob SHA | Sections Tracked |
 | :--- | :--- | :--- | :--- |
@@ -31,7 +31,7 @@ All 172 authoritative specification sections across the 8 primary authority docu
 | `Docs/CONFIG.md` | 4 | `0df558337f3fe51a90f7eef6369b22218309879f` | 9 |
 | `Docs/UI.md` | 5 | `33599d1fe7c09f3cd558824bcd13826dd958b302` | 56 |
 | `Docs/PLAN.md` | 6 | `317d8e583903d901310755ca96db5eab8f090399` | 23 |
-| `Docs/TASKS.md` | 7 | `f2b8f60c28f023946a3e3c4376c0bba14f585902` | Historical Ledger |
+| `Docs/TASKS.md` | 7 | `f2b8f60c28f023946a3e3c4376c0bba14f585902` | 21 |
 | `Docs/EXECUTION.md` | 8 | `4a41e269f1a46146e87b83829560294b85890563` | 15 |
 | `Docs/SKILL.md` | Meta/Instructional | `3ee7bf617703e36bda264096154bc2609950deea` | Operational |
 
@@ -60,6 +60,6 @@ GUESS_REQUIRED_IMPLEMENTATION_ITEMS = 0
 
 Computed via `python -m tools.cookbook.fingerprint`:
 
-- `INTERFACE_HASH`: `d5b9c4168389560357308b1d5b42fac213138fe279b11397f65c887b5d054da9`
-- `REQUIREMENT_MAP_HASH`: `34514838096946b92258061d314c54ac285d9079f3de13886c2579bc40a157de`
-- `PHASE_MANIFEST_HASH`: `e496f3b7ead4c1bd679664bce10e09e54d7d68f435188a556be6f03c7cd65747`
+- `INTERFACE_HASH`: `47cffee38d4c114ba9d503046e73e81d3f3fde34d9c9eab4dd34856db7d50bca`
+- `REQUIREMENT_MAP_HASH`: `486727cb5949ae2a4c8bac1f581dd97604bc467390a26e7ae48a2a8bd406203c`
+- `PHASE_MANIFEST_HASH`: `d89006d8feb6d05072a25a2ca076ef930921a2d4bd667d25da4012e6d7d1451a`
