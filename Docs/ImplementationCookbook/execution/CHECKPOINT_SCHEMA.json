@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PhaseCheckpoint",
+  "type": "object",
+  "properties": {
+    "phase": { "type": "string", "pattern": "^PH[0-9]{3}$" },
+    "title": { "type": "string" },
+    "cookbook_version": { "type": "string" },
+    "cookbook_work_base_sha": { "type": "string", "minLength": 40, "maxLength": 40 },
+    "product_code_base_sha": { "type": "string", "minLength": 40, "maxLength": 40 },
+    "phase_commit_sha": { "type": "string", "minLength": 40, "maxLength": 40 },
+    "interfaces_produced": { "type": "array", "items": { "type": "string" } },
+    "files_created": { "type": "array", "items": { "type": "string" } },
+    "files_modified": { "type": "array", "items": { "type": "string" } },
+    "tests_passed": { "type": "integer", "minimum": 0 },
+    "full_regression_passed": { "type": "boolean" },
+    "memory_rss_mb": { "type": "number", "maximum": 300.0 },
+    "findings": { "type": "array", "items": { "type": "string" } },
+    "next_exact_action": { "type": "string" }
+  },
+  "required": [
+    "phase",
+    "title",
+    "cookbook_version",
+    "cookbook_work_base_sha",
+    "product_code_base_sha",
+    "phase_commit_sha",
+    "interfaces_produced",
+    "files_created",
+    "files_modified",
+    "tests_passed",
+    "full_regression_passed",
+    "memory_rss_mb",
+    "findings",
+    "next_exact_action"
+  ],
+  "additionalProperties": false
+}

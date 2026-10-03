@@ -1,0 +1,648 @@
+{
+  "phases": [
+    {
+      "phase_id": "PH050",
+      "title": "Interactive Approval Broker & Native Popup",
+      "status": "FROZEN",
+      "required_reads": [
+        "Docs/SKILL.md",
+        "Docs/SECURITY.md",
+        "Docs/ImplementationCookbook/17_REFERENCE_CODE_CAPSULES.md"
+      ],
+      "files_created": [
+        "app/policy/broker.py",
+        "tests/test_approval_broker.py",
+        "tests/fakes/fake_popup.py"
+      ],
+      "files_modified": [
+        "app/core/dispatcher.py"
+      ],
+      "files_forbidden_to_modify": [
+        "app/policy/engine.py",
+        "app/actions/matcher.py",
+        "app/executors/*"
+      ],
+      "dependencies": [],
+      "required_capsules": [
+        "CAP-001"
+      ],
+      "tests": [
+        "test_approval_popup_transient_display",
+        "test_approval_hash_mismatch_denied",
+        "test_approval_single_use_replay_denied",
+        "test_approval_timeout_denies",
+        "test_daemon_restart_clears_pending_approvals"
+      ],
+      "acceptance_criteria": [
+        "Approval dialog pops up independently for ASK_USER",
+        "Token is single-use and bound to SHA-256 payload hash",
+        "Timeout after 60s strictly denies action",
+        "Daemon restart clears all pending grants in memory"
+      ],
+      "output_interfaces": [
+        "ApprovalBroker.request_approval",
+        "ApprovalBroker.verify_grant",
+        "ApprovalBroker.consume_grant",
+        "ApprovalBroker.reset"
+      ],
+      "stop_conditions": [
+        "Popup backend requires root permissions",
+        "Grant hash comparison non-deterministic"
+      ]
+    },
+    {
+      "phase_id": "PH060",
+      "title": "NVIDIA Nemotron AI Provider Adapter",
+      "status": "FROZEN",
+      "required_reads": [
+        "Docs/SKILL.md",
+        "Docs/DOCS.md",
+        "Docs/ImplementationCookbook/10_DATA_SCHEMAS.md"
+      ],
+      "files_created": [
+        "app/ai/nvidia.py",
+        "tests/test_nvidia_provider.py",
+        "tests/fakes/fake_nvidia.py"
+      ],
+      "files_modified": [],
+      "files_forbidden_to_modify": [
+        "app/core/dispatcher.py",
+        "app/executors/*"
+      ],
+      "dependencies": [
+        "PH050"
+      ],
+      "required_capsules": [],
+      "tests": [
+        "test_nvidia_client_configuration",
+        "test_nvidia_zero_sdk_retries",
+        "test_nvidia_streaming_tool_call_parsing",
+        "test_reasoning_trace_not_leaked",
+        "test_provider_tests_offline_no_quota"
+      ],
+      "acceptance_criteria": [
+        "Reusable AsyncOpenAI client targeting NVIDIA base URL",
+        "max_retries=0 configured in SDK",
+        "Streaming tool call arguments parsed incrementally",
+        "Raw reasoning traces filtered from public return and logs",
+        "Automated test suite runs completely offline without burning quota"
+      ],
+      "output_interfaces": [
+        "NvidiaProvider.create_client",
+        "NvidiaProvider.complete",
+        "NvidiaProvider.stream_chat",
+        "NvidiaProvider.aclose"
+      ],
+      "stop_conditions": [
+        "OpenAI SDK requires incompatible dependencies",
+        "Live API needed for default tests"
+      ]
+    },
+    {
+      "phase_id": "PH070",
+      "title": "Command Router & Single-Agent Runtime",
+      "status": "FROZEN",
+      "required_reads": [
+        "Docs/SKILL.md",
+        "Docs/DOCS.md",
+        "Docs/SECURITY.md"
+      ],
+      "files_created": [
+        "app/core/command_router.py",
+        "app/agents/model.py",
+        "app/agents/runtime.py",
+        "tests/test_command_router.py",
+        "tests/test_agent_runtime.py"
+      ],
+      "files_modified": [
+        "app/core/dispatcher.py"
+      ],
+      "files_forbidden_to_modify": [
+        "app/policy/*",
+        "app/executors/*"
+      ],
+      "dependencies": [
+        "PH050",
+        "PH060"
+      ],
+      "required_capsules": [],
+      "tests": [
+        "test_command_router_order_of_precedence",
+        "test_exact_action_zero_ai_calls",
+        "test_agent_budget_and_step_limit_enforced",
+        "test_agent_cannot_bypass_policy_dispatcher"
+      ],
+      "acceptance_criteria": [
+        "4-tier routing order: exact match -> built-in -> structured -> AI reasoning",
+        "Exact action match causes zero external AI calls",
+        "Agent task bounded to max 15 steps and 20 API calls",
+        "All model tool proposals routed through ActionDispatcher"
+      ],
+      "output_interfaces": [
+        "CommandRouter.route",
+        "AgentRuntime.run_task",
+        "AgentRuntime.cancel_task"
+      ],
+      "stop_conditions": [
+        "Agent loop deadlocks on approval",
+        "Router precedence non-deterministic"
+      ]
+    },
+    {
+      "phase_id": "PH080",
+      "title": "Local Voice Wake Pipeline",
+      "status": "FROZEN",
+      "required_reads": [
+        "Docs/SKILL.md",
+        "Docs/DOCS.md",
+        "Docs/SECURITY.md",
+        "Docs/ImplementationCookbook/17_REFERENCE_CODE_CAPSULES.md"
+      ],
+      "files_created": [
+        "app/voice/audio.py",
+        "app/voice/wake.py",
+        "app/voice/recorder.py",
+        "tests/test_voice_wake.py",
+        "tests/fakes/fake_voice.py"
+      ],
+      "files_modified": [
+        "app/core/state.py"
+      ],
+      "files_forbidden_to_modify": [
+        "app/policy/*",
+        "app/ai/*"
+      ],
+      "dependencies": [
+        "PH070"
+      ],
+      "required_capsules": [
+        "CAP-002"
+      ],
+      "tests": [
+        "test_prewake_audio_zero_network_callback",
+        "test_audio_ring_buffer_hard_bound",
+        "test_command_recording_vad_stop"
+      ],
+      "acceptance_criteria": [
+        "Pre-wake audio confined to memory-only ring buffer with zero network transmission",
+        "Ring buffer bounded to max 3s (96KB PCM)",
+        "openWakeWord runs on single CPU thread",
+        "Recording terminates via VAD silence or timeout"
+      ],
+      "output_interfaces": [
+        "AudioSource.read_frames",
+        "WakeDetector.process_chunk",
+        "CommandRecorder.record_command"
+      ],
+      "stop_conditions": [
+        "openWakeWord RSS exceeds 100MB",
+        "Audio capture requires root privileges"
+      ]
+    },
+    {
+      "phase_id": "PH090",
+      "title": "Remote STT Adapter (NVIDIA Multilingual ASR)",
+      "status": "FROZEN",
+      "required_reads": [
+        "Docs/SKILL.md",
+        "Docs/DOCS.md",
+        "Docs/SECURITY.md"
+      ],
+      "files_created": [
+        "app/voice/stt.py",
+        "tests/test_stt_adapter.py",
+        "tests/fakes/fake_stt.py"
+      ],
+      "files_modified": [
+        "app/core/config.py"
+      ],
+      "files_forbidden_to_modify": [
+        "app/voice/wake.py",
+        "app/policy/*"
+      ],
+      "dependencies": [
+        "PH080"
+      ],
+      "required_capsules": [],
+      "tests": [
+        "test_stt_transcribes_postwake_only",
+        "test_audio_buffer_released_after_stt",
+        "test_stt_failure_prevents_execution"
+      ],
+      "acceptance_criteria": [
+        "Remote STT called strictly for post-wake command segment",
+        "Audio buffer freed from memory immediately following transcription",
+        "STT failure fails closed with zero downstream action execution"
+      ],
+      "output_interfaces": [
+        "STTAdapter.transcribe",
+        "STTAdapter.release_buffer"
+      ],
+      "stop_conditions": [
+        "STT adapter retains audio in memory post-call",
+        "Vosk proposed as resident dependency"
+      ]
+    },
+    {
+      "phase_id": "PH100",
+      "title": "StatusNotifierItem System Tray Integration",
+      "status": "FROZEN",
+      "required_reads": [
+        "Docs/SKILL.md",
+        "Docs/DOCS.md",
+        "Docs/UI.md"
+      ],
+      "files_created": [
+        "app/tray/status_notifier.py",
+        "tests/test_tray.py",
+        "tests/fakes/fake_dbus.py"
+      ],
+      "files_modified": [
+        "app/core/state.py"
+      ],
+      "files_forbidden_to_modify": [
+        "app/policy/*",
+        "app/executors/*"
+      ],
+      "dependencies": [
+        "PH080",
+        "PH090"
+      ],
+      "required_capsules": [],
+      "tests": [
+        "test_tray_dbus_registration",
+        "test_tray_menu_actions_and_state_sync"
+      ],
+      "acceptance_criteria": [
+        "Freedesktop StatusNotifierItem registered over session D-Bus",
+        "Tray icon synchronizes live assistant state",
+        "Provides Push-to-Talk, Always Listen, Dashboard, and Quit actions",
+        "Resident memory delta < 10 MiB; no GUI window created"
+      ],
+      "output_interfaces": [
+        "StatusNotifierTray.register",
+        "StatusNotifierTray.update_state",
+        "StatusNotifierTray.unregister"
+      ],
+      "stop_conditions": [
+        "Qt/GTK window required for tray",
+        "D-Bus calls block asyncio event loop"
+      ]
+    },
+    {
+      "phase_id": "PH110",
+      "title": "Firefox WebExtension & Native Messaging Host",
+      "status": "FROZEN",
+      "required_reads": [
+        "Docs/SKILL.md",
+        "Docs/DOCS.md",
+        "Docs/SECURITY.md",
+        "Docs/ImplementationCookbook/17_REFERENCE_CODE_CAPSULES.md"
+      ],
+      "files_created": [
+        "app/browser/native_bridge.py",
+        "extension/firefox/manifest.json",
+        "extension/firefox/background.js",
+        "extension/firefox/native.js",
+        "extension/firefox/generic.js",
+        "tests/test_browser_bridge.py",
+        "tests/fakes/fake_browser.py"
+      ],
+      "files_modified": [
+        "app/browser/protocol.py"
+      ],
+      "files_forbidden_to_modify": [
+        "app/executors/*",
+        "app/policy/*"
+      ],
+      "dependencies": [
+        "PH100"
+      ],
+      "required_capsules": [
+        "CAP-004"
+      ],
+      "tests": [
+        "test_native_messaging_framing_and_size_limit",
+        "test_browser_unlisted_domain_denied",
+        "test_browser_origin_mismatch_denied",
+        "test_password_and_secret_fields_not_extracted"
+      ],
+      "acceptance_criteria": [
+        "4-byte native endian length-prefixed protocol framing (max 1MB)",
+        "Double permission check: daemon allowlist + browser host permission",
+        "Tab origin verified in content script before executing action",
+        "Password fields and credentials strictly excluded from DOM extraction"
+      ],
+      "output_interfaces": [
+        "NativeMessageBridge.send_command",
+        "NativeMessageBridge.receive_message",
+        "NativeMessageBridge.verify_domain_permission"
+      ],
+      "stop_conditions": [
+        "CDP/Puppeteer proposed over Native Messaging",
+        "Password extraction cannot be blocked"
+      ]
+    },
+    {
+      "phase_id": "PH120",
+      "title": "Specialized Browser Site Adapters",
+      "status": "FROZEN",
+      "required_reads": [
+        "Docs/SKILL.md",
+        "Docs/DOCS.md",
+        "Docs/SECURITY.md"
+      ],
+      "files_created": [
+        "extension/firefox/adapters/base.js",
+        "extension/firefox/adapters/google.js",
+        "extension/firefox/adapters/amazon.js",
+        "extension/firefox/adapters/chatgpt.js",
+        "extension/firefox/adapters/claude.js",
+        "extension/firefox/adapters/gemini.js",
+        "tests/test_site_adapters.py"
+      ],
+      "files_modified": [
+        "extension/firefox/background.js"
+      ],
+      "files_forbidden_to_modify": [
+        "app/executors/*",
+        "app/policy/*"
+      ],
+      "dependencies": [
+        "PH110"
+      ],
+      "required_capsules": [],
+      "tests": [
+        "test_site_adapters_semantic_extraction",
+        "test_outdated_adapter_fails_safely"
+      ],
+      "acceptance_criteria": [
+        "Semantic adapters extract structured items from Google, Amazon, and AI sites",
+        "Outdated DOM changes handled gracefully with ADAPTER_OUTDATED status",
+        "Zero arbitrary JavaScript eval() or remote script execution"
+      ],
+      "output_interfaces": [
+        "GoogleAdapter.extract",
+        "BaseAdapter.handle_outdated_dom"
+      ],
+      "stop_conditions": [
+        "Arbitrary eval() used for scraping",
+        "Automatic checkout flow attempted"
+      ]
+    },
+    {
+      "phase_id": "PH130",
+      "title": "Local Dashboard Backend & SQLite Storage",
+      "status": "FROZEN",
+      "required_reads": [
+        "Docs/SKILL.md",
+        "Docs/DOCS.md",
+        "Docs/SECURITY.md",
+        "Docs/ImplementationCookbook/17_REFERENCE_CODE_CAPSULES.md"
+      ],
+      "files_created": [
+        "app/api/app.py",
+        "app/api/routes_config.py",
+        "app/api/routes_audit.py",
+        "app/storage/sqlite.py",
+        "tests/test_dashboard_api.py"
+      ],
+      "files_modified": [],
+      "files_forbidden_to_modify": [
+        "app/executors/*",
+        "app/policy/engine.py"
+      ],
+      "dependencies": [
+        "PH110",
+        "PH120"
+      ],
+      "required_capsules": [
+        "CAP-005"
+      ],
+      "tests": [
+        "test_dashboard_cors_and_localhost_binding",
+        "test_dashboard_config_crud_transactionality"
+      ],
+      "acceptance_criteria": [
+        "FastAPI app binds strictly to 127.0.0.1:8765 with zero wildcard CORS",
+        "Host header validation blocks DNS rebinding attacks",
+        "Transactional config CRUD and paginated audit queries",
+        "SQLite layer in WAL mode with connection pooling"
+      ],
+      "output_interfaces": [
+        "create_dashboard_app",
+        "SQLiteStorage.record_audit_event",
+        "SQLiteStorage.get_audit_events"
+      ],
+      "stop_conditions": [
+        "Server binds to 0.0.0.0",
+        "Wildcard CORS allow_origins=['*'] introduced"
+      ]
+    },
+    {
+      "phase_id": "PH140",
+      "title": "Vanilla Web Dashboard Frontend",
+      "status": "FROZEN",
+      "required_reads": [
+        "Docs/SKILL.md",
+        "Docs/UI.md",
+        "Docs/DOCS.md"
+      ],
+      "files_created": [
+        "app/web/index.html",
+        "app/web/css/app.css",
+        "app/web/js/app.js",
+        "tests/test_dashboard_frontend.py"
+      ],
+      "files_modified": [],
+      "files_forbidden_to_modify": [
+        "app/api/*",
+        "app/core/*"
+      ],
+      "dependencies": [
+        "PH130"
+      ],
+      "required_capsules": [],
+      "tests": [
+        "test_frontend_assets_local_and_no_node_runtime"
+      ],
+      "acceptance_criteria": [
+        "Single-page static dashboard using vanilla JS and local Bootstrap 5.3 CSS",
+        "SVG AI Core animations with reduced-motion support",
+        "Animations pause automatically when browser tab is hidden",
+        "Zero Node.js runtime, npm packages, or frontend build steps"
+      ],
+      "output_interfaces": [
+        "MayaDashboardUI"
+      ],
+      "stop_conditions": [
+        "Node/React/Vite dependencies added",
+        "Remote CDN scripts referenced"
+      ]
+    },
+    {
+      "phase_id": "PH150",
+      "title": "Developer Workflows & VS Code Integration",
+      "status": "FROZEN",
+      "required_reads": [
+        "Docs/SKILL.md",
+        "Docs/DOCS.md",
+        "Docs/SECURITY.md"
+      ],
+      "files_created": [
+        "app/executors/developer.py",
+        "tests/test_developer_workflows.py"
+      ],
+      "files_modified": [],
+      "files_forbidden_to_modify": [
+        "app/core/dispatcher.py",
+        "app/policy/engine.py"
+      ],
+      "dependencies": [
+        "PH130",
+        "PH140"
+      ],
+      "required_capsules": [],
+      "tests": [
+        "test_dev_workflow_git_and_test_under_policy",
+        "test_auto_commit_disabled_by_default"
+      ],
+      "acceptance_criteria": [
+        "Developer repo registration and git status/diff inspection",
+        "Test command execution within allowed repo roots under policy",
+        "VS Code CLI launcher (code <path>)",
+        "Auto-commit is strictly disabled by default"
+      ],
+      "output_interfaces": [
+        "DeveloperToolExecutor.run_workflow",
+        "DeveloperToolExecutor.git_status",
+        "DeveloperToolExecutor.run_tests"
+      ],
+      "stop_conditions": [
+        "Auto-commit enabled without human confirmation",
+        "Commands execute outside allowed roots"
+      ]
+    },
+    {
+      "phase_id": "PH160",
+      "title": "Resource Hardening & Cgroup Verification",
+      "status": "FROZEN",
+      "required_reads": [
+        "Docs/SKILL.md",
+        "Docs/DOCS.md",
+        "Docs/ImplementationCookbook/14_RESOURCE_BUDGET.md"
+      ],
+      "files_created": [
+        "app/core/lifecycle.py",
+        "tests/test_resource_hardening.py"
+      ],
+      "files_modified": [],
+      "files_forbidden_to_modify": [
+        "packaging/systemd/maya.service",
+        "app/core/config.py"
+      ],
+      "dependencies": [
+        "PH150"
+      ],
+      "required_capsules": [],
+      "tests": [
+        "test_resident_cgroup_memory_stress_compliance"
+      ],
+      "acceptance_criteria": [
+        "Full stress scenario with concurrent voice, dashboard, AI, and agent activity",
+        "Peak resident daemon memory remains strictly <= 300 MiB",
+        "MemoryHigh=240M and MemoryMax=300M compliance verified",
+        "External processes accounted for separately from daemon cgroup"
+      ],
+      "output_interfaces": [
+        "LifecycleManager.monitor_memory"
+      ],
+      "stop_conditions": [
+        "MemoryMax raised above 300M",
+        "Resident RSS exceeds 300 MiB under stress"
+      ]
+    },
+    {
+      "phase_id": "PH170",
+      "title": "Packaging & Systemd User Service Integration",
+      "status": "FROZEN",
+      "required_reads": [
+        "Docs/SKILL.md",
+        "Docs/DOCS.md",
+        "Docs/ImplementationCookbook/14_RESOURCE_BUDGET.md"
+      ],
+      "files_created": [
+        "packaging/systemd/maya.service",
+        "packaging/native-manifest/project_h_firefox.json",
+        "packaging/install.sh",
+        "packaging/uninstall.sh",
+        "tests/test_packaging.py"
+      ],
+      "files_modified": [],
+      "files_forbidden_to_modify": [
+        "app/core/dispatcher.py",
+        "app/policy/*"
+      ],
+      "dependencies": [
+        "PH160"
+      ],
+      "required_capsules": [],
+      "tests": [
+        "test_systemd_service_unit_configuration"
+      ],
+      "acceptance_criteria": [
+        "User systemd service unit configured with MemoryHigh=240M and MemoryMax=300M",
+        "Service restarts on failure (Restart=on-failure, RestartSec=3s)",
+        "Firefox native messaging host manifest registered in user profile",
+        "Idempotent install and uninstall scripts provided"
+      ],
+      "output_interfaces": [
+        "maya.service",
+        "install.sh"
+      ],
+      "stop_conditions": [
+        "Service configured as root daemon",
+        "MemoryMax omitted from unit file"
+      ]
+    },
+    {
+      "phase_id": "PH180",
+      "title": "Final System Acceptance & Offline Verification",
+      "status": "FROZEN",
+      "required_reads": [
+        "Docs/SKILL.md",
+        "Docs/DOCS.md",
+        "Docs/PLAN.md",
+        "Docs/ImplementationCookbook/02_REQUIREMENTS.md"
+      ],
+      "files_created": [
+        "tests/test_offline_determinism.py",
+        "Docs/Current/PH180_FINAL_ACCEPTANCE_REPORT.md"
+      ],
+      "files_modified": [],
+      "files_forbidden_to_modify": [
+        "app/*"
+      ],
+      "dependencies": [
+        "PH170"
+      ],
+      "required_capsules": [],
+      "tests": [
+        "test_offline_deterministic_actions_succeed"
+      ],
+      "acceptance_criteria": [
+        "All 44 atomic requirements verified with passing automated tests",
+        "Zero unmapped requirements and zero untested acceptance criteria",
+        "Deterministic local actions operate 100% when NVIDIA remote AI is unavailable",
+        "Final certification report generated without critical or important gaps"
+      ],
+      "output_interfaces": [
+        "test_offline_deterministic_actions_succeed"
+      ],
+      "stop_conditions": [
+        "Any requirement lacks automated test evidence",
+        "Offline deterministic actions fail or hang"
+      ]
+    }
+  ]
+}
