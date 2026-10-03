@@ -19,16 +19,29 @@ Additionally, `Docs/SKILL.md` (`3ee7bf617703e36bda264096154bc2609950deea`) acts 
 
 ## 2. Core Conflict Principles
 
-1. **Higher Authority Wins:** A lower document cannot relax, circumvent, or contradict a rule from a higher document. For example, if `PLAN.md` suggests an open endpoint or loose check, but `SECURITY.md` demands strict approval or origin validation, `SECURITY.md` strictly governs.
+1. **Higher Authority Wins:** A lower document cannot relax, circumvent, or contradict a rule from a higher document.
 2. **Behavioral Authority vs Implementation State:**
-   - **Behavioral Authority:** What the system *must* do is dictated strictly by the authority order above.
-   - **Actual Implementation State:** What *currently exists* in code is determined by Git tree, source code in `app/`, automated tests in `tests/`, and merged pull requests, superseding stale task-ledger prose in `TASKS.md`.
-3. **No Stealth Refactoring:** The existing PH-000 through PH-040 code must not be refactored during cookbook generation unless an unavoidable blocker is uncovered and recorded.
+   - **Behavioral Authority:** Governed strictly by the 8 documents in authority order.
+   - **Actual Implementation State:** Governed by Git commit tree, source in `app/`, tests in `tests/`, and merged PRs, which supersede stale task-ledger prose in `TASKS.md`.
+3. **No Stealth Refactoring:** Existing PH-000 through PH-040 code must not be refactored during cookbook generation unless an unavoidable blocker is uncovered.
 
 ---
 
 ## 3. Baselines
 
-- **Cookbook Generation Work Base:** `d603173624ddc9285b32ee00f33c10be2ecc9b58`
-- **Product Code Base (PH-000 to PH-040):** `ef00714c86d3d7b5684d693da35aa82595a088d4`
+- **Cookbook Work Base SHA:** `d603173624ddc9285b32ee00f33c10be2ecc9b58`
+- **Product Code Base SHA:** `ef00714c86d3d7b5684d693da35aa82595a088d4`
 - **CI Run Baseline:** `37107781413`
+
+---
+
+## 4. Conflict & Gap Ledger
+
+| Conflict ID | Higher Authority | Lower Source / State | Conflict Description | Ruling & Decision | Affected Phases | Required Action |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `CONF-001` | `Git Tree` | `Docs/TASKS.md` | `TASKS.md` checkpoint prose may state PR #3 is pending review/merge, whereas Git `main` has merged `ef00714` with CI pass. | Git repository truth wins for implementation state. PH-040 is fully merged and verified. | All (PH-050..180) | Anchor all phase packets starting from PH-050 onwards; do not replay PH-040. |
+| `CONF-002` | `Docs/DOCS.md` | Casual STT proposals | Some ecosystem notes suggest Vosk for local offline STT. | `DOCS.md` Section 3.4 explicitly forbids Vosk as default resident STT due to ~300MB RAM requirement. Remote STT (NVIDIA Parakeet) is used after wake only. | PH-080, PH-090 | Freeze architecture to remote STT post-wake only. |
+| `CONF-003` | `Docs/UI.md` / `DOCS.md` | Web frameworks | Common web practice uses React/Vue/Node. | `UI.md` and `DOCS.md` strictly forbid Node/React/Vue runtimes. Static HTML, local Bootstrap 5.3 CSS, vanilla JS, SVG AI Core served via FastAPI localhost. | PH-130, PH-140 | Enforce zero-Node frontend architecture in contracts and tests. |
+| `CONF-004` | `Docs/SECURITY.md` | Shell execution | Subprocess execution could tempt `shell=True` for convenience. | `SECURITY.md` strictly forbids `shell=True`. All executions must use `asyncio.create_subprocess_exec` with explicit argv lists. | PH-040, PH-050, PH-150 | Enforce argv execution across all executors. |
+| `CONF-005` | `Docs/SECURITY.md` | UI location of approval | Approval requests could tempt web dashboard modal. | `SECURITY.md` Section 5 and `DOCS.md` Section 1 require an independent native approval popup that functions even if dashboard is closed. | PH-050 | Build independent transient popup protocol and broker. |
+| `CONF-006` | `Docs/DOCS.md` | Cgroup limits | Memory limits could tempt loosening during development. | `MemoryHigh=240M`, `MemoryMax=300M` are hard invariants. Silent limit increases are forbidden. | PH-160, PH-170 | Design strict bounds, bounded queues, and memory monitoring. |
