@@ -1,0 +1,580 @@
+{
+  "files": [
+    {
+      "path": "app/core/dispatcher.py",
+      "owner_phase": "PH040",
+      "secondary_modifiers": [
+        "PH050",
+        "PH070"
+      ],
+      "purpose": "Central action dispatching and security boundary enforcement",
+      "allowed_contents": [
+        "ActionDispatcher class",
+        "dispatch logic",
+        "executor invocation"
+      ],
+      "forbidden_contents": [
+        "direct OS subprocess calls without executor",
+        "policy bypass"
+      ]
+    },
+    {
+      "path": "app/core/state.py",
+      "owner_phase": "PH000",
+      "secondary_modifiers": [
+        "PH080",
+        "PH100"
+      ],
+      "purpose": "Application runtime state machine and event dispatch",
+      "allowed_contents": [
+        "AppState class",
+        "SystemState enum",
+        "transition methods"
+      ],
+      "forbidden_contents": [
+        "business logic",
+        "executor calls"
+      ]
+    },
+    {
+      "path": "app/core/config.py",
+      "owner_phase": "PH010",
+      "secondary_modifiers": [
+        "PH060",
+        "PH080",
+        "PH130"
+      ],
+      "purpose": "Configuration schemas and TOML loading",
+      "allowed_contents": [
+        "Pydantic config models",
+        "load_config function"
+      ],
+      "forbidden_contents": [
+        "runtime state mutation"
+      ]
+    },
+    {
+      "path": "app/policy/engine.py",
+      "owner_phase": "PH020",
+      "secondary_modifiers": [
+        "PH050"
+      ],
+      "purpose": "Pure policy evaluation against preapprovals and rules",
+      "allowed_contents": [
+        "PolicyEngine class",
+        "PolicyEvaluation",
+        "PolicyDecision"
+      ],
+      "forbidden_contents": [
+        "executor invocation",
+        "subprocess calls"
+      ]
+    },
+    {
+      "path": "app/actions/registry.py",
+      "owner_phase": "PH030",
+      "secondary_modifiers": [
+        "PH150"
+      ],
+      "purpose": "Action pack loading, schema validation, and phrase lookup table",
+      "allowed_contents": [
+        "ActionRegistry class",
+        "ActionPack loading"
+      ],
+      "forbidden_contents": [
+        "arbitrary code execution",
+        "symlink following"
+      ]
+    },
+    {
+      "path": "app/executors/process.py",
+      "owner_phase": "PH040",
+      "secondary_modifiers": [],
+      "purpose": "Safe process execution with argv allowlists and bounded buffers",
+      "allowed_contents": [
+        "ProcessExecutor class",
+        "subprocess exec"
+      ],
+      "forbidden_contents": [
+        "shell=True",
+        "unbounded output capture"
+      ]
+    },
+    {
+      "path": "app/executors/files.py",
+      "owner_phase": "PH040",
+      "secondary_modifiers": [],
+      "purpose": "Sandboxed file operations with canonical path validation",
+      "allowed_contents": [
+        "FileExecutor class",
+        "path validation"
+      ],
+      "forbidden_contents": [
+        "path traversal escape",
+        "arbitrary root overwrite"
+      ]
+    },
+    {
+      "path": "app/executors/xdg.py",
+      "owner_phase": "PH040",
+      "secondary_modifiers": [],
+      "purpose": "Desktop launcher using xdg-open for validated URLs and files",
+      "allowed_contents": [
+        "XdgExecutor class",
+        "URL validation"
+      ],
+      "forbidden_contents": [
+        "arbitrary command execution"
+      ]
+    },
+    {
+      "path": "app/policy/broker.py",
+      "owner_phase": "PH050",
+      "secondary_modifiers": [],
+      "purpose": "Interactive approval broker, cryptographic hash binding, and popup dispatch",
+      "allowed_contents": [
+        "ApprovalBroker class",
+        "ApprovalGrant",
+        "popup spawning"
+      ],
+      "forbidden_contents": [
+        "persistent grant storage",
+        "multi-use grants"
+      ]
+    },
+    {
+      "path": "app/ai/nvidia.py",
+      "owner_phase": "PH060",
+      "secondary_modifiers": [],
+      "purpose": "NVIDIA Nemotron AsyncOpenAI client adapter with streaming and tool parsing",
+      "allowed_contents": [
+        "NvidiaProvider class",
+        "ChatMessage",
+        "ToolCall parsing"
+      ],
+      "forbidden_contents": [
+        "direct OS execution",
+        "leaking raw reasoning traces"
+      ]
+    },
+    {
+      "path": "app/core/command_router.py",
+      "owner_phase": "PH070",
+      "secondary_modifiers": [],
+      "purpose": "4-tier command classification and routing pipeline",
+      "allowed_contents": [
+        "CommandRouter class",
+        "CommandRoutingDecision"
+      ],
+      "forbidden_contents": [
+        "direct executor calls bypassing dispatcher"
+      ]
+    },
+    {
+      "path": "app/agents/runtime.py",
+      "owner_phase": "PH070",
+      "secondary_modifiers": [],
+      "purpose": "Bounded single logical agent execution loop with step limits",
+      "allowed_contents": [
+        "AgentRuntime class",
+        "step loop",
+        "transcript management"
+      ],
+      "forbidden_contents": [
+        "parallel unconstrained swarms",
+        "policy bypass"
+      ]
+    },
+    {
+      "path": "app/agents/model.py",
+      "owner_phase": "PH070",
+      "secondary_modifiers": [],
+      "purpose": "Agent task and step Pydantic data schemas",
+      "allowed_contents": [
+        "AgentTask",
+        "AgentTaskResult",
+        "AgentStep"
+      ],
+      "forbidden_contents": [
+        "runtime execution logic"
+      ]
+    },
+    {
+      "path": "app/voice/audio.py",
+      "owner_phase": "PH080",
+      "secondary_modifiers": [],
+      "purpose": "Audio stream capture and bounded circular ring buffer",
+      "allowed_contents": [
+        "AudioSource class",
+        "ring buffer reading/writing"
+      ],
+      "forbidden_contents": [
+        "network socket calls",
+        "disk writing of pre-wake audio"
+      ]
+    },
+    {
+      "path": "app/voice/wake.py",
+      "owner_phase": "PH080",
+      "secondary_modifiers": [],
+      "purpose": "Local wake word detection using openWakeWord 1-thread engine",
+      "allowed_contents": [
+        "WakeDetector class",
+        "frame inference"
+      ],
+      "forbidden_contents": [
+        "network transmission",
+        "remote STT calls"
+      ]
+    },
+    {
+      "path": "app/voice/recorder.py",
+      "owner_phase": "PH080",
+      "secondary_modifiers": [],
+      "purpose": "Post-wake command audio recording bounded by VAD and duration",
+      "allowed_contents": [
+        "CommandRecorder class",
+        "VAD silence detection"
+      ],
+      "forbidden_contents": [
+        "pre-wake buffer retention"
+      ]
+    },
+    {
+      "path": "app/voice/stt.py",
+      "owner_phase": "PH090",
+      "secondary_modifiers": [],
+      "purpose": "Remote STT adapter for post-wake command audio transcription",
+      "allowed_contents": [
+        "STTAdapter class",
+        "audio buffer release logic"
+      ],
+      "forbidden_contents": [
+        "pre-wake audio transcription",
+        "disk persistence of audio"
+      ]
+    },
+    {
+      "path": "app/tray/status_notifier.py",
+      "owner_phase": "PH100",
+      "secondary_modifiers": [],
+      "purpose": "Freedesktop StatusNotifierItem over session D-Bus",
+      "allowed_contents": [
+        "StatusNotifierTray class",
+        "D-Bus property updates"
+      ],
+      "forbidden_contents": [
+        "heavyweight GUI window creation"
+      ]
+    },
+    {
+      "path": "app/browser/native_bridge.py",
+      "owner_phase": "PH110",
+      "secondary_modifiers": [],
+      "purpose": "Length-prefixed native messaging host communicating with Firefox",
+      "allowed_contents": [
+        "NativeMessageBridge class",
+        "message framing",
+        "domain checks"
+      ],
+      "forbidden_contents": [
+        "unrestricted DOM access",
+        "bypassing domain allowlist"
+      ]
+    },
+    {
+      "path": "extension/firefox/manifest.json",
+      "owner_phase": "PH110",
+      "secondary_modifiers": [],
+      "purpose": "Firefox WebExtension manifest declaring permissions and native messaging host",
+      "allowed_contents": [
+        "manifest metadata",
+        "permissions declarations"
+      ],
+      "forbidden_contents": [
+        "broad wildcard permissions without user prompt"
+      ]
+    },
+    {
+      "path": "extension/firefox/background.js",
+      "owner_phase": "PH110",
+      "secondary_modifiers": [],
+      "purpose": "Extension background service worker connecting native messaging pipe to content scripts",
+      "allowed_contents": [
+        "browser.runtime.connectNative",
+        "tab routing"
+      ],
+      "forbidden_contents": [
+        "direct remote script evaluation"
+      ]
+    },
+    {
+      "path": "extension/firefox/native.js",
+      "owner_phase": "PH110",
+      "secondary_modifiers": [],
+      "purpose": "Native messaging framing and tab origin validation routines",
+      "allowed_contents": [
+        "verifyTabOrigin function",
+        "message dispatch"
+      ],
+      "forbidden_contents": [
+        "origin mismatch execution"
+      ]
+    },
+    {
+      "path": "extension/firefox/generic.js",
+      "owner_phase": "PH110",
+      "secondary_modifiers": [],
+      "purpose": "Generic DOM text extraction excluding passwords and sensitive elements",
+      "allowed_contents": [
+        "extractVisibleText function",
+        "sensitive field filters"
+      ],
+      "forbidden_contents": [
+        "reading password inputs",
+        "scraping cookies"
+      ]
+    },
+    {
+      "path": "extension/firefox/adapters/base.js",
+      "owner_phase": "PH120",
+      "secondary_modifiers": [],
+      "purpose": "Base site adapter interface and graceful outdated DOM failure handler",
+      "allowed_contents": [
+        "BaseAdapter class",
+        "handle_outdated_dom"
+      ],
+      "forbidden_contents": [
+        "silent failure",
+        "arbitrary selector injection"
+      ]
+    },
+    {
+      "path": "extension/firefox/adapters/google.js",
+      "owner_phase": "PH120",
+      "secondary_modifiers": [],
+      "purpose": "Dedicated semantic adapter for Google Search result extraction",
+      "allowed_contents": [
+        "GoogleAdapter class",
+        "result parsing"
+      ],
+      "forbidden_contents": [
+        "ad clicking",
+        "capturing user cookies"
+      ]
+    },
+    {
+      "path": "extension/firefox/adapters/amazon.js",
+      "owner_phase": "PH120",
+      "secondary_modifiers": [],
+      "purpose": "Dedicated semantic adapter for Amazon product search results",
+      "allowed_contents": [
+        "AmazonAdapter class",
+        "product title/price extraction"
+      ],
+      "forbidden_contents": [
+        "automatic checkout",
+        "one-click purchase"
+      ]
+    },
+    {
+      "path": "extension/firefox/adapters/chatgpt.js",
+      "owner_phase": "PH120",
+      "secondary_modifiers": [],
+      "purpose": "Dedicated semantic adapter for ChatGPT interface response extraction",
+      "allowed_contents": [
+        "ChatGPTAdapter class",
+        "response turn extraction"
+      ],
+      "forbidden_contents": [
+        "account settings modification"
+      ]
+    },
+    {
+      "path": "extension/firefox/adapters/claude.js",
+      "owner_phase": "PH120",
+      "secondary_modifiers": [],
+      "purpose": "Dedicated semantic adapter for Claude.ai response extraction",
+      "allowed_contents": [
+        "ClaudeAdapter class",
+        "response turn extraction"
+      ],
+      "forbidden_contents": [
+        "account settings modification"
+      ]
+    },
+    {
+      "path": "extension/firefox/adapters/gemini.js",
+      "owner_phase": "PH120",
+      "secondary_modifiers": [],
+      "purpose": "Dedicated semantic adapter for Gemini web interface response extraction",
+      "allowed_contents": [
+        "GeminiAdapter class",
+        "response turn extraction"
+      ],
+      "forbidden_contents": [
+        "account settings modification"
+      ]
+    },
+    {
+      "path": "app/api/app.py",
+      "owner_phase": "PH130",
+      "secondary_modifiers": [],
+      "purpose": "FastAPI localhost application factory and lifespan management",
+      "allowed_contents": [
+        "create_dashboard_app function",
+        "route mounting"
+      ],
+      "forbidden_contents": [
+        "wildcard CORS",
+        "binding to 0.0.0.0"
+      ]
+    },
+    {
+      "path": "app/api/routes_config.py",
+      "owner_phase": "PH130",
+      "secondary_modifiers": [],
+      "purpose": "Configuration CRUD endpoints with strict validation",
+      "allowed_contents": [
+        "config GET/POST/PUT endpoints"
+      ],
+      "forbidden_contents": [
+        "unvalidated config overwrites"
+      ]
+    },
+    {
+      "path": "app/api/routes_audit.py",
+      "owner_phase": "PH130",
+      "secondary_modifiers": [],
+      "purpose": "Paginated audit event log query endpoints",
+      "allowed_contents": [
+        "audit log GET endpoints with limit/offset"
+      ],
+      "forbidden_contents": [
+        "unbounded log dumps"
+      ]
+    },
+    {
+      "path": "app/storage/sqlite.py",
+      "owner_phase": "PH130",
+      "secondary_modifiers": [],
+      "purpose": "Local SQLite storage layer with WAL mode and connection pooling",
+      "allowed_contents": [
+        "SQLiteStorage class",
+        "schema migration",
+        "audit inserts"
+      ],
+      "forbidden_contents": [
+        "storing plaintext secrets/API keys"
+      ]
+    },
+    {
+      "path": "app/web/index.html",
+      "owner_phase": "PH140",
+      "secondary_modifiers": [],
+      "purpose": "Single-page static dashboard HTML shell",
+      "allowed_contents": [
+        "semantic HTML structure",
+        "tab views",
+        "SVG AI Core markup"
+      ],
+      "forbidden_contents": [
+        "inline javascript",
+        "CDN script tags"
+      ]
+    },
+    {
+      "path": "app/web/css/app.css",
+      "owner_phase": "PH140",
+      "secondary_modifiers": [],
+      "purpose": "Custom CSS layout and AI Core pulse animations",
+      "allowed_contents": [
+        "CSS styling",
+        "reduced motion media queries"
+      ],
+      "forbidden_contents": [
+        "remote @import rules"
+      ]
+    },
+    {
+      "path": "app/web/js/app.js",
+      "owner_phase": "PH140",
+      "secondary_modifiers": [],
+      "purpose": "Vanilla JavaScript dashboard state controller and SSE consumer",
+      "allowed_contents": [
+        "EventSource listener",
+        "DOM updates",
+        "fetch calls"
+      ],
+      "forbidden_contents": [
+        "Node dependencies",
+        "frontend build steps"
+      ]
+    },
+    {
+      "path": "app/executors/developer.py",
+      "owner_phase": "PH150",
+      "secondary_modifiers": [],
+      "purpose": "Developer workflows: git status/diff, test runner, code CLI launcher",
+      "allowed_contents": [
+        "DeveloperToolExecutor class",
+        "git/test helpers"
+      ],
+      "forbidden_contents": [
+        "auto-commit without verification"
+      ]
+    },
+    {
+      "path": "app/core/lifecycle.py",
+      "owner_phase": "PH160",
+      "secondary_modifiers": [],
+      "purpose": "Daemon lifecycle manager, cgroup memory monitor, and graceful shutdown coordinator",
+      "allowed_contents": [
+        "LifecycleManager class",
+        "monitor_memory function"
+      ],
+      "forbidden_contents": [
+        "raising MemoryMax limit"
+      ]
+    },
+    {
+      "path": "packaging/systemd/maya.service",
+      "owner_phase": "PH170",
+      "secondary_modifiers": [],
+      "purpose": "User systemd unit definition with cgroup resource limits",
+      "allowed_contents": [
+        "systemd unit file",
+        "MemoryHigh=240M",
+        "MemoryMax=300M"
+      ],
+      "forbidden_contents": [
+        "root service installation"
+      ]
+    },
+    {
+      "path": "packaging/native-manifest/project_h_firefox.json",
+      "owner_phase": "PH170",
+      "secondary_modifiers": [],
+      "purpose": "Firefox native messaging host registration manifest",
+      "allowed_contents": [
+        "native messaging host path",
+        "allowed_extensions"
+      ],
+      "forbidden_contents": [
+        "executable scripts directly"
+      ]
+    },
+    {
+      "path": "tests/test_offline_determinism.py",
+      "owner_phase": "PH180",
+      "secondary_modifiers": [],
+      "purpose": "End-to-end verification of deterministic actions when remote AI is offline",
+      "allowed_contents": [
+        "test_offline_deterministic_actions_succeed test case"
+      ],
+      "forbidden_contents": [
+        "live API network calls"
+      ]
+    }
+  ]
+}
