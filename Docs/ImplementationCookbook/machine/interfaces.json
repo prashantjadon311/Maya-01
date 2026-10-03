@@ -1,0 +1,539 @@
+{
+  "interfaces": [
+    {
+      "name": "ApprovalBroker.request_approval",
+      "owning_phase": "PH050",
+      "file": "app/policy/broker.py",
+      "signature": "async def request_approval(self, req: ActionRequest, reason: str, risk: RiskLevel) -> ApprovalGrant",
+      "inputs": [
+        {
+          "name": "req",
+          "type": "ActionRequest"
+        },
+        {
+          "name": "reason",
+          "type": "str"
+        },
+        {
+          "name": "risk",
+          "type": "RiskLevel"
+        }
+      ],
+      "output": "ApprovalGrant",
+      "preconditions": [
+        "req is validated Pydantic model",
+        "risk in (RiskLevel.MEDIUM, RiskLevel.HIGH)"
+      ],
+      "postconditions": [
+        "grant registered in memory with expiry and payload hash",
+        "popup displayed to user"
+      ],
+      "is_security_boundary": true,
+      "security_test_id": "test_approval_popup_transient_display",
+      "bounds": "Max 10 concurrent pending approval requests in broker memory",
+      "timeout_seconds": 60.0,
+      "cancellation": "Cancels popup subprocess immediately and resolves to DENY",
+      "idempotent": false,
+      "audit_code": "SEC-APPR-REQ",
+      "errors": [
+        "ApprovalTimeoutError",
+        "ApprovalDeniedError",
+        "ApprovalBackendError"
+      ]
+    },
+    {
+      "name": "ApprovalBroker.verify_grant",
+      "owning_phase": "PH050",
+      "file": "app/policy/broker.py",
+      "signature": "def verify_grant(self, grant_id: str, action_hash: str) -> bool",
+      "inputs": [
+        {
+          "name": "grant_id",
+          "type": "str"
+        },
+        {
+          "name": "action_hash",
+          "type": "str"
+        }
+      ],
+      "output": "bool",
+      "preconditions": [
+        "grant_id is valid UUID",
+        "action_hash is 64-char lowercase hex"
+      ],
+      "postconditions": [
+        "returns True if grant exists, unexpired, and hash matches exactly"
+      ],
+      "is_security_boundary": true,
+      "security_test_id": "test_approval_hash_mismatch_denied",
+      "bounds": "Constant-time string comparison (hmac.compare_digest)",
+      "timeout_seconds": 0.1,
+      "cancellation": "Sync operation; non-cancellable",
+      "idempotent": true,
+      "audit_code": "SEC-APPR-VERIFY",
+      "errors": [
+        "InvalidGrantError"
+      ]
+    },
+    {
+      "name": "ApprovalBroker.consume_grant",
+      "owning_phase": "PH050",
+      "file": "app/policy/broker.py",
+      "signature": "def consume_grant(self, grant_id: str, action_hash: str) -> bool",
+      "inputs": [
+        {
+          "name": "grant_id",
+          "type": "str"
+        },
+        {
+          "name": "action_hash",
+          "type": "str"
+        }
+      ],
+      "output": "bool",
+      "preconditions": [
+        "grant_id is valid UUID",
+        "action_hash is 64-char lowercase hex"
+      ],
+      "postconditions": [
+        "grant removed atomically from memory; cannot be reused"
+      ],
+      "is_security_boundary": true,
+      "security_test_id": "test_approval_single_use_replay_denied",
+      "bounds": "Atomically removes key from dict under asyncio.Lock",
+      "timeout_seconds": 0.1,
+      "cancellation": "Sync operation; non-cancellable",
+      "idempotent": false,
+      "audit_code": "SEC-APPR-CONSUME",
+      "errors": [
+        "GrantAlreadyConsumedError",
+        "InvalidGrantError"
+      ]
+    },
+    {
+      "name": "NvidiaProvider.complete",
+      "owning_phase": "PH060",
+      "file": "app/ai/nvidia.py",
+      "signature": "async def complete(self, messages: list[ChatMessage], tools: list[ToolDefinition] | None = None) -> ChatResponse",
+      "inputs": [
+        {
+          "name": "messages",
+          "type": "list[ChatMessage]"
+        },
+        {
+          "name": "tools",
+          "type": "list[ToolDefinition] | None"
+        }
+      ],
+      "output": "ChatResponse",
+      "preconditions": [
+        "messages non-empty",
+        "messages bounded to max 32 items"
+      ],
+      "postconditions": [
+        "returns ChatResponse with content and optional tool calls",
+        "reasoning trace stripped"
+      ],
+      "is_security_boundary": true,
+      "security_test_id": "test_reasoning_trace_not_leaked",
+      "bounds": "Max request context 128KB, max completion tokens 4096",
+      "timeout_seconds": 30.0,
+      "cancellation": "Cancels httpx streaming response immediately",
+      "idempotent": false,
+      "audit_code": "SEC-AI-COMPLETE",
+      "errors": [
+        "ProviderTimeoutError",
+        "ProviderAPIError",
+        "ProviderRateLimitError"
+      ]
+    },
+    {
+      "name": "NvidiaProvider.stream_chat",
+      "owning_phase": "PH060",
+      "file": "app/ai/nvidia.py",
+      "signature": "async def stream_chat(self, messages: list[ChatMessage], tools: list[ToolDefinition] | None = None) -> AsyncIterator[ChatChunk]",
+      "inputs": [
+        {
+          "name": "messages",
+          "type": "list[ChatMessage]"
+        },
+        {
+          "name": "tools",
+          "type": "list[ToolDefinition] | None"
+        }
+      ],
+      "output": "AsyncIterator[ChatChunk]",
+      "preconditions": [
+        "messages non-empty",
+        "messages bounded to max 32 items"
+      ],
+      "postconditions": [
+        "yields ChatChunks as received from SSE stream"
+      ],
+      "is_security_boundary": true,
+      "security_test_id": "test_nvidia_streaming_tool_call_parsing",
+      "bounds": "Chunks bounded to 4KB per chunk",
+      "timeout_seconds": 60.0,
+      "cancellation": "Closes HTTP response stream cleanly",
+      "idempotent": false,
+      "audit_code": "SEC-AI-STREAM",
+      "errors": [
+        "ProviderStreamError",
+        "ProviderTimeoutError"
+      ]
+    },
+    {
+      "name": "CommandRouter.route",
+      "owning_phase": "PH070",
+      "file": "app/core/command_router.py",
+      "signature": "async def route(self, command_text: str, source: str) -> CommandRoutingDecision",
+      "inputs": [
+        {
+          "name": "command_text",
+          "type": "str"
+        },
+        {
+          "name": "source",
+          "type": "str"
+        }
+      ],
+      "output": "CommandRoutingDecision",
+      "preconditions": [
+        "command_text trimmed, len <= 1024",
+        "source in ('voice', 'cli', 'web')"
+      ],
+      "postconditions": [
+        "returns routing decision according to strict 4-step hierarchy"
+      ],
+      "is_security_boundary": true,
+      "security_test_id": "test_exact_action_zero_ai_calls",
+      "bounds": "Max command length 1024 chars",
+      "timeout_seconds": 35.0,
+      "cancellation": "Propagates cancellation to underlying AI or executor call",
+      "idempotent": false,
+      "audit_code": "SEC-ROUT-DECISION",
+      "errors": [
+        "RoutingAmbiguityError",
+        "CommandParsingError"
+      ]
+    },
+    {
+      "name": "AgentRuntime.run_task",
+      "owning_phase": "PH070",
+      "file": "app/agents/runtime.py",
+      "signature": "async def run_task(self, objective: str, workspace_root: Path) -> AgentTaskResult",
+      "inputs": [
+        {
+          "name": "objective",
+          "type": "str"
+        },
+        {
+          "name": "workspace_root",
+          "type": "Path"
+        }
+      ],
+      "output": "AgentTaskResult",
+      "preconditions": [
+        "single active agent lock acquired",
+        "workspace_root is within allowed roots"
+      ],
+      "postconditions": [
+        "executes max 15 steps",
+        "every tool call routed through ActionDispatcher"
+      ],
+      "is_security_boundary": true,
+      "security_test_id": "test_agent_cannot_bypass_policy_dispatcher",
+      "bounds": "Max 15 steps, max 20 AI API calls, max 64KB transcript",
+      "timeout_seconds": 300.0,
+      "cancellation": "Terminates step loop, records partial evidence, aborts subprocesses",
+      "idempotent": false,
+      "audit_code": "SEC-AGNT-RUN",
+      "errors": [
+        "AgentStepLimitExceeded",
+        "AgentBudgetExceeded",
+        "AgentPolicyViolation"
+      ]
+    },
+    {
+      "name": "WakeDetector.process_chunk",
+      "owning_phase": "PH080",
+      "file": "app/voice/wake.py",
+      "signature": "def process_chunk(self, pcm_chunk: bytes) -> float",
+      "inputs": [
+        {
+          "name": "pcm_chunk",
+          "type": "bytes"
+        }
+      ],
+      "output": "float",
+      "preconditions": [
+        "pcm_chunk is 16kHz 16-bit mono PCM (1280 bytes = 80ms)"
+      ],
+      "postconditions": [
+        "returns confidence score [0.0, 1.0]",
+        "zero network I/O invoked"
+      ],
+      "is_security_boundary": true,
+      "security_test_id": "test_prewake_audio_zero_network_callback",
+      "bounds": "Exact 1280 bytes per chunk, single CPU inference thread",
+      "timeout_seconds": 0.05,
+      "cancellation": "Synchronous call; non-cancellable",
+      "idempotent": true,
+      "audit_code": "SEC-VOIC-WAKE",
+      "errors": [
+        "WakeInferenceError"
+      ]
+    },
+    {
+      "name": "AudioSource.read_frames",
+      "owning_phase": "PH080",
+      "file": "app/voice/audio.py",
+      "signature": "async def read_frames(self, num_frames: int) -> bytes",
+      "inputs": [
+        {
+          "name": "num_frames",
+          "type": "int"
+        }
+      ],
+      "output": "bytes",
+      "preconditions": [
+        "stream is open and active",
+        "num_frames > 0"
+      ],
+      "postconditions": [
+        "reads from circular buffer; oldest dropped on overflow"
+      ],
+      "is_security_boundary": false,
+      "security_test_id": null,
+      "bounds": "Max ring buffer size 3 seconds (96,000 bytes)",
+      "timeout_seconds": 1.0,
+      "cancellation": "Interrupts buffer await cleanly",
+      "idempotent": false,
+      "audit_code": "AUD-VOIC-READ",
+      "errors": [
+        "AudioStreamClosedError"
+      ]
+    },
+    {
+      "name": "STTAdapter.transcribe",
+      "owning_phase": "PH090",
+      "file": "app/voice/stt.py",
+      "signature": "async def transcribe(self, pcm_bytes: bytes, language: str = 'hi-IN') -> str",
+      "inputs": [
+        {
+          "name": "pcm_bytes",
+          "type": "bytes"
+        },
+        {
+          "name": "language",
+          "type": "str"
+        }
+      ],
+      "output": "str",
+      "preconditions": [
+        "pcm_bytes represents post-wake command segment only",
+        "len <= 320,000 bytes (10s)"
+      ],
+      "postconditions": [
+        "returns normalized transcript text",
+        "pcm_bytes released from RAM"
+      ],
+      "is_security_boundary": true,
+      "security_test_id": "test_stt_transcribes_postwake_only",
+      "bounds": "Max audio length 10.0 seconds (320KB PCM)",
+      "timeout_seconds": 10.0,
+      "cancellation": "Aborts HTTP request to STT endpoint and clears audio buffer",
+      "idempotent": false,
+      "audit_code": "SEC-STT-CALL",
+      "errors": [
+        "STTTimeoutError",
+        "STTRecognitionError",
+        "STTNetworkError"
+      ]
+    },
+    {
+      "name": "StatusNotifierTray.update_state",
+      "owning_phase": "PH100",
+      "file": "app/tray/status_notifier.py",
+      "signature": "def update_state(self, new_state: SystemState) -> None",
+      "inputs": [
+        {
+          "name": "new_state",
+          "type": "SystemState"
+        }
+      ],
+      "output": "None",
+      "preconditions": [
+        "tray D-Bus connection is established"
+      ],
+      "postconditions": [
+        "updates icon and tooltip via D-Bus properties changed signal"
+      ],
+      "is_security_boundary": false,
+      "security_test_id": null,
+      "bounds": "Rate limited to max 10 updates per second",
+      "timeout_seconds": 0.5,
+      "cancellation": "Non-cancellable sync call",
+      "idempotent": true,
+      "audit_code": "AUD-TRAY-STATE",
+      "errors": [
+        "DBusCommunicationError"
+      ]
+    },
+    {
+      "name": "NativeMessageBridge.send_command",
+      "owning_phase": "PH110",
+      "file": "app/browser/native_bridge.py",
+      "signature": "async def send_command(self, action: BrowserCommand) -> BrowserResponse",
+      "inputs": [
+        {
+          "name": "action",
+          "type": "BrowserCommand"
+        }
+      ],
+      "output": "BrowserResponse",
+      "preconditions": [
+        "action target domain is on daemon allowlist",
+        "action.tab_id is valid integer"
+      ],
+      "postconditions": [
+        "sends length-prefixed JSON to Firefox host",
+        "returns response payload"
+      ],
+      "is_security_boundary": true,
+      "security_test_id": "test_browser_unlisted_domain_denied",
+      "bounds": "Max message payload size 1MB (Firefox native messaging protocol limit)",
+      "timeout_seconds": 15.0,
+      "cancellation": "Sends cancellation message to content script and releases awaiter",
+      "idempotent": false,
+      "audit_code": "SEC-BROW-CMD",
+      "errors": [
+        "BrowserBridgeDisconnectedError",
+        "BrowserCommandTimeoutError",
+        "DomainNotAllowedError"
+      ]
+    },
+    {
+      "name": "GoogleAdapter.extract",
+      "owning_phase": "PH120",
+      "file": "extension/firefox/adapters/google.js",
+      "signature": "function extract(document: Document) -> AdapterResult",
+      "inputs": [
+        {
+          "name": "document",
+          "type": "Document"
+        }
+      ],
+      "output": "AdapterResult",
+      "preconditions": [
+        "window.location.origin is 'https://www.google.com'"
+      ],
+      "postconditions": [
+        "returns top 5 organic search results (title, snippet, URL)"
+      ],
+      "is_security_boundary": true,
+      "security_test_id": "test_site_adapters_semantic_extraction",
+      "bounds": "Max 5 results, max 500 chars snippet per result",
+      "timeout_seconds": 2.0,
+      "cancellation": "Synchronous DOM traversal",
+      "idempotent": true,
+      "audit_code": "SEC-ADPT-EXTRACT",
+      "errors": [
+        "DOMSelectorNotFoundError"
+      ]
+    },
+    {
+      "name": "create_dashboard_app",
+      "owning_phase": "PH130",
+      "file": "app/api/app.py",
+      "signature": "def create_dashboard_app(dispatcher: ActionDispatcher, storage: SQLiteStorage) -> FastAPI",
+      "inputs": [
+        {
+          "name": "dispatcher",
+          "type": "ActionDispatcher"
+        },
+        {
+          "name": "storage",
+          "type": "SQLiteStorage"
+        }
+      ],
+      "output": "FastAPI",
+      "preconditions": [
+        "dispatcher and storage initialized"
+      ],
+      "postconditions": [
+        "returns FastAPI application bound strictly to localhost with no wildcard CORS"
+      ],
+      "is_security_boundary": true,
+      "security_test_id": "test_dashboard_cors_and_localhost_binding",
+      "bounds": "Request body size limited to 64KB",
+      "timeout_seconds": 30.0,
+      "cancellation": "ASGI standard request cancellation",
+      "idempotent": true,
+      "audit_code": "SEC-API-CREATE",
+      "errors": [
+        "AppFactoryError"
+      ]
+    },
+    {
+      "name": "DeveloperToolExecutor.run_workflow",
+      "owning_phase": "PH150",
+      "file": "app/executors/developer.py",
+      "signature": "async def run_workflow(self, repo_path: Path, steps: list[DevStep]) -> WorkflowResult",
+      "inputs": [
+        {
+          "name": "repo_path",
+          "type": "Path"
+        },
+        {
+          "name": "steps",
+          "type": "list[DevStep]"
+        }
+      ],
+      "output": "WorkflowResult",
+      "preconditions": [
+        "repo_path is verified git repository inside allowed roots",
+        "all steps pass policy"
+      ],
+      "postconditions": [
+        "executes edit -> test -> inspect diff loop",
+        "auto-commit is NOT triggered"
+      ],
+      "is_security_boundary": true,
+      "security_test_id": "test_auto_commit_disabled_by_default",
+      "bounds": "Max 10 steps per workflow, max diff capture 100KB",
+      "timeout_seconds": 120.0,
+      "cancellation": "Terminates active test or git subprocess cleanly",
+      "idempotent": false,
+      "audit_code": "SEC-DEV-RUN",
+      "errors": [
+        "GitExecutionError",
+        "TestExecutionFailedError"
+      ]
+    },
+    {
+      "name": "LifecycleManager.monitor_memory",
+      "owning_phase": "PH160",
+      "file": "app/core/lifecycle.py",
+      "signature": "def monitor_memory(self) -> MemorySnapshot",
+      "inputs": [],
+      "output": "MemorySnapshot",
+      "preconditions": [
+        "cgroup v2 memory controller or /proc/self/status available"
+      ],
+      "postconditions": [
+        "returns MemorySnapshot with current_rss_mb, peak_rss_mb, and limit_mb"
+      ],
+      "is_security_boundary": false,
+      "security_test_id": null,
+      "bounds": "Instantaneous procfs read",
+      "timeout_seconds": 0.1,
+      "cancellation": "Sync operation",
+      "idempotent": true,
+      "audit_code": "AUD-RES-MONITOR",
+      "errors": [
+        "ProcfsReadError"
+      ]
+    }
+  ]
+}
