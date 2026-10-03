@@ -1,0 +1,17 @@
+{
+  "requirements": [
+    {
+      "id": "REQ-MIN-001",
+      "source": "Docs/DOCS.md",
+      "category": "core",
+      "description": "Minimal test requirement",
+      "phase": "PH050",
+      "component": "dispatcher",
+      "file": "app/core/dispatcher.py",
+      "symbol": "dispatch_action",
+      "test_ids": ["TEST-MIN-001"],
+      "acceptance_evidence": "Passes test_min_001",
+      "out_of_v1_rationale": null
+    }
+  ]
+}

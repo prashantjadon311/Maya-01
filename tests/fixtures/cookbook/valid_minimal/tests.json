@@ -1,0 +1,18 @@
+{
+  "tests": [
+    {
+      "test_id": "TEST-MIN-001",
+      "phase": "PH050",
+      "requirement_id": "REQ-MIN-001",
+      "file": "tests/test_dispatcher.py",
+      "test_type": "security",
+      "fixture": "dispatcher_fixture",
+      "attack_setup": "inject forged approval grant",
+      "fault_injection": null,
+      "act": "await dispatch_action(req)",
+      "assert_positive": "assert res.success is False",
+      "assert_not": "assert 'forged_grant' not in res.audit",
+      "verification_command": "pytest tests/test_dispatcher.py -v"
+    }
+  ]
+}

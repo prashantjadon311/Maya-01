@@ -1,0 +1,23 @@
+{
+  "cookbook_version": "1.0.0",
+  "status": "DRAFT",
+  "cookbook_work_base_sha": "d603173624ddc9285b32ee00f33c10be2ecc9b58",
+  "product_code_base_sha": "ef00714c86d3d7b5684d693da35aa82595a088d4",
+  "base_sha": "ef00714c86d3d7b5684d693da35aa82595a088d4",
+  "ci_baseline_run": "37107781413",
+  "python_floor": ">=3.11",
+  "target_os": "Ubuntu",
+  "authority_order": [
+    "Docs/DOCS.md",
+    "Docs/SECURITY.md",
+    "Docs/ARCHITECTURE.md",
+    "Docs/CONFIG.md",
+    "Docs/UI.md",
+    "Docs/PLAN.md",
+    "Docs/TASKS.md",
+    "Docs/EXECUTION.md"
+  ],
+  "blob_shas": {
+    "Docs/DOCS.md": "f0661e12eb37d7cb35468fb998d24e3be9ca61a0"
+  }
+}

@@ -1,0 +1,312 @@
+{
+  "bounds": [
+    {
+      "id": "RB-APPROVAL-PENDING",
+      "owner": "ApprovalBroker._pending",
+      "phase": "PH050",
+      "lifetime": "REQUEST",
+      "structure": "dict[str, PendingApproval]",
+      "max_count": 10,
+      "max_bytes": null,
+      "timeout_seconds": null,
+      "overflow_policy": "reject additional approval requests with fail-closed DENY"
+    },
+    {
+      "id": "RB-APPROVAL-GRANTS",
+      "owner": "ApprovalBroker._grants",
+      "phase": "PH050",
+      "lifetime": "REQUEST",
+      "structure": "dict[str, ApprovalGrant]",
+      "max_count": 10,
+      "max_bytes": null,
+      "timeout_seconds": null,
+      "overflow_policy": "prune expired grants, reject new grants if capacity reached"
+    },
+    {
+      "id": "RB-APPROVAL-TIMEOUT",
+      "owner": "ApprovalBroker.request_decision",
+      "phase": "PH050",
+      "lifetime": "REQUEST",
+      "structure": "asyncio.timeout",
+      "max_count": null,
+      "max_bytes": null,
+      "timeout_seconds": 60.0,
+      "overflow_policy": "terminate popup subprocess and resolve to fail-closed DENY"
+    },
+    {
+      "id": "RB-AI-OUTPUT-TOKENS",
+      "owner": "NvidiaProvider.complete",
+      "phase": "PH060",
+      "lifetime": "REQUEST",
+      "structure": "tokens",
+      "max_count": 8192,
+      "max_bytes": null,
+      "timeout_seconds": null,
+      "overflow_policy": "model generation truncated or stopped by provider"
+    },
+    {
+      "id": "RB-AI-TIMEOUT",
+      "owner": "NvidiaProvider._client",
+      "phase": "PH060",
+      "lifetime": "REQUEST",
+      "structure": "httpx.Timeout",
+      "max_count": null,
+      "max_bytes": null,
+      "timeout_seconds": 120.0,
+      "overflow_policy": "cancel HTTP request and raise AIProviderTimeoutError"
+    },
+    {
+      "id": "RB-ROUTER-TIMEOUT",
+      "owner": "CommandRouter.route",
+      "phase": "PH070",
+      "lifetime": "COMMAND",
+      "structure": "asyncio.timeout",
+      "max_count": null,
+      "max_bytes": null,
+      "timeout_seconds": 125.0,
+      "overflow_policy": "abort routing resolution with routing failure"
+    },
+    {
+      "id": "RB-AGENT-STEPS",
+      "owner": "AgentRuntime._step_count",
+      "phase": "PH070",
+      "lifetime": "TASK",
+      "structure": "int",
+      "max_count": 30,
+      "max_bytes": null,
+      "timeout_seconds": null,
+      "overflow_policy": "terminate task execution with step budget exceeded error"
+    },
+    {
+      "id": "RB-AGENT-API-CALLS",
+      "owner": "AgentRuntime._api_call_count",
+      "phase": "PH070",
+      "lifetime": "TASK",
+      "structure": "int",
+      "max_count": 20,
+      "max_bytes": null,
+      "timeout_seconds": null,
+      "overflow_policy": "deny further model calls and finalize task"
+    },
+    {
+      "id": "RB-AGENT-TIMEOUT",
+      "owner": "AgentRuntime.run_task",
+      "phase": "PH070",
+      "lifetime": "TASK",
+      "structure": "asyncio.timeout",
+      "max_count": null,
+      "max_bytes": null,
+      "timeout_seconds": 1800.0,
+      "overflow_policy": "cancel running agent task with AgentTimeoutError"
+    },
+    {
+      "id": "RB-AGENT-TRANSCRIPT-BYTES",
+      "owner": "AgentRuntime.transcript",
+      "phase": "PH070",
+      "lifetime": "TASK",
+      "structure": "list[ChatMessage]",
+      "max_count": 100,
+      "max_bytes": 1048576,
+      "timeout_seconds": null,
+      "overflow_policy": "compact oldest assistant messages preserving system prompt"
+    },
+    {
+      "id": "RB-VOICE-QUEUE",
+      "owner": "AudioSource._audio_queue",
+      "phase": "PH080",
+      "lifetime": "DAEMON",
+      "structure": "asyncio.Queue[bytes]",
+      "max_count": 16,
+      "max_bytes": null,
+      "timeout_seconds": null,
+      "overflow_policy": "drop oldest queued frame, increment dropped_frames, enqueue newest"
+    },
+    {
+      "id": "RB-VOICE-FRAME",
+      "owner": "AudioSource.next_frame",
+      "phase": "PH080",
+      "lifetime": "DAEMON",
+      "structure": "bytes",
+      "max_count": 1280,
+      "max_bytes": 2560,
+      "timeout_seconds": null,
+      "overflow_policy": "fixed 80ms 16kHz 16-bit PCM frame chunk"
+    },
+    {
+      "id": "RB-STT-AUDIO",
+      "owner": "CommandAudioSegment.pcm_data",
+      "phase": "PH080",
+      "lifetime": "COMMAND",
+      "structure": "bytes",
+      "max_count": 1,
+      "max_bytes": 960000,
+      "timeout_seconds": 30.0,
+      "overflow_policy": "stop capture and finalize segment at configured maximum duration"
+    },
+    {
+      "id": "RB-STT-BUFFER",
+      "owner": "RivaSTTAdapter._buffer",
+      "phase": "PH090",
+      "lifetime": "COMMAND",
+      "structure": "bytes",
+      "max_count": null,
+      "max_bytes": 960000,
+      "timeout_seconds": null,
+      "overflow_policy": "reject audio exceeding 960000 bytes with STTAudioTooLargeError"
+    },
+    {
+      "id": "RB-STT-TIMEOUT",
+      "owner": "RivaSTTAdapter.transcribe",
+      "phase": "PH090",
+      "lifetime": "COMMAND",
+      "structure": "grpc.aio.Call",
+      "max_count": null,
+      "max_bytes": null,
+      "timeout_seconds": 30.0,
+      "overflow_policy": "cancel gRPC streaming call and raise STTTimeoutError"
+    },
+    {
+      "id": "RB-STATE-SUBSCRIBERS",
+      "owner": "StateEventBus._subscriptions",
+      "phase": "PH100",
+      "lifetime": "DAEMON",
+      "structure": "dict[str, asyncio.Queue]",
+      "max_count": 32,
+      "max_bytes": null,
+      "timeout_seconds": null,
+      "overflow_policy": "reject thirty-third subscriber with StateSubscriberLimitError"
+    },
+    {
+      "id": "RB-STATE-QUEUE",
+      "owner": "StateSubscription.queue",
+      "phase": "PH100",
+      "lifetime": "DAEMON",
+      "structure": "asyncio.Queue[AppState]",
+      "max_count": 4,
+      "max_bytes": null,
+      "timeout_seconds": null,
+      "overflow_policy": "drop oldest state projection, enqueue latest snapshot"
+    },
+    {
+      "id": "RB-BROWSER-UDS-FRAME",
+      "owner": "NativeBridgeHost._read_frame",
+      "phase": "PH110",
+      "lifetime": "REQUEST",
+      "structure": "bytes",
+      "max_count": null,
+      "max_bytes": 1048576,
+      "timeout_seconds": null,
+      "overflow_policy": "reject frame larger than 1 MiB with NativeBridgePayloadTooLargeError"
+    },
+    {
+      "id": "RB-BROWSER-TIMEOUT",
+      "owner": "NativeMessageBridge.send_command",
+      "phase": "PH110",
+      "lifetime": "REQUEST",
+      "structure": "asyncio.timeout",
+      "max_count": null,
+      "max_bytes": null,
+      "timeout_seconds": 10.0,
+      "overflow_policy": "cancel pending request and return browser timeout error"
+    },
+    {
+      "id": "RB-ADAPTER-TIMEOUT",
+      "owner": "GoogleAdapter.extract",
+      "phase": "PH120",
+      "lifetime": "TAB",
+      "structure": "DOM extraction promise",
+      "max_count": null,
+      "max_bytes": null,
+      "timeout_seconds": 5.0,
+      "overflow_policy": "resolve extraction with partial content or adapter timeout"
+    },
+    {
+      "id": "RB-DB-QUEUE",
+      "owner": "SQLiteStorage._jobs",
+      "phase": "PH130",
+      "lifetime": "DAEMON",
+      "structure": "queue.Queue[_DBJob]",
+      "max_count": 128,
+      "max_bytes": null,
+      "timeout_seconds": null,
+      "overflow_policy": "reject job with StorageBusyError"
+    },
+    {
+      "id": "RB-SSE-CLIENTS",
+      "owner": "DashboardEventHub._clients",
+      "phase": "PH130",
+      "lifetime": "DAEMON",
+      "structure": "dict[str, asyncio.Queue]",
+      "max_count": 10,
+      "max_bytes": null,
+      "timeout_seconds": null,
+      "overflow_policy": "reject eleventh client with service-busy response"
+    },
+    {
+      "id": "RB-SSE-QUEUE",
+      "owner": "DashboardEventHub.subscribe",
+      "phase": "PH130",
+      "lifetime": "DAEMON",
+      "structure": "asyncio.Queue[DashboardEvent]",
+      "max_count": 32,
+      "max_bytes": null,
+      "timeout_seconds": null,
+      "overflow_policy": "drop slow client connection and evict subscriber"
+    },
+    {
+      "id": "RB-DEV-WORKFLOW-OUTPUT",
+      "owner": "DeveloperWorkflowService._capture_buffer",
+      "phase": "PH150",
+      "lifetime": "COMMAND",
+      "structure": "bytes",
+      "max_count": null,
+      "max_bytes": 10485760,
+      "timeout_seconds": null,
+      "overflow_policy": "truncate process output at 10 MiB with warning marker"
+    },
+    {
+      "id": "RB-DEV-WORKFLOW-TIMEOUT",
+      "owner": "DeveloperWorkflowService.run_workflow",
+      "phase": "PH150",
+      "lifetime": "COMMAND",
+      "structure": "asyncio.timeout",
+      "max_count": null,
+      "max_bytes": null,
+      "timeout_seconds": 300.0,
+      "overflow_policy": "terminate workflow subprocess group with WorkflowTimeoutError"
+    },
+    {
+      "id": "RB-MEMORY-HIGH",
+      "owner": "DaemonResourceMonitor.memory_high",
+      "phase": "PH160",
+      "lifetime": "DAEMON",
+      "structure": "cgroup_bytes",
+      "max_count": null,
+      "max_bytes": 251658240,
+      "timeout_seconds": null,
+      "overflow_policy": "pause background tasks and emit memory warning at 240 MiB"
+    },
+    {
+      "id": "RB-MEMORY-MAX",
+      "owner": "DaemonResourceMonitor.memory_max",
+      "phase": "PH160",
+      "lifetime": "DAEMON",
+      "structure": "cgroup_bytes",
+      "max_count": null,
+      "max_bytes": 314572800,
+      "timeout_seconds": null,
+      "overflow_policy": "hard ceiling at 300 MiB enforced by cgroup MemoryMax"
+    },
+    {
+      "id": "RB-FILE-EXEC-BYTES",
+      "owner": "FileExecutor.max_file_bytes",
+      "phase": "PH040",
+      "lifetime": "COMMAND",
+      "structure": "bytes",
+      "max_count": null,
+      "max_bytes": 10485760,
+      "timeout_seconds": null,
+      "overflow_policy": "deny read/write requests exceeding 10 MiB"
+    }
+  ]
+}

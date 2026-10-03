@@ -1,0 +1,2589 @@
+{
+  "requirements": [
+    {
+      "id": "REQ-PLAN-PH000-001",
+      "source": "Docs/PLAN.md",
+      "category": "core",
+      "description": "Package skeleton and baseline process RSS measurement harness",
+      "phase": "PH000",
+      "component": "harness",
+      "file": "tests/test_harness.py",
+      "symbol": "test_baseline_process_rss",
+      "acceptance_evidence": "Baseline process RSS <= 35 MiB without external models loaded",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_baseline_process_rss"
+      ]
+    },
+    {
+      "id": "REQ-ARCH-SYS-001",
+      "source": "Docs/ARCHITECTURE.md",
+      "category": "core",
+      "description": "Modular system architecture with decoupled subsystem boundaries",
+      "phase": "PH000",
+      "component": "daemon",
+      "file": "tests/test_harness.py",
+      "symbol": "Daemon",
+      "acceptance_evidence": "Daemon starts and stops cleanly via minimal lifecycle boundary",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_daemon_lifecycle"
+      ]
+    },
+    {
+      "id": "REQ-ARCH-PROC-001",
+      "source": "Docs/ARCHITECTURE.md",
+      "category": "core",
+      "description": "Process execution separation between resident daemon and transient helpers",
+      "phase": "PH000",
+      "component": "harness",
+      "file": "tests/test_harness.py",
+      "symbol": "test_no_credentials_required",
+      "acceptance_evidence": "Zero live credentials or external network sockets required for baseline tests",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_no_credentials_required"
+      ]
+    },
+    {
+      "id": "REQ-ARCH-PROC-RES-001",
+      "source": "Docs/ARCHITECTURE.md",
+      "category": "core",
+      "description": "Single resident daemon lifecycle and state management",
+      "phase": "PH000",
+      "component": "state",
+      "file": "tests/test_schemas.py",
+      "symbol": "AppState",
+      "acceptance_evidence": "AppState tracks runtime status without thread locks or unvalidated transitions",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_app_state_interface"
+      ]
+    },
+    {
+      "id": "REQ-ARCH-PROC-TRN-001",
+      "source": "Docs/ARCHITECTURE.md",
+      "category": "core",
+      "description": "Transient helper processes adhere to architected status literals",
+      "phase": "PH000",
+      "component": "state",
+      "file": "tests/test_schemas.py",
+      "symbol": "AppState",
+      "acceptance_evidence": "All architectural states (DISABLED, IDLE, LISTENING, THINKING, EXECUTING, ERROR) supported",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_architecture_states"
+      ]
+    },
+    {
+      "id": "REQ-ARCH-DEP-001",
+      "source": "Docs/ARCHITECTURE.md",
+      "category": "core",
+      "description": "Acyclic architecture layers reject unknown state updates",
+      "phase": "PH000",
+      "component": "state",
+      "file": "tests/test_schemas.py",
+      "symbol": "AppState",
+      "acceptance_evidence": "AppState rejects unknown status updates and unauthorized field mutations",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_state_rejects_unknown_updates"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-RUN-001",
+      "source": "Docs/EXECUTION.md",
+      "category": "core",
+      "description": "First run configuration fixture validation",
+      "phase": "PH000",
+      "component": "harness",
+      "file": "tests/test_harness.py",
+      "symbol": "test_config_fixture_exists",
+      "acceptance_evidence": "Canonical config example fixture exists and passes baseline loading",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_config_fixture_exists"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-EXIST-001",
+      "source": "Docs/EXECUTION.md",
+      "category": "core",
+      "description": "Preservation of existing codebase without type coercion defects",
+      "phase": "PH000",
+      "component": "state",
+      "file": "tests/test_schemas.py",
+      "symbol": "AppState",
+      "acceptance_evidence": "AppState strictly forbids boolean coercion for string status values",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_state_rejects_coerced_boolean"
+      ]
+    },
+    {
+      "id": "REQ-CFG-001",
+      "source": "Docs/CONFIG.md",
+      "category": "config",
+      "description": "Strict Pydantic configuration schemas and command request validation",
+      "phase": "PH010",
+      "component": "config",
+      "file": "tests/test_schemas.py",
+      "symbol": "Config",
+      "acceptance_evidence": "CommandRequest rejects unknown injected fields and strict validation passes",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_command_request_unknown_field_rejected"
+      ]
+    },
+    {
+      "id": "REQ-CFG-LOC-001",
+      "source": "Docs/CONFIG.md",
+      "category": "config",
+      "description": "Assistant identity configuration nonempty and trimmed",
+      "phase": "PH010",
+      "component": "config",
+      "file": "tests/test_config.py",
+      "symbol": "AssistantConfig",
+      "acceptance_evidence": "Assistant name is stripped of surrounding whitespace and non-empty",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_assistant_identity_is_nonempty_and_trimmed"
+      ]
+    },
+    {
+      "id": "REQ-CFG-JSON-001",
+      "source": "Docs/CONFIG.md",
+      "category": "config",
+      "description": "Strict JSON and TOML parsing rejecting extra forbidden keys",
+      "phase": "PH010",
+      "component": "config",
+      "file": "tests/test_config.py",
+      "symbol": "Config",
+      "acceptance_evidence": "Configuration fails fast on unknown nested configuration fields",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_config_unknown_field_fails"
+      ]
+    },
+    {
+      "id": "REQ-PLAN-PH010-001",
+      "source": "Docs/PLAN.md",
+      "category": "config",
+      "description": "Dashboard loopback binding and configuration network safety",
+      "phase": "PH010",
+      "component": "config",
+      "file": "tests/test_config.py",
+      "symbol": "DashboardConfig",
+      "acceptance_evidence": "Dashboard host strictly constrained to 127.0.0.1 loopback only",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_dashboard_is_ipv4_loopback_only"
+      ]
+    },
+    {
+      "id": "REQ-POL-001",
+      "source": "Docs/SECURITY.md",
+      "category": "policy",
+      "description": "Policy evaluation states: ALLOW_PREAPPROVED, ASK_USER, DENY",
+      "phase": "PH020",
+      "component": "policy",
+      "file": "tests/test_policy.py",
+      "symbol": "PolicyEngine.evaluate",
+      "acceptance_evidence": "Policy engine evaluates requests into exact 3-state decision enum",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_policy_decision_enum_states"
+      ]
+    },
+    {
+      "id": "REQ-POL-002",
+      "source": "Docs/SECURITY.md",
+      "category": "policy",
+      "description": "High-risk actions can never be preapproved or auto-executed",
+      "phase": "PH020",
+      "component": "policy",
+      "file": "tests/test_registry.py",
+      "symbol": "ActionDefinition",
+      "acceptance_evidence": "Action pack validation rejects definitions with risk='high' and preapproved=True",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_action_definition_high_preapproved_rejected"
+      ]
+    },
+    {
+      "id": "REQ-POL-RISK-001",
+      "source": "Docs/SECURITY.md",
+      "category": "policy",
+      "description": "Risk classification rejects malformed argv and shell injections",
+      "phase": "PH020",
+      "component": "policy",
+      "file": "tests/test_policy.py",
+      "symbol": "classify_risk",
+      "acceptance_evidence": "Subprocess execution with shell metacharacters or malformed argv strictly denied",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_malformed_argv_denied"
+      ]
+    },
+    {
+      "id": "REQ-POL-RISK-LOW-001",
+      "source": "Docs/SECURITY.md",
+      "category": "policy",
+      "description": "Low-risk preapproval cannot override sensitive system defaults",
+      "phase": "PH020",
+      "component": "policy",
+      "file": "tests/test_policy.py",
+      "symbol": "classify_risk",
+      "acceptance_evidence": "Sensitive commands default to ASK_USER regardless of user preapproval rules",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_sensitive_defaults_cannot_be_overridden"
+      ]
+    },
+    {
+      "id": "REQ-POL-RISK-MED-001",
+      "source": "Docs/SECURITY.md",
+      "category": "policy",
+      "description": "File symlink and parent directory traversal escape prevention",
+      "phase": "PH020",
+      "component": "policy",
+      "file": "tests/test_policy.py",
+      "symbol": "canonical_path",
+      "acceptance_evidence": "File operations attempting ../ escape or resolving symlinks outside roots denied",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_file_symlink_and_parent_escape"
+      ]
+    },
+    {
+      "id": "REQ-POL-ALWAYS-001",
+      "source": "Docs/DOCS.md",
+      "category": "policy",
+      "description": "Privilege wrappers like sudo strictly require interactive approval",
+      "phase": "PH020",
+      "component": "policy",
+      "file": "tests/test_policy.py",
+      "symbol": "classify_risk",
+      "acceptance_evidence": "Commands invoking sudo, su, pkexec, doas always require user approval",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_privilege_wrappers_require_approval"
+      ]
+    },
+    {
+      "id": "REQ-POL-DEV-001",
+      "source": "Docs/CONFIG.md",
+      "category": "policy",
+      "description": "Developer preapproval rules require explicit executable and argv prefixes",
+      "phase": "PH020",
+      "component": "policy",
+      "file": "tests/test_policy_contract.py",
+      "symbol": "PreapprovalRule",
+      "acceptance_evidence": "Developer preapproval rules validated against strict schema before caching",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_preapproval_contract"
+      ]
+    },
+    {
+      "id": "REQ-PLAN-PH020-001",
+      "source": "Docs/PLAN.md",
+      "category": "policy",
+      "description": "Destructive executables can never be preapproved",
+      "phase": "PH020",
+      "component": "policy",
+      "file": "tests/test_policy_contract.py",
+      "symbol": "PolicyEngine",
+      "acceptance_evidence": "Executables like rm, dd, mkfs, fdisk strictly forbidden from preapproval",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_destructive_executables_never_preapproved"
+      ]
+    },
+    {
+      "id": "REQ-REG-001",
+      "source": "Docs/DOCS.md",
+      "category": "registry",
+      "description": "Action packs loaded from disk reject symlinks and path traversals",
+      "phase": "PH030",
+      "component": "registry",
+      "file": "tests/test_registry.py",
+      "symbol": "ActionRegistry.reload",
+      "acceptance_evidence": "Symlinked action pack files in actions.d are skipped with warning",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_symlinked_pack_rejected"
+      ]
+    },
+    {
+      "id": "REQ-REG-002",
+      "source": "Docs/DOCS.md",
+      "category": "registry",
+      "description": "Strict literal argument slot substitution without shell interpolation",
+      "phase": "PH030",
+      "component": "matcher",
+      "file": "tests/test_registry.py",
+      "symbol": "substitute_arguments",
+      "acceptance_evidence": "Slot arguments undergo exact literal substitution preventing shell escape",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_strict_argument_substitution"
+      ]
+    },
+    {
+      "id": "REQ-REG-AMBIG-001",
+      "source": "Docs/SECURITY.md",
+      "category": "registry",
+      "description": "Runtime ambiguity fails closed and never picks an arbitrary action",
+      "phase": "PH030",
+      "component": "registry",
+      "file": "tests/test_registry.py",
+      "symbol": "ActionRegistry.resolve",
+      "acceptance_evidence": "Multiple candidate matches return RegistryAmbiguity with zero execution",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_runtime_ambiguity_never_picks_an_action"
+      ]
+    },
+    {
+      "id": "REQ-REG-PACK-001",
+      "source": "Docs/CONFIG.md",
+      "category": "registry",
+      "description": "Enforce hard bounds on action pack file count (max 64)",
+      "phase": "PH030",
+      "component": "registry",
+      "file": "tests/test_registry.py",
+      "symbol": "ActionRegistry.reload",
+      "acceptance_evidence": "Packs exceeding MAX_PACK_FILES=64 are rejected preventing memory bloat",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_max_pack_files_enforced"
+      ]
+    },
+    {
+      "id": "REQ-PLAN-PH030-001",
+      "source": "Docs/PLAN.md",
+      "category": "registry",
+      "description": "Enforce total action limit across all packs (max 2048)",
+      "phase": "PH030",
+      "component": "registry",
+      "file": "tests/test_registry.py",
+      "symbol": "ActionRegistry.reload",
+      "acceptance_evidence": "Total registered actions capped at 2048 to maintain bounded lookup latency",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_max_total_actions_enforced"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-001",
+      "source": "Docs/DOCS.md",
+      "category": "executors",
+      "description": "Safe process execution with strict argv allowlists and bounded buffers",
+      "phase": "PH040",
+      "component": "executors",
+      "file": "tests/test_executors.py",
+      "symbol": "ProcessExecutor.execute",
+      "acceptance_evidence": "Arguments with shell metacharacters are executed literally without shell interpolation",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_process_shell_metacharacters_remain_literal"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-002",
+      "source": "Docs/DOCS.md",
+      "category": "executors",
+      "description": "Sandboxed file operations restricted to canonical configured roots",
+      "phase": "PH040",
+      "component": "executors",
+      "file": "tests/test_executors.py",
+      "symbol": "FileExecutor.execute",
+      "acceptance_evidence": "Path traversal attempts escaping allowed root are strictly denied",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_file_traversal_denied"
+      ]
+    },
+    {
+      "id": "REQ-PLAN-PH040-001",
+      "source": "Docs/PLAN.md",
+      "category": "executors",
+      "description": "Execution authorization provenance prevents rule risk lowering",
+      "phase": "PH040",
+      "component": "dispatcher",
+      "file": "tests/test_dispatcher.py",
+      "symbol": "ActionDispatcher.dispatch",
+      "acceptance_evidence": "Action rule risk cannot silently lower evaluation risk level",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_rule_risk_raises_trusted_risk"
+      ]
+    },
+    {
+      "id": "REQ-PLAN-PH040-PROC-001",
+      "source": "Docs/PLAN.md",
+      "category": "executors",
+      "description": "Process executor timeout and child escalation reaping",
+      "phase": "PH040",
+      "component": "executors",
+      "file": "tests/test_executors.py",
+      "symbol": "ProcessExecutor._run_process",
+      "acceptance_evidence": "Processes exceeding configured timeout are strictly killed via SIGKILL",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_process_timeout_kills_process"
+      ]
+    },
+    {
+      "id": "REQ-PLAN-PH040-FILE-001",
+      "source": "Docs/PLAN.md",
+      "category": "executors",
+      "description": "File operation permissions and root containment enforcement",
+      "phase": "PH040",
+      "component": "executors",
+      "file": "tests/test_executors.py",
+      "symbol": "FileExecutor._verify_capability",
+      "acceptance_evidence": "File operations enforce read/write/delete capabilities on root configs",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_file_capability_enforcement"
+      ]
+    },
+    {
+      "id": "REQ-PLAN-PH040-XDG-001",
+      "source": "Docs/PLAN.md",
+      "category": "executors",
+      "description": "Desktop launcher xdg-open restricted to validated URIs and apps",
+      "phase": "PH040",
+      "component": "executors",
+      "file": "tests/test_executors.py",
+      "symbol": "XdgExecutor.execute",
+      "acceptance_evidence": "Desktop launcher xdg-open restricted to validated local file targets and trusted schemes",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_xdg_target_schemes_and_root_security"
+      ]
+    },
+    {
+      "id": "REQ-APPR-001",
+      "source": "Docs/DOCS.md",
+      "category": "approval",
+      "description": "Native modal approval popup displayed for ASK_USER decisions",
+      "phase": "PH050",
+      "component": "broker",
+      "file": "app/policy/broker.py",
+      "symbol": "ApprovalBroker.request_decision",
+      "acceptance_evidence": "Modal dialog appears independently and returns explicit user decision",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_approval_popup_transient_display"
+      ]
+    },
+    {
+      "id": "REQ-APPR-002",
+      "source": "Docs/DOCS.md",
+      "category": "approval",
+      "description": "Single-use approval grant bound to canonical request payload hash",
+      "phase": "PH050",
+      "component": "broker",
+      "file": "app/policy/broker.py",
+      "symbol": "ApprovalBroker.consume_grant",
+      "acceptance_evidence": "Altering action arguments invalidates the grant with comparison mismatch",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_approval_hash_mismatch_denied"
+      ]
+    },
+    {
+      "id": "REQ-APPR-003",
+      "source": "Docs/SECURITY.md",
+      "category": "approval",
+      "description": "Approval grant is strictly single-use; replay attempts fail",
+      "phase": "PH050",
+      "component": "broker",
+      "file": "app/policy/broker.py",
+      "symbol": "ApprovalBroker.consume_grant",
+      "acceptance_evidence": "Subsequent calls to consume_grant with the same grant_id return False",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_approval_single_use_replay_denied"
+      ]
+    },
+    {
+      "id": "REQ-PLAN-PH050-001",
+      "source": "Docs/PLAN.md",
+      "category": "approval",
+      "description": "Approval request timeout fails closed and mints zero grant",
+      "phase": "PH050",
+      "component": "broker",
+      "file": "app/policy/broker.py",
+      "symbol": "ApprovalBroker.request_decision",
+      "acceptance_evidence": "Unanswered popup after 60s timeout automatically denies execution",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_approval_timeout_denies"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-APPR-001",
+      "source": "Docs/EXECUTION.md",
+      "category": "approval",
+      "description": "Daemon restart clears all pending grants and approval state",
+      "phase": "PH050",
+      "component": "broker",
+      "file": "app/policy/broker.py",
+      "symbol": "ApprovalBroker.reset",
+      "acceptance_evidence": "Daemon restart or broker reset invalidates all cached approval tokens",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_daemon_restart_clears_pending_approvals"
+      ]
+    },
+    {
+      "id": "REQ-PROV-001",
+      "source": "Docs/DOCS.md",
+      "category": "provider",
+      "description": "Reusable AsyncOpenAI client with max_retries=0 targeting Nemotron",
+      "phase": "PH060",
+      "component": "provider",
+      "file": "app/ai/nvidia.py",
+      "symbol": "NvidiaProvider",
+      "acceptance_evidence": "AsyncOpenAI initialized with custom base_url, timeout, and max_retries=0",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_nvidia_client_configuration",
+        "test_missing_api_key_fails_fast"
+      ]
+    },
+    {
+      "id": "REQ-PROV-004",
+      "source": "Docs/SECURITY.md",
+      "category": "provider",
+      "description": "Streaming reasoning trace sanitized statefully across chunk boundaries",
+      "phase": "PH060",
+      "component": "provider",
+      "file": "app/ai/nvidia.py",
+      "symbol": "NvidiaProvider.stream_chat",
+      "acceptance_evidence": "Split tags like <thi + nk>secret</think> completely filtered with zero leak",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_reasoning_trace_not_leaked",
+        "test_reasoning_filter_split_tags"
+      ]
+    },
+    {
+      "id": "REQ-PROV-BASE-001",
+      "source": "Docs/ARCHITECTURE.md",
+      "category": "provider",
+      "description": "AIProvider Protocol defined in app/ai/base.py decoupled from SDK",
+      "phase": "PH060",
+      "component": "provider",
+      "file": "app/ai/base.py",
+      "symbol": "AIProvider",
+      "acceptance_evidence": "Provider adheres to AIProvider Protocol without leaking OpenAI SDK objects",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ai_provider_protocol_compliance"
+      ]
+    },
+    {
+      "id": "REQ-PLAN-PH060-001",
+      "source": "Docs/PLAN.md",
+      "category": "provider",
+      "description": "Zero automatic retries on side effects or after streamed chunks",
+      "phase": "PH060",
+      "component": "provider",
+      "file": "app/ai/nvidia.py",
+      "symbol": "NvidiaProvider.complete",
+      "acceptance_evidence": "Client strictly disables automatic retries on failed tool completions",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_nvidia_zero_sdk_retries"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-NEMO-001",
+      "source": "Docs/EXECUTION.md",
+      "category": "provider",
+      "description": "Incremental tool call parsing bounded by argument buffer size",
+      "phase": "PH060",
+      "component": "provider",
+      "file": "app/ai/nvidia.py",
+      "symbol": "NvidiaProvider.stream_chat",
+      "acceptance_evidence": "Streamed tool call arguments parsed only when complete and within budget",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_nvidia_streaming_tool_call_parsing",
+        "test_malformed_tool_call_rejected"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-API-001",
+      "source": "Docs/EXECUTION.md",
+      "category": "provider",
+      "description": "Test suite runs completely offline with zero hosted token consumption",
+      "phase": "PH060",
+      "component": "provider",
+      "file": "tests/fakes/fake_nvidia.py",
+      "symbol": "FakeOpenAIClient",
+      "acceptance_evidence": "Default pytest run uses fake client and never contacts api.nvidia.com",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_provider_tests_offline_no_quota"
+      ]
+    },
+    {
+      "id": "REQ-ROUT-001",
+      "source": "Docs/DOCS.md",
+      "category": "router",
+      "description": "Command router precedence: ActionRegistry -> Builtins -> AI Reasoning",
+      "phase": "PH070",
+      "component": "router",
+      "file": "app/core/command_router.py",
+      "symbol": "CommandRouter.route",
+      "acceptance_evidence": "Exact registered phrase matches resolve immediately without calling AI",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_command_router_order_of_precedence"
+      ]
+    },
+    {
+      "id": "REQ-ROUT-002",
+      "source": "Docs/DOCS.md",
+      "category": "router",
+      "description": "Exact deterministic registered action incurs zero AI provider calls",
+      "phase": "PH070",
+      "component": "router",
+      "file": "app/core/command_router.py",
+      "symbol": "CommandRouter.route",
+      "acceptance_evidence": "Verified AI call count is strictly zero for deterministic actions",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_exact_action_zero_ai_calls"
+      ]
+    },
+    {
+      "id": "REQ-ROUT-AI-001",
+      "source": "Docs/ARCHITECTURE.md",
+      "category": "router",
+      "description": "Ambiguous or freeform commands fallback to AI reasoning loop",
+      "phase": "PH070",
+      "component": "router",
+      "file": "app/core/command_router.py",
+      "symbol": "CommandRouter.route",
+      "acceptance_evidence": "Non-matching natural language queries route to AI provider agent loop",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_command_router_ai_fallback"
+      ]
+    },
+    {
+      "id": "REQ-AGNT-001",
+      "source": "Docs/DOCS.md",
+      "category": "agents",
+      "description": "Single active agent loop bounded by step and API call limits",
+      "phase": "PH070",
+      "component": "agents",
+      "file": "app/agents/runtime.py",
+      "symbol": "AgentRuntime.run_task",
+      "acceptance_evidence": "Agent loop strictly halts when max_steps=15 or budget=20 is reached",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_agent_budget_and_step_limit_enforced"
+      ]
+    },
+    {
+      "id": "REQ-AGNT-002",
+      "source": "Docs/SECURITY.md",
+      "category": "agents",
+      "description": "Agent proposed tool calls route exclusively through ActionDispatcher",
+      "phase": "PH070",
+      "component": "agents",
+      "file": "app/agents/runtime.py",
+      "symbol": "AgentRuntime.run_task",
+      "acceptance_evidence": "Agent cannot invoke executors directly; all requests route via policy",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_agent_cannot_bypass_policy_dispatcher"
+      ]
+    },
+    {
+      "id": "REQ-AGNT-VERIFY-001",
+      "source": "Docs/PLAN.md",
+      "category": "agents",
+      "description": "Coding agent tasks require explicit verification step before completion",
+      "phase": "PH070",
+      "component": "agents",
+      "file": "app/agents/runtime.py",
+      "symbol": "AgentVerifier",
+      "acceptance_evidence": "Task does not finish solely because model claims done; tests must verify",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_agent_verification_step_enforced"
+      ]
+    },
+    {
+      "id": "REQ-TOOL-SCHEMA-001",
+      "source": "Docs/ARCHITECTURE.md",
+      "category": "agents",
+      "description": "Typed strict tool schema definitions exposed to AI model",
+      "phase": "PH070",
+      "component": "agents",
+      "file": "app/agents/model.py",
+      "symbol": "AgentTask",
+      "acceptance_evidence": "Tool calls strictly validate arguments against Pydantic models",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_agent_tool_schema_validation"
+      ]
+    },
+    {
+      "id": "REQ-PLAN-PH070-001",
+      "source": "Docs/PLAN.md",
+      "category": "agents",
+      "description": "Single active task lock prevents concurrent agent runs",
+      "phase": "PH070",
+      "component": "agents",
+      "file": "app/agents/runtime.py",
+      "symbol": "AgentRuntime.run_task",
+      "acceptance_evidence": "Second concurrent run_task call fails with AgentBusyError",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_agent_runtime_single_task_lock"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-AGENT-001",
+      "source": "Docs/EXECUTION.md",
+      "category": "agents",
+      "description": "Single logical agent task lifecycle management",
+      "phase": "PH070",
+      "component": "agents",
+      "file": "app/agents/model.py",
+      "symbol": "AgentTaskResult",
+      "acceptance_evidence": "Agent task initializes, executes steps, and returns structured result",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_agent_task_lifecycle"
+      ]
+    },
+    {
+      "id": "REQ-VOIC-001",
+      "source": "Docs/DOCS.md",
+      "category": "voice",
+      "description": "Zero audio transmitted over network prior to wake word detection",
+      "phase": "PH080",
+      "component": "voice",
+      "file": "app/voice/audio.py",
+      "symbol": "AudioSource",
+      "acceptance_evidence": "Local openWakeWord operates purely offline; zero network calls made",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_prewake_audio_zero_network_callback"
+      ]
+    },
+    {
+      "id": "REQ-VOIC-002",
+      "source": "Docs/DOCS.md",
+      "category": "voice",
+      "description": "Bounded audio ring buffer drops oldest frames enforcing RAM cap",
+      "phase": "PH080",
+      "component": "voice",
+      "file": "app/voice/audio.py",
+      "symbol": "AudioRingBuffer",
+      "acceptance_evidence": "Ring buffer memory stays strictly below configured maximum seconds",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_audio_ring_buffer_hard_bound"
+      ]
+    },
+    {
+      "id": "REQ-VOIC-PTT-001",
+      "source": "Docs/DOCS.md",
+      "category": "voice",
+      "description": "Push-to-talk keybind triggers audio capture without wake word",
+      "phase": "PH080",
+      "component": "voice",
+      "file": "app/voice/audio.py",
+      "symbol": "AudioSource.start_ptt",
+      "acceptance_evidence": "Push-to-talk directly activates command recording pipeline",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_push_to_talk_activation"
+      ]
+    },
+    {
+      "id": "REQ-VOIC-ALW-001",
+      "source": "Docs/DOCS.md",
+      "category": "voice",
+      "description": "Always-listening mode toggle enables local wake detection loop",
+      "phase": "PH080",
+      "component": "voice",
+      "file": "app/voice/wake.py",
+      "symbol": "WakeDetector",
+      "acceptance_evidence": "Always-listening toggle starts local wake detector thread safely",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_always_listening_mode_toggle"
+      ]
+    },
+    {
+      "id": "REQ-VOIC-SM-001",
+      "source": "Docs/ARCHITECTURE.md",
+      "category": "voice",
+      "description": "Voice pipeline coordinates state machine transitions",
+      "phase": "PH080",
+      "component": "voice",
+      "file": "app/voice/recorder.py",
+      "symbol": "CommandRecorder",
+      "acceptance_evidence": "Transitions: IDLE -> LISTENING -> THINKING -> EXECUTING -> IDLE",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_voice_state_machine_transitions"
+      ]
+    },
+    {
+      "id": "REQ-VOIC-NO-STT-001",
+      "source": "Docs/PLAN.md",
+      "category": "voice",
+      "description": "No speech-to-text calls permitted before wake word verified",
+      "phase": "PH080",
+      "component": "voice",
+      "file": "app/voice/wake.py",
+      "symbol": "WakeDetector.process_chunk",
+      "acceptance_evidence": "Audio chunks before wake threshold do not trigger STT adapter",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_no_stt_before_wake"
+      ]
+    },
+    {
+      "id": "REQ-VOIC-POST-001",
+      "source": "Docs/PLAN.md",
+      "category": "voice",
+      "description": "Command audio segment begins strictly after wake boundary",
+      "phase": "PH080",
+      "component": "voice",
+      "file": "app/voice/recorder.py",
+      "symbol": "CommandRecorder.start_command",
+      "acceptance_evidence": "Pre-wake audio ring buffer is never prepended to remote STT payload",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_command_segment_begins_after_wake"
+      ]
+    },
+    {
+      "id": "REQ-VOIC-CLOSE-001",
+      "source": "Docs/PLAN.md",
+      "category": "voice",
+      "description": "Disabling listening closes audio capture stream immediately",
+      "phase": "PH080",
+      "component": "voice",
+      "file": "app/voice/audio.py",
+      "symbol": "AudioSource.stop",
+      "acceptance_evidence": "Audio input stream closed and soundcard handle released on disable",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_disabling_listen_closes_audio_stream"
+      ]
+    },
+    {
+      "id": "REQ-PLAN-PH080-001",
+      "source": "Docs/PLAN.md",
+      "category": "voice",
+      "description": "VAD silence detection stops command recording within configured duration",
+      "phase": "PH080",
+      "component": "voice",
+      "file": "app/voice/recorder.py",
+      "symbol": "CommandRecorder.record_command",
+      "acceptance_evidence": "Recording stops upon detecting trailing silence or reaching timeout",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_command_recording_vad_stop"
+      ]
+    },
+    {
+      "id": "REQ-STT-001",
+      "source": "Docs/DOCS.md",
+      "category": "stt",
+      "description": "Remote STT called exclusively for post-wake command segment",
+      "phase": "PH090",
+      "component": "stt",
+      "file": "app/voice/stt.py",
+      "symbol": "STTAdapter.transcribe",
+      "acceptance_evidence": "STT adapter processes trusted CommandAudioSegment only",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_stt_transcribes_postwake_only"
+      ]
+    },
+    {
+      "id": "REQ-PLAN-PH090-001",
+      "source": "Docs/PLAN.md",
+      "category": "stt",
+      "description": "Audio buffer released from memory immediately post-transcription",
+      "phase": "PH090",
+      "component": "stt",
+      "file": "app/voice/stt.py",
+      "symbol": "STTAdapter.transcribe",
+      "acceptance_evidence": "Temporary in-memory audio bytes cleared immediately in finally block",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_audio_buffer_released_after_stt"
+      ]
+    },
+    {
+      "id": "REQ-TRAY-001",
+      "source": "Docs/DOCS.md",
+      "category": "tray",
+      "description": "System tray indicator registered over D-Bus StatusNotifierItem",
+      "phase": "PH100",
+      "component": "tray",
+      "file": "app/tray/status_notifier.py",
+      "symbol": "StatusNotifierTray",
+      "acceptance_evidence": "StatusNotifierItem service appears on D-Bus session bus",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_tray_dbus_registration"
+      ]
+    },
+    {
+      "id": "REQ-TRAY-002",
+      "source": "Docs/DOCS.md",
+      "category": "tray",
+      "description": "Tray menu actions dispatch controls and reflect live daemon state",
+      "phase": "PH100",
+      "component": "tray",
+      "file": "app/tray/status_notifier.py",
+      "symbol": "StatusNotifierTray.update_state",
+      "acceptance_evidence": "Tray icon and tooltip update dynamically when system state changes",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_tray_menu_actions_and_state_sync",
+        "test_tray_menu_actions_unauthorized_call_denied",
+        "test_state_event_bus_overflow_drops_oldest"
+      ]
+    },
+    {
+      "id": "REQ-PLAN-PH100-001",
+      "source": "Docs/PLAN.md",
+      "category": "tray",
+      "description": "Tray receives injected control protocol without direct lifecycle coupling",
+      "phase": "PH100",
+      "component": "tray",
+      "file": "app/tray/status_notifier.py",
+      "symbol": "StatusNotifierTray",
+      "acceptance_evidence": "Tray invokes injected callbacks for shutdown and pause without cyclic dependency",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_tray_injected_control_callbacks"
+      ]
+    },
+    {
+      "id": "REQ-BROW-001",
+      "source": "Docs/DOCS.md",
+      "category": "browser",
+      "description": "Resident daemon UDS bridge and transient Firefox Native Messaging host",
+      "phase": "PH110",
+      "component": "browser",
+      "file": "app/browser/native_bridge.py",
+      "symbol": "NativeMessageBridge",
+      "acceptance_evidence": "Host communicates via 4-byte framed JSON; Project H enforces 1MB cap",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_native_messaging_framing_and_size_limit"
+      ]
+    },
+    {
+      "id": "REQ-BROW-002",
+      "source": "Docs/DOCS.md",
+      "category": "browser",
+      "description": "Browser automation restricted strictly to configured domain allowlist",
+      "phase": "PH110",
+      "component": "browser",
+      "file": "app/browser/native_bridge.py",
+      "symbol": "NativeMessageBridge.send_command",
+      "acceptance_evidence": "Commands targeting domains not in allowlist are rejected at gateway",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_browser_unlisted_domain_denied"
+      ]
+    },
+    {
+      "id": "REQ-BROW-003",
+      "source": "Docs/SECURITY.md",
+      "category": "browser",
+      "description": "Extension verifies immediate active tab origin re-check before dispatch",
+      "phase": "PH110",
+      "component": "browser",
+      "file": "extension/firefox/native.js",
+      "symbol": "verifyTabOrigin",
+      "acceptance_evidence": "Navigating away from approved origin triggers instant execution abort",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_browser_origin_mismatch_denied"
+      ]
+    },
+    {
+      "id": "REQ-BROW-004",
+      "source": "Docs/SECURITY.md",
+      "category": "browser",
+      "description": "Sensitive fields (passwords, tokens, cookies) never extracted from DOM",
+      "phase": "PH110",
+      "component": "browser",
+      "file": "extension/firefox/generic.js",
+      "symbol": "extractVisibleText",
+      "acceptance_evidence": "Input type='password', auth tokens, and session cookies strictly omitted",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_password_and_secret_fields_not_extracted"
+      ]
+    },
+    {
+      "id": "REQ-BROW-PERM-001",
+      "source": "Docs/PLAN.md",
+      "category": "browser",
+      "description": "Commands targeting tabs without explicit host permission fail safely",
+      "phase": "PH110",
+      "component": "browser",
+      "file": "extension/firefox/native.js",
+      "symbol": "verifyHostPermission",
+      "acceptance_evidence": "Missing WebExtension host permission produces clear authorization error",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_browser_ungranted_host_permission_denied"
+      ]
+    },
+    {
+      "id": "REQ-PLAN-PH110-001",
+      "source": "Docs/PLAN.md",
+      "category": "browser",
+      "description": "Local UDS bridge enforces mode 0600 and SO_PEERCRED UID validation",
+      "phase": "PH110",
+      "component": "browser",
+      "file": "app/browser/native_bridge.py",
+      "symbol": "NativeMessageBridge",
+      "acceptance_evidence": "UDS socket rejects connections from foreign UIDs",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_browser_bridge_uds_peercred_auth"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-BROW-001",
+      "source": "Docs/EXECUTION.md",
+      "category": "browser",
+      "description": "WebExtension manifest specifies exact native messaging host permissions",
+      "phase": "PH110",
+      "component": "browser",
+      "file": "extension/firefox/manifest.json",
+      "symbol": "manifest",
+      "acceptance_evidence": "Firefox manifest declares nativeMessaging permission and allowed extension ID",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_browser_extension_message_validation"
+      ]
+    },
+    {
+      "id": "REQ-ADPT-001",
+      "source": "Docs/DOCS.md",
+      "category": "adapters",
+      "description": "JavaScript site adapters extract clean semantic content for top sites",
+      "phase": "PH120",
+      "component": "adapters",
+      "file": "extension/firefox/adapters/google.js",
+      "symbol": "GoogleAdapter.extract",
+      "acceptance_evidence": "Adapters for Google, Amazon, ChatGPT, Claude, Gemini extract clean text",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_site_adapters_semantic_extraction"
+      ]
+    },
+    {
+      "id": "REQ-ADPT-SMOKE-001",
+      "source": "Docs/PLAN.md",
+      "category": "adapters",
+      "description": "Site adapter live smoke test against local fixture pages",
+      "phase": "PH120",
+      "component": "adapters",
+      "file": "extension/firefox/adapters/base.js",
+      "symbol": "BaseAdapter",
+      "acceptance_evidence": "Adapters execute successfully against realistic HTML test fixtures",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_site_adapters_live_smoke"
+      ]
+    },
+    {
+      "id": "REQ-PLAN-PH120-001",
+      "source": "Docs/PLAN.md",
+      "category": "adapters",
+      "description": "Outdated or broken site selectors fail safely to generic DOM extractor",
+      "phase": "PH120",
+      "component": "adapters",
+      "file": "extension/firefox/adapters/base.js",
+      "symbol": "BaseAdapter.extract",
+      "acceptance_evidence": "Adapter DOM extraction error falls back safely without crashing native host",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_outdated_adapter_fails_safely"
+      ]
+    },
+    {
+      "id": "REQ-DASH-001",
+      "source": "Docs/DOCS.md",
+      "category": "dashboard",
+      "description": "FastAPI dashboard server binds strictly to 127.0.0.1 with CORS protection",
+      "phase": "PH130",
+      "component": "dashboard",
+      "file": "app/api/app.py",
+      "symbol": "create_dashboard_app",
+      "acceptance_evidence": "Dashboard binds to loopback IPv4 only and denies foreign Host/Origin",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_dashboard_cors_and_localhost_binding"
+      ]
+    },
+    {
+      "id": "REQ-DASH-002",
+      "source": "Docs/DOCS.md",
+      "category": "dashboard",
+      "description": "Transactional configuration CRUD API validates changes against schema",
+      "phase": "PH130",
+      "component": "dashboard",
+      "file": "app/api/routes_config.py",
+      "symbol": "update_config",
+      "acceptance_evidence": "Config update validates Pydantic model before atomically writing to disk",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_dashboard_config_crud_transactionality"
+      ]
+    },
+    {
+      "id": "REQ-DASH-CRUD-001",
+      "source": "Docs/PLAN.md",
+      "category": "dashboard",
+      "description": "Action pack CRUD endpoints allow viewing and updating phrase actions",
+      "phase": "PH130",
+      "component": "dashboard",
+      "file": "app/api/routes_actions.py",
+      "symbol": "get_actions",
+      "acceptance_evidence": "Dashboard routes support listing and modifying action pack definitions",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_dashboard_action_crud"
+      ]
+    },
+    {
+      "id": "REQ-DASH-AGNT-001",
+      "source": "Docs/PLAN.md",
+      "category": "dashboard",
+      "description": "Agent control endpoints allow inspecting and cancelling running tasks",
+      "phase": "PH130",
+      "component": "dashboard",
+      "file": "app/api/routes_agents.py",
+      "symbol": "cancel_agent",
+      "acceptance_evidence": "Dashboard endpoint cancels active agent task safely and returns status",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_dashboard_agent_controls"
+      ]
+    },
+    {
+      "id": "REQ-DASH-EVENT-001",
+      "source": "Docs/PLAN.md",
+      "category": "dashboard",
+      "description": "Server-Sent Events (SSE) stream emits real-time state transitions",
+      "phase": "PH130",
+      "component": "dashboard",
+      "file": "app/api/routes_state.py",
+      "symbol": "stream_state",
+      "acceptance_evidence": "State changes stream to connected browser client over text/event-stream",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_dashboard_event_stream_sse"
+      ]
+    },
+    {
+      "id": "REQ-HIST-001",
+      "source": "Docs/DOCS.md",
+      "category": "dashboard",
+      "description": "Audit event log pagination with limit and offset query bounds",
+      "phase": "PH130",
+      "component": "dashboard",
+      "file": "app/api/routes_audit.py",
+      "symbol": "get_audit_log",
+      "acceptance_evidence": "Audit queries enforce maximum page size limit=100 preventing memory spikes",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_dashboard_audit_pagination"
+      ]
+    },
+    {
+      "id": "REQ-STOR-SQLITE-001",
+      "source": "Docs/ARCHITECTURE.md",
+      "category": "dashboard",
+      "description": "SQLite dedicated worker thread with WAL mode and bounded queries",
+      "phase": "PH130",
+      "component": "storage",
+      "file": "app/storage/sqlite.py",
+      "symbol": "SQLiteStorage",
+      "acceptance_evidence": "Database operations execute through serialized worker thread with WAL journal",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_sqlite_wal_and_serialized_worker"
+      ]
+    },
+    {
+      "id": "REQ-PLAN-PH130-001",
+      "source": "Docs/PLAN.md",
+      "category": "dashboard",
+      "description": "Storage degradation retains bounded in-memory audit metadata",
+      "phase": "PH130",
+      "component": "storage",
+      "file": "app/storage/sqlite.py",
+      "symbol": "SQLiteStorage",
+      "acceptance_evidence": "Disk write failures switch storage to degraded mode without dropping memory events",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_dashboard_storage_degraded_fallback"
+      ]
+    },
+    {
+      "id": "REQ-DASH-003",
+      "source": "Docs/DOCS.md",
+      "category": "ui",
+      "description": "Dashboard frontend built with local static assets and zero Node build step",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "index.html",
+      "acceptance_evidence": "Static HTML, CSS, and vanilla JS served directly without npm or CDN",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_frontend_assets_local_and_no_node_runtime"
+      ]
+    },
+    {
+      "id": "REQ-UI-TECH-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Frontend technology strictly vanilla HTML, CSS, and modern JavaScript",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/js/app.js",
+      "symbol": "app.js",
+      "acceptance_evidence": "Zero external npm dependencies, frameworks, or bundlers in frontend",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_vanilla_tech_stack"
+      ]
+    },
+    {
+      "id": "REQ-UI-PERF-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Dashboard asset performance budget strictly under 100KB gzipped",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/css/app.css",
+      "symbol": "app.css",
+      "acceptance_evidence": "Total CSS and JS bundle sizes comply with performance budget limits",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_asset_performance_budget"
+      ]
+    },
+    {
+      "id": "REQ-UI-VIS-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Visual system defines consistent design tokens and dark aesthetic",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/css/app.css",
+      "symbol": ":root",
+      "acceptance_evidence": "CSS variables define complete theme color palette and border radiuses",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_visual_system_tokens"
+      ]
+    },
+    {
+      "id": "REQ-UI-TOKENS-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Semantic color tokens defined for backgrounds, surfaces, and accents",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/css/app.css",
+      "symbol": "tokens",
+      "acceptance_evidence": "Theme tokens support high contrast and consistent dark mode styling",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_color_tokens"
+      ]
+    },
+    {
+      "id": "REQ-UI-TYPO-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Typography uses clean system font stack with fallback fonts",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/css/app.css",
+      "symbol": "typography",
+      "acceptance_evidence": "Font stack specifies local system fonts avoiding external web fonts",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_typography_stack"
+      ]
+    },
+    {
+      "id": "REQ-UI-BORDER-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Panel border radius and borders follow 14px/8px specification",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/css/app.css",
+      "symbol": "borders",
+      "acceptance_evidence": "Cards and modal dialogs conform to specified border radius geometry",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_radius_and_border"
+      ]
+    },
+    {
+      "id": "REQ-UI-BG-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Subtle CSS radial gradient background replaces photographic wallpaper",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/css/app.css",
+      "symbol": "background",
+      "acceptance_evidence": "Pure CSS background gradient used; zero heavy image downloads",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_background_gradient"
+      ]
+    },
+    {
+      "id": "REQ-UI-AICORE-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Animated AI Core SVG reacts smoothly to system runtime state changes",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "svg#ai-core",
+      "acceptance_evidence": "AI Core visual state reflects READY_WAKE, THINKING, EXECUTING, and ERROR",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_aicore_animation"
+      ]
+    },
+    {
+      "id": "REQ-UI-AICORE-IMPL-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "AI Core implementation uses single inline SVG and CSS keyframes",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/css/app.css",
+      "symbol": "ai-core-keyframes",
+      "acceptance_evidence": "SVG keyframe animation consumes minimal CPU/GPU during idle",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_aicore_svg_keyframes"
+      ]
+    },
+    {
+      "id": "REQ-UI-SHELL-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Desktop shell provides sidebar navigation and primary content container",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "nav.sidebar",
+      "acceptance_evidence": "Sidebar navigation switches between active screens without page reload",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_desktop_shell_layout"
+      ]
+    },
+    {
+      "id": "REQ-UI-TOPBAR-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Global top bar displays assistant status pill, title, and quick toggles",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "header.topbar",
+      "acceptance_evidence": "Top bar updates status pill in sync with daemon SSE state stream",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_global_topbar"
+      ]
+    },
+    {
+      "id": "REQ-UI-VIEW-HOME-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Screen Home provides at-a-glance status, quick actions, and composer",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#screen-home",
+      "acceptance_evidence": "Home screen renders quick action buttons and AI Core visualizer",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_view_home"
+      ]
+    },
+    {
+      "id": "REQ-UI-HOME-CONTENT-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Home left/center content area displays recent actions and activity",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#home-content",
+      "acceptance_evidence": "Activity panel renders recent audit events and action status items",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_home_content_panel"
+      ]
+    },
+    {
+      "id": "REQ-UI-HOME-AICORE-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Home AI Core panel houses central orb visualization",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#home-aicore",
+      "acceptance_evidence": "AI Core container displays state orb and active listening cues",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_home_aicore_panel"
+      ]
+    },
+    {
+      "id": "REQ-UI-HOME-COMPOSER-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Home bottom composer provides text input and voice toggle controls",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#home-composer",
+      "acceptance_evidence": "Composer input submits commands to daemon with voice mic shortcut",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_home_bottom_composer"
+      ]
+    },
+    {
+      "id": "REQ-UI-VIEW-CHAT-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Screen Chat displays conversational history and streaming tokens",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#screen-chat",
+      "acceptance_evidence": "Chat timeline renders user and assistant turns with streaming updates",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_view_chat"
+      ]
+    },
+    {
+      "id": "REQ-UI-VIEW-TASKS-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Screen Tasks/Agents displays active tasks and agent configuration",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#screen-tasks",
+      "acceptance_evidence": "Tasks screen displays task execution cards and agent parameters drawer",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_view_tasks_agents"
+      ]
+    },
+    {
+      "id": "REQ-UI-TASKS-LIST-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Tasks list displays task cards with step progress and status badges",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#tasks-list",
+      "acceptance_evidence": "Task list displays active step progress and completion badges",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_tasks_list_component"
+      ]
+    },
+    {
+      "id": "REQ-UI-TASKS-DRAWER-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Agent settings drawer configures step limits and execution budgets",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#agent-drawer",
+      "acceptance_evidence": "Drawer form updates max_steps and budget_calls via config API",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_agent_settings_drawer"
+      ]
+    },
+    {
+      "id": "REQ-UI-VIEW-BROWSER-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Screen Browser displays domain allowlist, bridge status, and site adapters",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#screen-browser",
+      "acceptance_evidence": "Browser screen displays allowlist table, bridge status, and adapters",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_view_browser"
+      ]
+    },
+    {
+      "id": "REQ-UI-BROWSER-DOMAINS-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Domain allowlist table allows adding and removing allowed domains",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#domains-table",
+      "acceptance_evidence": "Allowlist table allows adding and removing domains with validation",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_browser_domain_table"
+      ]
+    },
+    {
+      "id": "REQ-UI-BROWSER-STATUS-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Browser bridge status card indicates Firefox extension connection state",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#bridge-status",
+      "acceptance_evidence": "Bridge card shows whether native host is connected and extension is active",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_browser_bridge_status"
+      ]
+    },
+    {
+      "id": "REQ-UI-BROWSER-ADAPTERS-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Site adapter cards show status and capabilities of registered adapters",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#adapter-cards",
+      "acceptance_evidence": "Cards display status for Google, Amazon, ChatGPT, Claude, and Gemini",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_browser_adapter_cards"
+      ]
+    },
+    {
+      "id": "REQ-UI-VIEW-VOICE-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Screen Voice provides assistant identity, listening, and privacy controls",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#screen-voice",
+      "acceptance_evidence": "Voice screen controls identity, always-listening, and privacy card",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_view_voice"
+      ]
+    },
+    {
+      "id": "REQ-UI-VOICE-IDENTITY-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Voice assistant identity settings configure assistant display name",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#voice-identity",
+      "acceptance_evidence": "Identity setting updates assistant name with immediate UI feedback",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_voice_identity"
+      ]
+    },
+    {
+      "id": "REQ-UI-VOICE-LISTEN-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Voice listening controls configure always-listen mode and wake word",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#voice-listening",
+      "acceptance_evidence": "Listening card toggles always_listen and displays wake model status",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_voice_listening_controls"
+      ]
+    },
+    {
+      "id": "REQ-UI-VOICE-STT-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Voice STT section displays configured provider and language options",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#voice-stt",
+      "acceptance_evidence": "STT section displays provider, model, and language configuration",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_voice_stt_controls"
+      ]
+    },
+    {
+      "id": "REQ-UI-VOICE-PRIVACY-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Voice privacy card explicitly highlights local wake and zero cloud retention",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#voice-privacy-card",
+      "acceptance_evidence": "Privacy card prominently displays offline wake guarantee and privacy contract",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_voice_privacy_card"
+      ]
+    },
+    {
+      "id": "REQ-UI-VOICE-TTS-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Voice TTS controls provide audio playback toggle and volume setting",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#voice-tts",
+      "acceptance_evidence": "TTS section provides enable toggle and speech playback preferences",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_voice_tts_controls"
+      ]
+    },
+    {
+      "id": "REQ-UI-VIEW-ACTIONS-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Screen Actions displays action packs and registered phrase bindings",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#screen-actions",
+      "acceptance_evidence": "Actions screen displays packs, triggers, and execution parameters",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_view_actions"
+      ]
+    },
+    {
+      "id": "REQ-UI-VIEW-PERMS-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Screen Permissions manages terminal, files, and browser safety rules",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#screen-permissions",
+      "acceptance_evidence": "Permissions screen displays terminal preapprovals, roots, and browser rules",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_view_permissions"
+      ]
+    },
+    {
+      "id": "REQ-UI-PERMS-TERM-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Terminal permissions panel manages command preapproval rules",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#perms-terminal",
+      "acceptance_evidence": "Terminal panel displays preapproved rules and risk classification criteria",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_perms_terminal"
+      ]
+    },
+    {
+      "id": "REQ-UI-PERMS-FILES-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Files permissions panel manages allowed filesystem root paths",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#perms-files",
+      "acceptance_evidence": "Files panel lists allowed directory roots and read/write capabilities",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_perms_files"
+      ]
+    },
+    {
+      "id": "REQ-UI-PERMS-BROWSER-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Browser permissions panel manages domain allowlist and capability shortcuts",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#perms-browser",
+      "acceptance_evidence": "Browser permissions panel provides quick domain management controls",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_perms_browser"
+      ]
+    },
+    {
+      "id": "REQ-UI-VIEW-WORKSPACES-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Screen Files/Workspaces configures workspace roots and path containment",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#screen-workspaces",
+      "acceptance_evidence": "Workspaces screen manages project directory roots and active workspaces",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_view_workspaces"
+      ]
+    },
+    {
+      "id": "REQ-UI-VIEW-DEV-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Screen Developer manages coding repositories, VS Code, and agent defaults",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#screen-developer",
+      "acceptance_evidence": "Developer screen configures git repositories, VS Code, and coding defaults",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_view_developer"
+      ]
+    },
+    {
+      "id": "REQ-UI-DEV-REPOS-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Developer Repositories panel lists configured git repositories",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#dev-repos",
+      "acceptance_evidence": "Repositories list shows path, active branch, and git status summary",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_dev_repositories"
+      ]
+    },
+    {
+      "id": "REQ-UI-DEV-VSCODE-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Developer VS Code panel displays CLI integration and workspace launcher",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#dev-vscode",
+      "acceptance_evidence": "VS Code panel detects code executable and launches verified workspaces",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_dev_vscode"
+      ]
+    },
+    {
+      "id": "REQ-UI-DEV-AGENT-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Coding agent defaults panel configures auto-commit and step limits",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#dev-agent-defaults",
+      "acceptance_evidence": "Agent defaults panel shows auto-commit disabled by default and step limits",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_dev_agent_defaults"
+      ]
+    },
+    {
+      "id": "REQ-UI-VIEW-SETTINGS-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Screen Settings provides centralized access to all configuration groups",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#screen-settings",
+      "acceptance_evidence": "Settings screen organizes settings into clean categorized panels",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_view_settings"
+      ]
+    },
+    {
+      "id": "REQ-UI-SETTINGS-GEN-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "General settings panel configures assistant persona and autostart",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#settings-general",
+      "acceptance_evidence": "General panel configures assistant name, language, and start on boot",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_settings_general"
+      ]
+    },
+    {
+      "id": "REQ-UI-SETTINGS-AI-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "AI settings panel configures provider, model, base URL, and timeouts",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#settings-ai",
+      "acceptance_evidence": "AI settings panel manages Nemotron model selection and timeout values",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_settings_ai"
+      ]
+    },
+    {
+      "id": "REQ-UI-SETTINGS-VOICE-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Voice settings shortcut navigates directly to Voice screen",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#settings-voice-shortcut",
+      "acceptance_evidence": "Voice shortcut navigates directly to the dedicated Voice screen",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_settings_voice"
+      ]
+    },
+    {
+      "id": "REQ-UI-SETTINGS-BROWSER-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Browser settings shortcut navigates directly to Browser screen",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#settings-browser-shortcut",
+      "acceptance_evidence": "Browser shortcut navigates directly to the dedicated Browser screen",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_settings_browser"
+      ]
+    },
+    {
+      "id": "REQ-UI-SETTINGS-ACTIONS-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Actions settings shortcut navigates directly to Actions & Permissions",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#settings-actions-shortcut",
+      "acceptance_evidence": "Actions shortcut navigates directly to Actions and Permissions screens",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_settings_actions"
+      ]
+    },
+    {
+      "id": "REQ-UI-SETTINGS-PRIVACY-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Privacy settings panel configures data retention and audit clearing",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#settings-privacy",
+      "acceptance_evidence": "Privacy panel allows viewing data retention policies and clearing history",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_settings_privacy"
+      ]
+    },
+    {
+      "id": "REQ-UI-SETTINGS-RES-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Resource limits settings panel displays live memory RSS and budget cap",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#settings-resources",
+      "acceptance_evidence": "Resource limits panel displays current resident RSS and 300MB budget gauge",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_settings_resources"
+      ]
+    },
+    {
+      "id": "REQ-UI-SETTINGS-SYS-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "System settings panel displays daemon version and service restart button",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#settings-system",
+      "acceptance_evidence": "System panel displays version, uptime, and daemon restart control",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_settings_system"
+      ]
+    },
+    {
+      "id": "REQ-UI-RESPONSIVE-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Responsive layout adapts cleanly to desktop viewports (1366x768 upward)",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/css/app.css",
+      "symbol": "media-queries",
+      "acceptance_evidence": "Dashboard layout reflows cleanly without horizontal overflow",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_responsive_layout"
+      ]
+    },
+    {
+      "id": "REQ-UI-A11Y-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Accessibility compliance: keyboard reachable, aria-live, prefers-reduced-motion",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/css/app.css",
+      "symbol": "accessibility",
+      "acceptance_evidence": "Keyboard focus visible, screen-reader labels present, reduced motion honored",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_accessibility_and_reduced_motion"
+      ]
+    },
+    {
+      "id": "REQ-UI-SETTINGS-INV-001",
+      "source": "Docs/UI.md",
+      "category": "ui",
+      "description": "Dashboard settings inventory binds exhaustively to Pydantic Config fields",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/js/app.js",
+      "symbol": "SettingsManager",
+      "acceptance_evidence": "All settings fields map 1-to-1 with backend schema fields",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_settings_inventory_binding"
+      ]
+    },
+    {
+      "id": "REQ-PLAN-PH140-001",
+      "source": "Docs/PLAN.md",
+      "category": "ui",
+      "description": "Dashboard frontend handles SSE connection drops and automatic reconnection",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/js/app.js",
+      "symbol": "StateStreamListener",
+      "acceptance_evidence": "Frontend attempts backoff reconnection on SSE drop without infinite retry",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_sse_connection_lifecycle"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-UI-001",
+      "source": "Docs/EXECUTION.md",
+      "category": "ui",
+      "description": "Dashboard frontend assets strictly local with zero external CDN references",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "index.html",
+      "acceptance_evidence": "HTML and CSS files contain zero external script, font, or style URLs",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_ui_no_external_cdns"
+      ]
+    },
+    {
+      "id": "REQ-DEV-001",
+      "source": "Docs/DOCS.md",
+      "category": "developer",
+      "description": "Developer workflows (git status/diff, test runner) execute under central policy",
+      "phase": "PH150",
+      "component": "developer",
+      "file": "app/executors/developer.py",
+      "symbol": "DeveloperWorkflowService",
+      "acceptance_evidence": "Developer workflows route commands through ActionDispatcher as ActionRequest",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_dev_workflow_git_and_test_under_policy"
+      ]
+    },
+    {
+      "id": "REQ-PLAN-PH150-001",
+      "source": "Docs/PLAN.md",
+      "category": "developer",
+      "description": "Auto-commit remains disabled by default; require explicit user flag",
+      "phase": "PH150",
+      "component": "developer",
+      "file": "app/executors/developer.py",
+      "symbol": "DeveloperWorkflowService",
+      "acceptance_evidence": "Git commit workflow requires explicit approval or verified configuration flag",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_auto_commit_disabled_by_default"
+      ]
+    },
+    {
+      "id": "REQ-RES-001",
+      "source": "Docs/DOCS.md",
+      "category": "resource",
+      "description": "Resident daemon cgroup memory strictly bounded under 300 MiB stress cap",
+      "phase": "PH160",
+      "component": "lifecycle",
+      "file": "app/lifecycle.py",
+      "symbol": "LifecycleManager.monitor_memory",
+      "acceptance_evidence": "Full concurrency scenario stays within MemoryMax=300M and MemoryHigh=240M",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_resident_cgroup_memory_stress_compliance"
+      ]
+    },
+    {
+      "id": "REQ-RES-CGROUP-001",
+      "source": "Docs/ARCHITECTURE.md",
+      "category": "resource",
+      "description": "Systemd cgroup memory accounting tracks total slice including child workers",
+      "phase": "PH160",
+      "component": "lifecycle",
+      "file": "app/lifecycle.py",
+      "symbol": "LifecycleManager.monitor_memory",
+      "acceptance_evidence": "Memory monitor reads memory.current from systemd slice covering all subprocesses",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_cgroup_memory_accounting_with_children"
+      ]
+    },
+    {
+      "id": "REQ-PLAN-PH160-001",
+      "source": "Docs/PLAN.md",
+      "category": "resource",
+      "description": "Resource monitor triggers memory compaction when approaching MemoryHigh",
+      "phase": "PH160",
+      "component": "lifecycle",
+      "file": "app/lifecycle.py",
+      "symbol": "LifecycleManager.monitor_memory",
+      "acceptance_evidence": "Memory threshold alerts trigger internal garbage collection and cache flushes",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_resource_monitor_lifecycle"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-MEM-001",
+      "source": "Docs/EXECUTION.md",
+      "category": "resource",
+      "description": "Memory measurement workflow records accurate RSS deltas for new subsystems",
+      "phase": "PH160",
+      "component": "lifecycle",
+      "file": "tests/test_resource_hardening.py",
+      "symbol": "test_memory_measurement_protocol",
+      "acceptance_evidence": "Resident memory usage verified via /proc/self/statm and cgroup files",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_memory_measurement_protocol"
+      ]
+    },
+    {
+      "id": "REQ-PKG-EXT-001",
+      "source": "Docs/PLAN.md",
+      "category": "packaging",
+      "description": "Firefox extension packaged and installable via local manifest",
+      "phase": "PH170",
+      "component": "packaging",
+      "file": "extension/firefox/manifest.json",
+      "symbol": "manifest",
+      "acceptance_evidence": "Firefox extension package builds cleanly and matches manifest format",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_packaging_firefox_extension"
+      ]
+    },
+    {
+      "id": "REQ-PKG-ICON-001",
+      "source": "Docs/PLAN.md",
+      "category": "packaging",
+      "description": "Application desktop icons packaged under standard XDG icon directories",
+      "phase": "PH170",
+      "component": "packaging",
+      "file": "packaging/install.sh",
+      "symbol": "install.sh",
+      "acceptance_evidence": "Desktop icons installed to ~/.local/share/icons in standard resolutions",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_packaging_desktop_icons"
+      ]
+    },
+    {
+      "id": "REQ-PKG-FIRST-001",
+      "source": "Docs/PLAN.md",
+      "category": "packaging",
+      "description": "First-run setup wizard creates initial default configuration and directories",
+      "phase": "PH170",
+      "component": "packaging",
+      "file": "packaging/install.sh",
+      "symbol": "install.sh",
+      "acceptance_evidence": "Running installation creates ~/.config/project-h/config.toml and action packs",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_packaging_first_run_config"
+      ]
+    },
+    {
+      "id": "REQ-PLAN-PH170-001",
+      "source": "Docs/PLAN.md",
+      "category": "packaging",
+      "description": "Systemd user service unit configured with memory limits and project-hd script",
+      "phase": "PH170",
+      "component": "packaging",
+      "file": "packaging/systemd/maya.service",
+      "symbol": "maya.service",
+      "acceptance_evidence": "User systemd unit specifies project-hd entrypoint and MemoryMax=300M",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_systemd_service_unit_configuration"
+      ]
+    },
+    {
+      "id": "REQ-UPDATE-TRUST-001",
+      "source": "Docs/SECURITY.md",
+      "category": "packaging",
+      "description": "Uninstall script completely removes units, hosts, and temporary runtime files",
+      "phase": "PH170",
+      "component": "packaging",
+      "file": "packaging/uninstall.sh",
+      "symbol": "uninstall.sh",
+      "acceptance_evidence": "Uninstall script cleans up systemd unit and native messaging manifests",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_packaging_uninstall_cleanup"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-TERM-001",
+      "source": "Docs/EXECUTION.md",
+      "category": "packaging",
+      "description": "Safe API key environment strategy without leaking secrets to subprocesses",
+      "phase": "PH170",
+      "component": "packaging",
+      "file": "packaging/systemd/maya.service",
+      "symbol": "maya.service",
+      "acceptance_evidence": "Systemd service manages NVIDIA_API_KEY without exposing secret in command line",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_packaging_safe_api_key_environment"
+      ]
+    },
+    {
+      "id": "REQ-ACCP-REDTEAM-001",
+      "source": "Docs/PLAN.md",
+      "category": "acceptance",
+      "description": "Permission red-team test suite attempts policy and sandbox escapes",
+      "phase": "PH180",
+      "component": "acceptance",
+      "file": "tests/test_offline_determinism.py",
+      "symbol": "test_final_acceptance_permission_red_team",
+      "acceptance_evidence": "Adversarial command injection, path escape, and grant reuse strictly denied",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_final_acceptance_permission_red_team"
+      ]
+    },
+    {
+      "id": "REQ-ACCP-BROWSER-001",
+      "source": "Docs/PLAN.md",
+      "category": "acceptance",
+      "description": "Browser allowlist acceptance verifies domain barriers under automated attack",
+      "phase": "PH180",
+      "component": "acceptance",
+      "file": "tests/test_offline_determinism.py",
+      "symbol": "test_final_acceptance_browser_allowlist",
+      "acceptance_evidence": "Cross-origin requests and unlisted domain navigation fail closed",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_final_acceptance_browser_allowlist"
+      ]
+    },
+    {
+      "id": "REQ-ACCP-VOICE-001",
+      "source": "Docs/PLAN.md",
+      "category": "acceptance",
+      "description": "Voice privacy acceptance verifies zero audio leakage under real hardware mock",
+      "phase": "PH180",
+      "component": "acceptance",
+      "file": "tests/test_offline_determinism.py",
+      "symbol": "test_final_acceptance_voice_privacy",
+      "acceptance_evidence": "Pre-wake audio capture is strictly local with zero network traffic emitted",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_final_acceptance_voice_privacy"
+      ]
+    },
+    {
+      "id": "REQ-ACCP-MEMORY-001",
+      "source": "Docs/PLAN.md",
+      "category": "acceptance",
+      "description": "Memory stress acceptance runs 100 consecutive actions under 300MB cap",
+      "phase": "PH180",
+      "component": "acceptance",
+      "file": "tests/test_offline_determinism.py",
+      "symbol": "test_final_acceptance_memory_stress",
+      "acceptance_evidence": "Daemon memory remains below 300MB RSS across extended stress run",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_final_acceptance_memory_stress"
+      ]
+    },
+    {
+      "id": "REQ-ACCP-INSTALL-001",
+      "source": "Docs/PLAN.md",
+      "category": "acceptance",
+      "description": "Clean install acceptance verifies fresh installation into isolated environment",
+      "phase": "PH180",
+      "component": "acceptance",
+      "file": "tests/test_offline_determinism.py",
+      "symbol": "test_final_acceptance_clean_install",
+      "acceptance_evidence": "Package installs into fresh virtualenv and starts daemon successfully",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_final_acceptance_clean_install"
+      ]
+    },
+    {
+      "id": "REQ-ACCP-AUTOSTART-001",
+      "source": "Docs/PLAN.md",
+      "category": "acceptance",
+      "description": "Autostart acceptance verifies systemd service startup on simulated login",
+      "phase": "PH180",
+      "component": "acceptance",
+      "file": "tests/test_offline_determinism.py",
+      "symbol": "test_final_acceptance_autostart",
+      "acceptance_evidence": "Systemd user service triggers daemon autostart on session activation",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_final_acceptance_autostart"
+      ]
+    },
+    {
+      "id": "REQ-ACCP-PACKAGING-001",
+      "source": "Docs/PLAN.md",
+      "category": "acceptance",
+      "description": "Packaging acceptance verifies all files installed with correct permissions",
+      "phase": "PH180",
+      "component": "acceptance",
+      "file": "tests/test_offline_determinism.py",
+      "symbol": "test_final_acceptance_packaging",
+      "acceptance_evidence": "Installed files have 0600/0700 permissions with no world-writable assets",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_final_acceptance_packaging"
+      ]
+    },
+    {
+      "id": "REQ-ACCP-EVIDENCE-001",
+      "source": "Docs/PLAN.md",
+      "category": "acceptance",
+      "description": "Target Ubuntu manual evidence verification checklist completed",
+      "phase": "PH180",
+      "component": "acceptance",
+      "file": "Docs/Current/PH180_FINAL_ACCEPTANCE_REPORT.md",
+      "symbol": "report",
+      "acceptance_evidence": "Final acceptance report records manual test results on target Ubuntu desktop",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_final_acceptance_target_ubuntu_evidence"
+      ]
+    },
+    {
+      "id": "REQ-PLAN-PH180-001",
+      "source": "Docs/PLAN.md",
+      "category": "acceptance",
+      "description": "Offline deterministic actions execute with zero provider network attempts",
+      "phase": "PH180",
+      "component": "acceptance",
+      "file": "tests/test_offline_determinism.py",
+      "symbol": "test_offline_deterministic_actions_succeed",
+      "acceptance_evidence": "Offline deterministic commands succeed with verified network call count = 0",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_offline_deterministic_actions_succeed"
+      ]
+    },
+    {
+      "id": "REQ-ARCH-FAIL-001",
+      "source": "Docs/ARCHITECTURE.md",
+      "category": "acceptance",
+      "description": "Subsystem failure handling fails closed with zero action execution",
+      "phase": "PH180",
+      "component": "acceptance",
+      "file": "tests/test_offline_determinism.py",
+      "symbol": "test_final_acceptance_failure_fail_closed",
+      "acceptance_evidence": "Any component failure (wake, STT, provider, bridge) results in fail-closed stop",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_final_acceptance_failure_fail_closed"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-TDD-001",
+      "source": "Docs/EXECUTION.md",
+      "category": "acceptance",
+      "description": "TDD compliance verified across all 18 implementation phases",
+      "phase": "PH180",
+      "component": "acceptance",
+      "file": "tests/test_offline_determinism.py",
+      "symbol": "test_final_acceptance_tdd_compliance",
+      "acceptance_evidence": "Full test suite passes with zero regressions across entire codebase",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_final_acceptance_tdd_compliance"
+      ]
+    },
+    {
+      "id": "REQ-TTS-001",
+      "source": "Docs/DOCS.md",
+      "category": "voice",
+      "description": "Text-to-speech audio feedback is optional and default disabled in V1 to respect 240M memory ceiling; Voice Output toggle is rendered disabled/read-only with explanatory memory notice.",
+      "phase": "PH140",
+      "component": "ui",
+      "file": "app/web/index.html",
+      "symbol": "#voice-output-toggle",
+      "acceptance_evidence": "Voice Output toggle is disabled/read-only; no resident TTS synthesis engine loaded",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_tts_toggle_disabled_in_v1"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-PROC-BOUNDED-001",
+      "source": "Docs/SECURITY.md",
+      "category": "executors",
+      "description": "Process executor strictly bounds stdout and stderr capture buffers",
+      "phase": "PH040",
+      "component": "executors",
+      "file": "tests/test_executors.py",
+      "symbol": "ProcessExecutor._read_stream",
+      "acceptance_evidence": "Process output exceeding 100 KB is truncated with flag set",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_process_bounded_output"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-PROC-STDIN-001",
+      "source": "Docs/SECURITY.md",
+      "category": "executors",
+      "description": "Process executor disables interactive stdin handle for child processes",
+      "phase": "PH040",
+      "component": "executors",
+      "file": "tests/test_executors.py",
+      "symbol": "ProcessExecutor.execute",
+      "acceptance_evidence": "Child process stdin is connected to DEVNULL preventing interactive lockup",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_process_stdin_unavailable"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-PROC-ENV-001",
+      "source": "Docs/SECURITY.md",
+      "category": "executors",
+      "description": "Process executor runs with clean sanitized environment variables",
+      "phase": "PH040",
+      "component": "executors",
+      "file": "tests/test_executors.py",
+      "symbol": "ProcessExecutor._build_environment",
+      "acceptance_evidence": "Dangerous environment variables (LD_PRELOAD, PYTHONPATH) are stripped",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_process_controlled_env_and_dangerous_rejected"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-PROC-HIJACK-001",
+      "source": "Docs/SECURITY.md",
+      "category": "executors",
+      "description": "Process executor resolves absolute executable path preventing PATH hijack",
+      "phase": "PH040",
+      "component": "executors",
+      "file": "tests/test_executors.py",
+      "symbol": "resolve_trusted_executable",
+      "acceptance_evidence": "Executable resolved via canonical absolute path only",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_process_path_hijack_cannot_change_preapproved_executable"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-PROC-NONET-001",
+      "source": "Docs/SECURITY.md",
+      "category": "executors",
+      "description": "Process executor disallows unverified network bypass rules",
+      "phase": "PH040",
+      "component": "executors",
+      "file": "tests/test_executors.py",
+      "symbol": "ProcessExecutor.execute",
+      "acceptance_evidence": "Executors fail closed if network requirements are contradictory",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_process_no_fake_network_allowed_enforcement"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-FILE-SYMLINK-001",
+      "source": "Docs/SECURITY.md",
+      "category": "executors",
+      "description": "File executor denies symlink escape outside configured root directory",
+      "phase": "PH040",
+      "component": "executors",
+      "file": "tests/test_executors.py",
+      "symbol": "FileExecutor._resolve_safe_path",
+      "acceptance_evidence": "Symlinks targeting outside allowed root are rejected with security error",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_file_symlink_escape_denied"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-FILE-ATOMIC-001",
+      "source": "Docs/SECURITY.md",
+      "category": "executors",
+      "description": "File write operations are performed atomically via temporary file rename",
+      "phase": "PH040",
+      "component": "executors",
+      "file": "tests/test_executors.py",
+      "symbol": "FileExecutor._write_atomic",
+      "acceptance_evidence": "File writes complete via atomic rename, preserving file on failure",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_file_atomic_write_success"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-FILE-SYMLINK-WRITE-001",
+      "source": "Docs/SECURITY.md",
+      "category": "executors",
+      "description": "File writes through symlinks are strictly rejected",
+      "phase": "PH040",
+      "component": "executors",
+      "file": "tests/test_executors.py",
+      "symbol": "FileExecutor._resolve_safe_path",
+      "acceptance_evidence": "Writing to an existing symlink path fails closed",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_file_write_through_symlink_rejected"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-FILE-DELETE-001",
+      "source": "Docs/SECURITY.md",
+      "category": "executors",
+      "description": "File deletion does not execute target file or recurse outside root",
+      "phase": "PH040",
+      "component": "executors",
+      "file": "tests/test_executors.py",
+      "symbol": "FileExecutor._delete_file",
+      "acceptance_evidence": "File deletion performs unlink only without triggering execution hooks",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_file_delete_does_not_auto_execute"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-XDG-BROWSER-001",
+      "source": "Docs/SECURITY.md",
+      "category": "executors",
+      "description": "XDG launcher cannot bypass browser domain policy",
+      "phase": "PH040",
+      "component": "executors",
+      "file": "tests/test_executors.py",
+      "symbol": "XdgExecutor.execute",
+      "acceptance_evidence": "XDG executor rejects http/https schemes, enforcing local file targets only",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_xdg_cannot_bypass_browser_url_policy"
+      ]
+    },
+    {
+      "id": "REQ-EXEC-XDG-AMBIENT-001",
+      "source": "Docs/SECURITY.md",
+      "category": "executors",
+      "description": "XDG executor rejects ambient shutil.which lookup and uses pinned binary path",
+      "phase": "PH040",
+      "component": "executors",
+      "file": "tests/test_executors.py",
+      "symbol": "XdgExecutor._resolve_xdg_binary",
+      "acceptance_evidence": "xdg-open is resolved strictly from trusted system paths (/usr/bin/xdg-open)",
+      "out_of_v1_rationale": null,
+      "test_ids": [
+        "test_xdg_no_ambient_shutil_which_fallback"
+      ]
+    }
+  ]
+}

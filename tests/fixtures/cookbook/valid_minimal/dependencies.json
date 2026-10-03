@@ -1,0 +1,15 @@
+{
+  "components": ["dispatcher", "broker"],
+  "edges": [
+    {
+      "from": "dispatcher",
+      "to": "broker"
+    }
+  ],
+  "forbidden_edges": [
+    {
+      "from": "broker",
+      "to": "dispatcher"
+    }
+  ]
+}

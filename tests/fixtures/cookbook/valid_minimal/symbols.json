@@ -1,0 +1,17 @@
+{
+  "symbols": [
+    {
+      "symbol": "dispatch_action",
+      "file": "app/core/dispatcher.py",
+      "type": "async_function",
+      "status": "EXTEND",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "enforcement",
+      "resource_ownership": "ephemeral",
+      "test_coverage": ["tests/test_dispatcher.py"]
+    }
+  ]
+}

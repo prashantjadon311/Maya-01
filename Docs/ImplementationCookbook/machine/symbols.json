@@ -1,0 +1,2400 @@
+{
+  "symbols": [
+    {
+      "symbol": "normalize_text",
+      "file": "app/actions/matcher.py",
+      "type": "function",
+      "status": "KEEP",
+      "callers": [
+        "ActionRegistry.reload",
+        "ActionRegistry.resolve"
+      ],
+      "callees": [
+        "normalize",
+        "strip",
+        "sub"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "parse_phrase_template",
+      "file": "app/actions/matcher.py",
+      "type": "function",
+      "status": "KEEP",
+      "callers": [
+        "ActionRegistry.reload"
+      ],
+      "callees": [
+        "ValueError",
+        "add",
+        "append",
+        "compile",
+        "enumerate",
+        "escape",
+        "find",
+        "isinstance",
+        "join",
+        "len",
+        "match",
+        "normalize",
+        "range",
+        "set",
+        "strip",
+        "sub",
+        "type"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "extract_argument_slots",
+      "file": "app/actions/matcher.py",
+      "type": "function",
+      "status": "KEEP",
+      "callers": [
+        "ActionRegistry.reload",
+        "extract_argument_slots"
+      ],
+      "callees": [
+        "add",
+        "extract_argument_slots",
+        "finditer",
+        "group",
+        "isinstance",
+        "set",
+        "update",
+        "values"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "substitute_arguments",
+      "file": "app/actions/matcher.py",
+      "type": "function",
+      "status": "DO_NOT_TOUCH",
+      "callers": [
+        "ActionDispatcher._dispatch_composite",
+        "ActionDispatcher.dispatch_match",
+        "substitute_arguments"
+      ],
+      "callees": [
+        "ValueError",
+        "group",
+        "isinstance",
+        "items",
+        "str",
+        "sub",
+        "substitute_arguments"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "Strict argument substitution preventing template injection",
+      "resource_ownership": "Ephemeral",
+      "test_coverage": [
+        "tests/test_registry.py"
+      ]
+    },
+    {
+      "symbol": "repl",
+      "file": "app/actions/matcher.py",
+      "type": "function",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ValueError",
+        "group",
+        "str"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "_reject_duplicate_keys",
+      "file": "app/actions/registry.py",
+      "type": "function",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ValueError"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "RegistryMatch",
+      "file": "app/actions/registry.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [
+        "ActionRegistry.resolve"
+      ],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "RegistryMatch.__post_init__",
+      "file": "app/actions/registry.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "MappingProxyType",
+        "__setattr__",
+        "dict"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "RegistryAmbiguity",
+      "file": "app/actions/registry.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [
+        "ActionRegistry.resolve"
+      ],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "RegistryAmbiguity.__post_init__",
+      "file": "app/actions/registry.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "__setattr__",
+        "tuple"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "_RegistrySnapshot",
+      "file": "app/actions/registry.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [
+        "ActionRegistry.reload"
+      ],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "_check_composite_cycles",
+      "file": "app/actions/registry.py",
+      "type": "function",
+      "status": "KEEP",
+      "callers": [
+        "ActionRegistry.reload"
+      ],
+      "callees": [
+        "ValueError",
+        "dfs",
+        "get",
+        "items",
+        "join"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionRegistry",
+      "file": "app/actions/registry.py",
+      "type": "class",
+      "status": "EXTEND",
+      "callers": [],
+      "callees": [],
+      "state_owned": [
+        "actions",
+        "packs"
+      ],
+      "side_effects": [],
+      "security_role": "Holds validated action definitions from immutable/verified packs",
+      "resource_ownership": "Bounded memory cache",
+      "test_coverage": [
+        "tests/test_registry.py"
+      ]
+    },
+    {
+      "symbol": "ActionRegistry.__init__",
+      "file": "app/actions/registry.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "Path"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionRegistry.snapshot_version",
+      "file": "app/actions/registry.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionRegistry.get_definition",
+      "file": "app/actions/registry.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [
+        "ActionDispatcher._dispatch_composite",
+        "ActionDispatcher.dispatch_match"
+      ],
+      "callees": [
+        "deepcopy",
+        "get"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionRegistry.resolve",
+      "file": "app/actions/registry.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [
+        "ActionRegistry._load_pack_file",
+        "ActionRegistry.reload",
+        "ProcessExecutor.execute",
+        "canonical_path",
+        "resolve_trusted_executable"
+      ],
+      "callees": [
+        "RegistryAmbiguity",
+        "RegistryMatch",
+        "group",
+        "isinstance",
+        "items",
+        "iter",
+        "keys",
+        "len",
+        "match",
+        "next",
+        "normalize_text",
+        "sorted",
+        "strip",
+        "tuple"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionRegistry.reload",
+      "file": "app/actions/registry.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "_RegistrySnapshot",
+        "_check_composite_cycles",
+        "_load_pack_file",
+        "append",
+        "clear",
+        "dict",
+        "endswith",
+        "exists",
+        "extract_argument_slots",
+        "get",
+        "is_dir",
+        "isinstance",
+        "issubset",
+        "items",
+        "iterdir",
+        "keys",
+        "len",
+        "list",
+        "lower",
+        "normalize_text",
+        "parse_phrase_template",
+        "resolve",
+        "set",
+        "sorted",
+        "startswith",
+        "str",
+        "sum",
+        "values"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionRegistry._load_pack_file",
+      "file": "app/actions/registry.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [
+        "ActionRegistry.reload"
+      ],
+      "callees": [
+        "S_ISREG",
+        "append",
+        "close",
+        "decode",
+        "fstat",
+        "getattr",
+        "is_relative_to",
+        "is_symlink",
+        "islink",
+        "join",
+        "len",
+        "loads",
+        "min",
+        "model_validate",
+        "open",
+        "read",
+        "resolve",
+        "str"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "validate_canonical_json",
+      "file": "app/actions/schema.py",
+      "type": "function",
+      "status": "KEEP",
+      "callers": [
+        "ActionDefinition.validate_json_args",
+        "ActionRequest.validate_json_args",
+        "validate_canonical_json"
+      ],
+      "callees": [
+        "ValueError",
+        "isinf",
+        "isinstance",
+        "isnan",
+        "items",
+        "keys",
+        "type",
+        "validate_canonical_json"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionRequest",
+      "file": "app/actions/schema.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [
+        "ActionDispatcher._dispatch_composite",
+        "ActionDispatcher.dispatch_match"
+      ],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionRequest.to_canonical_json",
+      "file": "app/actions/schema.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [
+        "ActionRequest.to_canonical_bytes",
+        "ApprovalRequest.from_action",
+        "ApprovalRequest.validate_snapshot"
+      ],
+      "callees": [
+        "dumps"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionRequest.to_canonical_bytes",
+      "file": "app/actions/schema.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [
+        "hash_action"
+      ],
+      "callees": [
+        "encode",
+        "to_canonical_json"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionRequest.validate_json_args",
+      "file": "app/actions/schema.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "model_validator",
+        "validate_canonical_json"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionResult",
+      "file": "app/actions/schema.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [
+        "ActionDispatcher._definition_container_gate",
+        "ActionDispatcher._dispatch_composite",
+        "ActionDispatcher._dispatch_with_policy",
+        "ActionDispatcher.dispatch_match",
+        "FileExecutor.execute",
+        "FileExecutor.execute_delete",
+        "FileExecutor.execute_list",
+        "FileExecutor.execute_read",
+        "FileExecutor.execute_write",
+        "ProcessExecutor.execute",
+        "XdgExecutor.execute"
+      ],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionDefinition",
+      "file": "app/actions/schema.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionDefinition.validate_json_args",
+      "file": "app/actions/schema.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "field_validator",
+        "validate_canonical_json"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionDefinition.validate_security_contract",
+      "file": "app/actions/schema.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ValueError",
+        "model_validator"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionPack",
+      "file": "app/actions/schema.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionPack.validate_label",
+      "file": "app/actions/schema.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ValueError",
+        "field_validator",
+        "strip"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionPack.validate_unique_ids",
+      "file": "app/actions/schema.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ValueError",
+        "len",
+        "model_validator",
+        "set"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "BrowserBridge",
+      "file": "app/browser/protocol.py",
+      "type": "class",
+      "status": "EXTEND",
+      "callers": [],
+      "callees": [],
+      "state_owned": [
+        "connection_state"
+      ],
+      "side_effects": [
+        "Sends IPC messages to browser"
+      ],
+      "security_role": "Native messaging bridge interface to Firefox extension",
+      "resource_ownership": "Managed socket/pipe",
+      "test_coverage": [
+        "tests/test_executors.py"
+      ]
+    },
+    {
+      "symbol": "BrowserBridge.execute",
+      "file": "app/browser/protocol.py",
+      "type": "async_method",
+      "status": "KEEP",
+      "callers": [
+        "ActionDispatcher._dispatch_with_policy"
+      ],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "AssistantConfig",
+      "file": "app/core/config.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "AssistantConfig.validate_identity",
+      "file": "app/core/config.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ValueError",
+        "field_validator",
+        "strip"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "VoiceConfig",
+      "file": "app/core/config.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "STTConfig",
+      "file": "app/core/config.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "AIConfig",
+      "file": "app/core/config.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "DashboardConfig",
+      "file": "app/core/config.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "AgentsConfig",
+      "file": "app/core/config.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ResourcesConfig",
+      "file": "app/core/config.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ResourcesConfig.validate_memory_limits",
+      "file": "app/core/config.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ValueError",
+        "model_validator"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "PrivacyConfig",
+      "file": "app/core/config.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "BrowserDomainConfig",
+      "file": "app/core/config.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "BrowserConfig",
+      "file": "app/core/config.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "FileRootConfig",
+      "file": "app/core/config.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "FilesConfig",
+      "file": "app/core/config.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "Config",
+      "file": "app/core/config.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "parse_config_toml",
+      "file": "app/core/config.py",
+      "type": "function",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "loads",
+        "model_validate"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "load_config",
+      "file": "app/core/config.py",
+      "type": "function",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "load",
+        "model_validate",
+        "open"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "_CompositeBudget",
+      "file": "app/core/dispatcher.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [
+        "ActionDispatcher._dispatch_composite",
+        "ActionDispatcher.dispatch_match"
+      ],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "_CompositeBudget.__init__",
+      "file": "app/core/dispatcher.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionDispatcher",
+      "file": "app/core/dispatcher.py",
+      "type": "class",
+      "status": "EXTEND",
+      "callers": [],
+      "callees": [],
+      "state_owned": [
+        "active_executions",
+        "policy_engine",
+        "registry"
+      ],
+      "side_effects": [
+        "Invokes executors",
+        "emits audit logs"
+      ],
+      "security_role": "Central enforcement boundary",
+      "resource_ownership": "Bounded execution concurrency",
+      "test_coverage": [
+        "tests/test_dispatcher.py",
+        "tests/test_executors.py"
+      ]
+    },
+    {
+      "symbol": "ActionDispatcher.__init__",
+      "file": "app/core/dispatcher.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "deque"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionDispatcher.recent_audits",
+      "file": "app/core/dispatcher.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "dict",
+        "tuple"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionDispatcher._sanitize_error_code",
+      "file": "app/core/dispatcher.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [
+        "ActionDispatcher._emit_audit"
+      ],
+      "callees": [
+        "upper"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionDispatcher._emit_audit",
+      "file": "app/core/dispatcher.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [
+        "ActionDispatcher._dispatch_with_policy"
+      ],
+      "callees": [
+        "_sanitize_error_code",
+        "append",
+        "audit_sink",
+        "get",
+        "round",
+        "startswith",
+        "str",
+        "time"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionDispatcher._definition_container_gate",
+      "file": "app/core/dispatcher.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [
+        "ActionDispatcher._dispatch_composite",
+        "ActionDispatcher.dispatch_match"
+      ],
+      "callees": [
+        "ActionResult",
+        "RiskLevel",
+        "upper"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionDispatcher.dispatch_request",
+      "file": "app/core/dispatcher.py",
+      "type": "async_method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "_dispatch_with_policy"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionDispatcher.dispatch_match",
+      "file": "app/core/dispatcher.py",
+      "type": "async_method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ActionRequest",
+        "ActionResult",
+        "_CompositeBudget",
+        "_definition_container_gate",
+        "_dispatch_composite",
+        "_dispatch_with_policy",
+        "_map_executor_to_tool",
+        "get_definition",
+        "substitute_arguments"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionDispatcher._map_executor_to_tool",
+      "file": "app/core/dispatcher.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [
+        "ActionDispatcher._dispatch_composite",
+        "ActionDispatcher.dispatch_match"
+      ],
+      "callees": [
+        "get"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionDispatcher._dispatch_with_policy",
+      "file": "app/core/dispatcher.py",
+      "type": "async_method",
+      "status": "KEEP",
+      "callers": [
+        "ActionDispatcher._dispatch_composite",
+        "ActionDispatcher.dispatch_match",
+        "ActionDispatcher.dispatch_request"
+      ],
+      "callees": [
+        "ActionResult",
+        "RiskLevel",
+        "_emit_audit",
+        "evaluate_detailed",
+        "execute",
+        "get",
+        "index",
+        "list",
+        "max",
+        "split",
+        "startswith",
+        "str",
+        "time",
+        "upper"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ActionDispatcher._dispatch_composite",
+      "file": "app/core/dispatcher.py",
+      "type": "async_method",
+      "status": "KEEP",
+      "callers": [
+        "ActionDispatcher._dispatch_composite",
+        "ActionDispatcher.dispatch_match"
+      ],
+      "callees": [
+        "ActionRequest",
+        "ActionResult",
+        "_CompositeBudget",
+        "_definition_container_gate",
+        "_dispatch_composite",
+        "_dispatch_with_policy",
+        "_map_executor_to_tool",
+        "append",
+        "enumerate",
+        "get",
+        "get_definition",
+        "isinstance",
+        "join",
+        "len",
+        "substitute_arguments"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "CommandRequest",
+      "file": "app/core/events.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "AppState",
+      "file": "app/core/state.py",
+      "type": "class",
+      "status": "EXTEND",
+      "callers": [],
+      "callees": [],
+      "state_owned": [
+        "current_state",
+        "history"
+      ],
+      "side_effects": [
+        "State transition events"
+      ],
+      "security_role": "Thread-safe state container",
+      "resource_ownership": "Resident daemon lifecycle",
+      "test_coverage": [
+        "tests/test_schemas.py"
+      ]
+    },
+    {
+      "symbol": "AppState.get_state",
+      "file": "app/core/state.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "model_dump"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "AppState.update",
+      "file": "app/core/state.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [
+        "extract_argument_slots"
+      ],
+      "callees": [
+        "KeyError",
+        "setattr",
+        "type"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ProcessArgs",
+      "file": "app/executors/base.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ProcessArgs.validate_argv",
+      "file": "app/executors/base.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ValueError",
+        "enumerate",
+        "field_validator",
+        "isinstance",
+        "len",
+        "strip"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ProcessArgs.validate_cwd",
+      "file": "app/executors/base.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ValueError",
+        "field_validator",
+        "strip"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ProcessArgs.validate_env",
+      "file": "app/executors/base.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ValueError",
+        "field_validator",
+        "isinstance",
+        "items",
+        "len",
+        "strip"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "FileReadArgs",
+      "file": "app/executors/base.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "FileReadArgs.validate_path",
+      "file": "app/executors/base.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ValueError",
+        "field_validator",
+        "strip"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "FileListArgs",
+      "file": "app/executors/base.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "FileListArgs.validate_path",
+      "file": "app/executors/base.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ValueError",
+        "field_validator",
+        "strip"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "FileWriteArgs",
+      "file": "app/executors/base.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "FileWriteArgs.validate_path",
+      "file": "app/executors/base.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ValueError",
+        "field_validator",
+        "strip"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "FileWriteArgs.validate_content_size",
+      "file": "app/executors/base.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ValueError",
+        "encode",
+        "isinstance",
+        "len",
+        "model_validator"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "FileDeleteArgs",
+      "file": "app/executors/base.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "FileDeleteArgs.validate_path",
+      "file": "app/executors/base.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ValueError",
+        "field_validator",
+        "strip"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "XdgOpenArgs",
+      "file": "app/executors/base.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "XdgOpenArgs.validate_target",
+      "file": "app/executors/base.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ValueError",
+        "field_validator",
+        "lower",
+        "startswith",
+        "strip"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "BaseExecutor",
+      "file": "app/executors/base.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "BaseExecutor.execute",
+      "file": "app/executors/base.py",
+      "type": "async_method",
+      "status": "KEEP",
+      "callers": [
+        "ActionDispatcher._dispatch_with_policy"
+      ],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "_open_dirfd_under_root",
+      "file": "app/executors/files.py",
+      "type": "function",
+      "status": "KEEP",
+      "callers": [
+        "FileExecutor.execute_list",
+        "_open_parent_dirfd"
+      ],
+      "callees": [
+        "close",
+        "getattr",
+        "open",
+        "str"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "_open_parent_dirfd",
+      "file": "app/executors/files.py",
+      "type": "function",
+      "status": "KEEP",
+      "callers": [
+        "FileExecutor.execute_read",
+        "FileExecutor.execute_write"
+      ],
+      "callees": [
+        "ValueError",
+        "_open_dirfd_under_root"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "FileExecutor",
+      "file": "app/executors/files.py",
+      "type": "class",
+      "status": "EXTEND",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [
+        "Modifies filesystem within allowed directories"
+      ],
+      "security_role": "Sandboxed file operations (read, write, append, delete)",
+      "resource_ownership": "Bounded file size (1MB read, 5MB write)",
+      "test_coverage": [
+        "tests/test_executors.py"
+      ]
+    },
+    {
+      "symbol": "FileExecutor.__init__",
+      "file": "app/executors/files.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "canonical_path",
+        "list",
+        "set",
+        "str",
+        "union"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "FileExecutor._verify_path_security",
+      "file": "app/executors/files.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [
+        "FileExecutor.execute_delete",
+        "FileExecutor.execute_list",
+        "FileExecutor.execute_read",
+        "FileExecutor.execute_write"
+      ],
+      "callees": [
+        "Path",
+        "canonical_path",
+        "startswith"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "FileExecutor.execute",
+      "file": "app/executors/files.py",
+      "type": "async_method",
+      "status": "KEEP",
+      "callers": [
+        "ActionDispatcher._dispatch_with_policy"
+      ],
+      "callees": [
+        "ActionResult",
+        "execute_delete",
+        "execute_list",
+        "execute_read",
+        "execute_write",
+        "isinstance"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "FileExecutor.execute_read",
+      "file": "app/executors/files.py",
+      "type": "async_method",
+      "status": "KEEP",
+      "callers": [
+        "FileExecutor.execute"
+      ],
+      "callees": [
+        "ActionResult",
+        "S_ISREG",
+        "_open_parent_dirfd",
+        "_verify_path_security",
+        "close",
+        "decode",
+        "fdopen",
+        "fstat",
+        "getattr",
+        "len",
+        "model_validate",
+        "open",
+        "read",
+        "relative_to"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "FileExecutor.execute_list",
+      "file": "app/executors/files.py",
+      "type": "async_method",
+      "status": "KEEP",
+      "callers": [
+        "FileExecutor.execute"
+      ],
+      "callees": [
+        "ActionResult",
+        "S_ISDIR",
+        "_open_dirfd_under_root",
+        "_verify_path_security",
+        "append",
+        "close",
+        "dumps",
+        "enumerate",
+        "fstat",
+        "getattr",
+        "is_dir",
+        "is_file",
+        "is_symlink",
+        "list",
+        "model_validate",
+        "open",
+        "relative_to",
+        "scandir",
+        "sorted",
+        "stat",
+        "str"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "FileExecutor.execute_write",
+      "file": "app/executors/files.py",
+      "type": "async_method",
+      "status": "KEEP",
+      "callers": [
+        "FileExecutor.execute"
+      ],
+      "callees": [
+        "ActionResult",
+        "Path",
+        "S_ISLNK",
+        "_open_parent_dirfd",
+        "_verify_path_security",
+        "close",
+        "encode",
+        "expanduser",
+        "fsync",
+        "getattr",
+        "hex",
+        "is_symlink",
+        "isinstance",
+        "len",
+        "lstat",
+        "model_validate",
+        "open",
+        "relative_to",
+        "replace",
+        "str",
+        "unlink",
+        "urandom",
+        "write"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "FileExecutor.execute_delete",
+      "file": "app/executors/files.py",
+      "type": "async_method",
+      "status": "KEEP",
+      "callers": [
+        "FileExecutor.execute"
+      ],
+      "callees": [
+        "ActionResult",
+        "_verify_path_security",
+        "model_validate"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "_read_stream_bounded",
+      "file": "app/executors/process.py",
+      "type": "async_function",
+      "status": "KEEP",
+      "callers": [
+        "ProcessExecutor.execute"
+      ],
+      "callees": [
+        "bytearray",
+        "decode",
+        "extend",
+        "len",
+        "min",
+        "read"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ProcessExecutor",
+      "file": "app/executors/process.py",
+      "type": "class",
+      "status": "EXTEND",
+      "callers": [],
+      "callees": [],
+      "state_owned": [
+        "active_subprocesses"
+      ],
+      "side_effects": [
+        "Spawns OS subprocesses"
+      ],
+      "security_role": "Safe process execution with path and argument allowlists",
+      "resource_ownership": "Bounded subprocess runtime & output buffer (64KB)",
+      "test_coverage": [
+        "tests/test_executors.py"
+      ]
+    },
+    {
+      "symbol": "ProcessExecutor.__init__",
+      "file": "app/executors/process.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ProcessExecutor.execute",
+      "file": "app/executors/process.py",
+      "type": "async_method",
+      "status": "KEEP",
+      "callers": [
+        "ActionDispatcher._dispatch_with_policy"
+      ],
+      "callees": [
+        "ActionResult",
+        "_read_stream_bounded",
+        "any",
+        "cancel",
+        "canonical_path",
+        "create_subprocess_exec",
+        "create_task",
+        "gather",
+        "is_dir",
+        "is_relative_to",
+        "isinstance",
+        "items",
+        "kill",
+        "len",
+        "model_validate",
+        "resolve",
+        "resolve_trusted_executable",
+        "str",
+        "terminate",
+        "tuple",
+        "wait",
+        "wait_for"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "XdgExecutor",
+      "file": "app/executors/xdg.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [
+        "Launches default desktop applications"
+      ],
+      "security_role": "Safe desktop launcher using xdg-open for validated URLs and files",
+      "resource_ownership": "Subprocess execution",
+      "test_coverage": [
+        "tests/test_executors.py"
+      ]
+    },
+    {
+      "symbol": "XdgExecutor.__init__",
+      "file": "app/executors/xdg.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "list"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "XdgExecutor.execute",
+      "file": "app/executors/xdg.py",
+      "type": "async_method",
+      "status": "KEEP",
+      "callers": [
+        "ActionDispatcher._dispatch_with_policy"
+      ],
+      "callees": [
+        "ActionResult",
+        "canonical_path",
+        "create_subprocess_exec",
+        "exists",
+        "isinstance",
+        "kill",
+        "model_validate",
+        "resolve_trusted_executable",
+        "startswith",
+        "str",
+        "strip",
+        "wait",
+        "wait_for"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "Daemon",
+      "file": "app/main.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [
+        "main"
+      ],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "Daemon.__init__",
+      "file": "app/main.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "Daemon.start",
+      "file": "app/main.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [
+        "main"
+      ],
+      "callees": [
+        "info"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "Daemon.stop",
+      "file": "app/main.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "info"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "main",
+      "file": "app/main.py",
+      "type": "function",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "Daemon",
+        "start"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "hash_canonical_bytes",
+      "file": "app/policy/approvals.py",
+      "type": "function",
+      "status": "KEEP",
+      "callers": [
+        "ApprovalRequest.validate_snapshot",
+        "hash_action"
+      ],
+      "callees": [
+        "hexdigest",
+        "sha256"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "hash_action",
+      "file": "app/policy/approvals.py",
+      "type": "function",
+      "status": "KEEP",
+      "callers": [
+        "ApprovalRequest.from_action",
+        "verify_action"
+      ],
+      "callees": [
+        "hash_canonical_bytes",
+        "to_canonical_bytes"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "verify_action",
+      "file": "app/policy/approvals.py",
+      "type": "function",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "compare_digest",
+        "encode",
+        "hash_action",
+        "len",
+        "lower"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ApprovalRequest",
+      "file": "app/policy/approvals.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ApprovalRequest.from_action",
+      "file": "app/policy/approvals.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "cls",
+        "hash_action",
+        "time",
+        "to_canonical_json"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ApprovalRequest.validate_action_hash",
+      "file": "app/policy/approvals.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ValueError",
+        "field_validator",
+        "lower",
+        "match"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "ApprovalRequest.validate_snapshot",
+      "file": "app/policy/approvals.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ValueError",
+        "compare_digest",
+        "encode",
+        "hash_canonical_bytes",
+        "isinf",
+        "isnan",
+        "model_validate_json",
+        "model_validator",
+        "to_canonical_json"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "resolve_trusted_executable",
+      "file": "app/policy/engine.py",
+      "type": "function",
+      "status": "KEEP",
+      "callers": [
+        "PolicyEngine.evaluate_detailed",
+        "ProcessExecutor.execute",
+        "XdgExecutor.execute"
+      ],
+      "callees": [
+        "Path",
+        "access",
+        "any",
+        "exists",
+        "is_absolute",
+        "is_file",
+        "isinstance",
+        "resolve",
+        "strip",
+        "tuple"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "PolicyEvaluation",
+      "file": "app/policy/engine.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [
+        "PolicyEngine.evaluate_detailed"
+      ],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "PreapprovalRule",
+      "file": "app/policy/engine.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "PreapprovalRule.validate_nonempty",
+      "file": "app/policy/engine.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ValueError",
+        "field_validator",
+        "strip"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "PreapprovalRule.validate_roots",
+      "file": "app/policy/engine.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "canonical_path",
+        "field_validator"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "PreapprovalRule.validate_executable",
+      "file": "app/policy/engine.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ValueError",
+        "basename",
+        "model_validator"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "PolicyDecision",
+      "file": "app/policy/engine.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "PolicyEngine",
+      "file": "app/policy/engine.py",
+      "type": "class",
+      "status": "EXTEND",
+      "callers": [],
+      "callees": [],
+      "state_owned": [
+        "preapprovals",
+        "rules"
+      ],
+      "side_effects": [],
+      "security_role": "Primary policy evaluation against preapprovals and rules",
+      "resource_ownership": "Resident daemon lifecycle",
+      "test_coverage": [
+        "tests/test_policy.py"
+      ]
+    },
+    {
+      "symbol": "PolicyEngine.__init__",
+      "file": "app/policy/engine.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [],
+      "callees": [
+        "ValueError",
+        "append",
+        "canonical_path",
+        "isinstance",
+        "model_validate",
+        "set",
+        "str",
+        "union"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "PolicyEngine.assess_risk",
+      "file": "app/policy/engine.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [
+        "PolicyEngine.assess_risk",
+        "PolicyEngine.evaluate_detailed"
+      ],
+      "callees": [
+        "assess_risk"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "PolicyEngine.evaluate_detailed",
+      "file": "app/policy/engine.py",
+      "type": "method",
+      "status": "KEEP",
+      "callers": [
+        "ActionDispatcher._dispatch_with_policy",
+        "PolicyEngine.evaluate"
+      ],
+      "callees": [
+        "Path",
+        "PolicyEvaluation",
+        "RiskLevel",
+        "any",
+        "assess_risk",
+        "basename",
+        "canonical_path",
+        "get",
+        "index",
+        "is_relative_to",
+        "isinstance",
+        "len",
+        "list",
+        "max",
+        "resolve_trusted_executable",
+        "startswith",
+        "strip",
+        "upper"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "PolicyEngine.evaluate",
+      "file": "app/policy/engine.py",
+      "type": "method",
+      "status": "EXTEND",
+      "callers": [],
+      "callees": [
+        "evaluate_detailed"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "Determines ALLOW, ASK_USER, or DENY",
+      "resource_ownership": "Ephemeral evaluation",
+      "test_coverage": [
+        "tests/test_policy.py"
+      ]
+    },
+    {
+      "symbol": "canonical_path",
+      "file": "app/policy/paths.py",
+      "type": "function",
+      "status": "KEEP",
+      "callers": [
+        "FileExecutor.__init__",
+        "FileExecutor._verify_path_security",
+        "PolicyEngine.__init__",
+        "PolicyEngine.evaluate_detailed",
+        "PreapprovalRule.validate_roots",
+        "ProcessExecutor.execute",
+        "XdgExecutor.execute"
+      ],
+      "callees": [
+        "Path",
+        "ValueError",
+        "expanduser",
+        "isinstance",
+        "resolve",
+        "strip"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "RiskLevel",
+      "file": "app/policy/risk.py",
+      "type": "class",
+      "status": "KEEP",
+      "callers": [
+        "ActionDispatcher._definition_container_gate",
+        "ActionDispatcher._dispatch_with_policy",
+        "PolicyEngine.evaluate_detailed",
+        "assess_risk"
+      ],
+      "callees": [],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    },
+    {
+      "symbol": "assess_risk",
+      "file": "app/policy/risk.py",
+      "type": "function",
+      "status": "KEEP",
+      "callers": [
+        "PolicyEngine.assess_risk",
+        "PolicyEngine.evaluate_detailed"
+      ],
+      "callees": [
+        "Path",
+        "RiskLevel",
+        "get",
+        "index",
+        "isinstance",
+        "list",
+        "max",
+        "upper"
+      ],
+      "state_owned": [],
+      "side_effects": [],
+      "security_role": "",
+      "resource_ownership": "",
+      "test_coverage": []
+    }
+  ]
+}

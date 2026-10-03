@@ -1,0 +1,1265 @@
+{
+  "files": [
+    {
+      "path": "Docs/Current/PH180_FINAL_ACCEPTANCE_REPORT.md",
+      "owner_phase": "PH180",
+      "secondary_modifiers": [],
+      "purpose": "Final V1 acceptance and verification report",
+      "allowed_contents": [
+        "Verification results",
+        "requirement mapping table",
+        "test run outputs"
+      ],
+      "forbidden_contents": [
+        "unverified claims",
+        "modifying production requirements"
+      ]
+    },
+    {
+      "path": "app/actions/matcher.py",
+      "owner_phase": "PH030",
+      "secondary_modifiers": [],
+      "purpose": "Template matching and regex phrase slot extraction",
+      "allowed_contents": [
+        "PhraseMatcher class",
+        "regex compilation",
+        "slot extraction"
+      ],
+      "forbidden_contents": [
+        "arbitrary execution",
+        "file modification"
+      ]
+    },
+    {
+      "path": "app/actions/registry.py",
+      "owner_phase": "PH030",
+      "secondary_modifiers": [
+        "PH150"
+      ],
+      "purpose": "Action pack loading, schema validation, and phrase lookup table",
+      "allowed_contents": [
+        "ActionRegistry class",
+        "ActionPack loading"
+      ],
+      "forbidden_contents": [
+        "arbitrary code execution",
+        "symlink following"
+      ]
+    },
+    {
+      "path": "app/actions/schema.py",
+      "owner_phase": "PH030",
+      "secondary_modifiers": [],
+      "purpose": "Action pack Pydantic schemas and models",
+      "allowed_contents": [
+        "ActionPack",
+        "ActionDefinition",
+        "ArgumentDefinition"
+      ],
+      "forbidden_contents": [
+        "runtime execution",
+        "state mutation"
+      ]
+    },
+    {
+      "path": "app/agents/model.py",
+      "owner_phase": "PH070",
+      "secondary_modifiers": [],
+      "purpose": "Agent task and step Pydantic data schemas",
+      "allowed_contents": [
+        "AgentTask",
+        "AgentTaskResult",
+        "AgentStep"
+      ],
+      "forbidden_contents": [
+        "runtime execution logic"
+      ]
+    },
+    {
+      "path": "app/agents/runtime.py",
+      "owner_phase": "PH070",
+      "secondary_modifiers": [],
+      "purpose": "Bounded single logical agent execution loop with step limits",
+      "allowed_contents": [
+        "AgentRuntime class",
+        "step loop",
+        "transcript management"
+      ],
+      "forbidden_contents": [
+        "parallel unconstrained swarms",
+        "policy bypass"
+      ]
+    },
+    {
+      "path": "app/agents/verifier.py",
+      "owner_phase": "PH070",
+      "secondary_modifiers": [],
+      "purpose": "Agent task completion verification protocol and evidence collector",
+      "allowed_contents": [
+        "AgentVerifier",
+        "VerificationEvidence",
+        "VerificationResult"
+      ],
+      "forbidden_contents": [
+        "model execution",
+        "tool execution"
+      ]
+    },
+    {
+      "path": "app/ai/base.py",
+      "owner_phase": "PH060",
+      "secondary_modifiers": [],
+      "purpose": "AI provider protocol and model interaction base definitions",
+      "allowed_contents": [
+        "AIProvider Protocol",
+        "ProviderResponse",
+        "Message models"
+      ],
+      "forbidden_contents": [
+        "Nvidia SDK imports",
+        "live API network calls"
+      ]
+    },
+    {
+      "path": "app/ai/nvidia.py",
+      "owner_phase": "PH060",
+      "secondary_modifiers": [],
+      "purpose": "NVIDIA Nemotron AsyncOpenAI client adapter with streaming and tool parsing",
+      "allowed_contents": [
+        "NvidiaProvider class",
+        "ChatMessage",
+        "ToolCall parsing"
+      ],
+      "forbidden_contents": [
+        "direct OS execution",
+        "leaking raw reasoning traces"
+      ]
+    },
+    {
+      "path": "app/ai/schema.py",
+      "owner_phase": "PH060",
+      "secondary_modifiers": [
+        "PH070"
+      ],
+      "purpose": "AI completion, chat messages, and tool definition schemas",
+      "allowed_contents": [
+        "ChatMessage",
+        "ToolDefinition",
+        "ToolCall",
+        "ChatChunk",
+        "ChatResponse"
+      ],
+      "forbidden_contents": [
+        "external network calls",
+        "API keys"
+      ]
+    },
+    {
+      "path": "app/api/app.py",
+      "owner_phase": "PH130",
+      "secondary_modifiers": [],
+      "purpose": "FastAPI localhost application factory and lifespan management",
+      "allowed_contents": [
+        "create_dashboard_app function",
+        "route mounting"
+      ],
+      "forbidden_contents": [
+        "wildcard CORS",
+        "binding to 0.0.0.0"
+      ]
+    },
+    {
+      "path": "app/api/routes_actions.py",
+      "owner_phase": "PH130",
+      "secondary_modifiers": [],
+      "purpose": "Dashboard routes_actions.py API endpoint implementation",
+      "allowed_contents": [
+        "FastAPI route handlers",
+        "Pydantic models"
+      ],
+      "forbidden_contents": [
+        "direct SQL execution bypassing storage",
+        "wildcard CORS"
+      ]
+    },
+    {
+      "path": "app/api/routes_agents.py",
+      "owner_phase": "PH130",
+      "secondary_modifiers": [],
+      "purpose": "Dashboard routes_agents.py API endpoint implementation",
+      "allowed_contents": [
+        "FastAPI route handlers",
+        "Pydantic models"
+      ],
+      "forbidden_contents": [
+        "direct SQL execution bypassing storage",
+        "wildcard CORS"
+      ]
+    },
+    {
+      "path": "app/api/routes_audit.py",
+      "owner_phase": "PH130",
+      "secondary_modifiers": [],
+      "purpose": "Paginated audit event log query endpoints",
+      "allowed_contents": [
+        "audit log GET endpoints with limit/offset"
+      ],
+      "forbidden_contents": [
+        "unbounded log dumps"
+      ]
+    },
+    {
+      "path": "app/api/routes_config.py",
+      "owner_phase": "PH130",
+      "secondary_modifiers": [],
+      "purpose": "Configuration CRUD endpoints with strict validation",
+      "allowed_contents": [
+        "config GET/POST/PUT endpoints"
+      ],
+      "forbidden_contents": [
+        "unvalidated config overwrites"
+      ]
+    },
+    {
+      "path": "app/api/routes_state.py",
+      "owner_phase": "PH130",
+      "secondary_modifiers": [],
+      "purpose": "Dashboard routes_state.py API endpoint implementation",
+      "allowed_contents": [
+        "FastAPI route handlers",
+        "Pydantic models"
+      ],
+      "forbidden_contents": [
+        "direct SQL execution bypassing storage",
+        "wildcard CORS"
+      ]
+    },
+    {
+      "path": "app/api/schemas.py",
+      "owner_phase": "PH130",
+      "secondary_modifiers": [],
+      "purpose": "Dashboard schemas.py API endpoint implementation",
+      "allowed_contents": [
+        "FastAPI route handlers",
+        "Pydantic models"
+      ],
+      "forbidden_contents": [
+        "direct SQL execution bypassing storage",
+        "wildcard CORS"
+      ]
+    },
+    {
+      "path": "app/browser/native_bridge.py",
+      "owner_phase": "PH110",
+      "secondary_modifiers": [],
+      "purpose": "Length-prefixed native messaging host communicating with Firefox",
+      "allowed_contents": [
+        "NativeMessageBridge class",
+        "message framing",
+        "domain checks"
+      ],
+      "forbidden_contents": [
+        "unrestricted DOM access",
+        "bypassing domain allowlist"
+      ]
+    },
+    {
+      "path": "app/browser/native_host.py",
+      "owner_phase": "PH110",
+      "secondary_modifiers": [
+        "PH170"
+      ],
+      "purpose": "WebExtension Native Messaging Host stdio protocol runner",
+      "allowed_contents": [
+        "native host stdio framing",
+        "UDS bridge client dispatch",
+        "main entrypoint"
+      ],
+      "forbidden_contents": [
+        "raw shell calls",
+        "unauthenticated UDS sockets"
+      ]
+    },
+    {
+      "path": "app/browser/protocol.py",
+      "owner_phase": "PH040",
+      "secondary_modifiers": [
+        "PH110"
+      ],
+      "purpose": "BrowserBridge protocol definition and runtime_checkable interface",
+      "allowed_contents": [
+        "BrowserBridge protocol definition",
+        "execute signature"
+      ],
+      "forbidden_contents": [
+        "direct socket connections",
+        "subprocess spawns"
+      ]
+    },
+    {
+      "path": "app/core/command_router.py",
+      "owner_phase": "PH070",
+      "secondary_modifiers": [],
+      "purpose": "4-tier command classification and routing pipeline",
+      "allowed_contents": [
+        "CommandRouter class",
+        "CommandRoutingDecision"
+      ],
+      "forbidden_contents": [
+        "direct executor calls bypassing dispatcher"
+      ]
+    },
+    {
+      "path": "app/core/config.py",
+      "owner_phase": "PH010",
+      "secondary_modifiers": [
+        "PH060",
+        "PH080",
+        "PH090",
+        "PH130"
+      ],
+      "purpose": "Configuration schemas and TOML loading",
+      "allowed_contents": [
+        "Pydantic config models",
+        "load_config function"
+      ],
+      "forbidden_contents": [
+        "runtime state mutation"
+      ]
+    },
+    {
+      "path": "app/core/dispatcher.py",
+      "owner_phase": "PH040",
+      "secondary_modifiers": [
+        "PH050",
+        "PH070"
+      ],
+      "purpose": "Central action dispatching and security boundary enforcement",
+      "allowed_contents": [
+        "ActionDispatcher class",
+        "dispatch logic",
+        "executor invocation"
+      ],
+      "forbidden_contents": [
+        "direct OS subprocess calls without executor",
+        "policy bypass"
+      ]
+    },
+    {
+      "path": "app/core/events.py",
+      "owner_phase": "PH000",
+      "secondary_modifiers": [
+        "PH100"
+      ],
+      "purpose": "Application event types and bus definitions",
+      "allowed_contents": [
+        "Event",
+        "EventType enum",
+        "EventBus"
+      ],
+      "forbidden_contents": [
+        "blocking I/O",
+        "subprocess calls"
+      ]
+    },
+    {
+      "path": "app/core/state.py",
+      "owner_phase": "PH000",
+      "secondary_modifiers": [
+        "PH080",
+        "PH100"
+      ],
+      "purpose": "Application runtime state machine and event dispatch",
+      "allowed_contents": [
+        "AppState class",
+        "SystemState enum",
+        "transition methods"
+      ],
+      "forbidden_contents": [
+        "business logic",
+        "executor calls"
+      ]
+    },
+    {
+      "path": "app/developer/workflow.py",
+      "owner_phase": "PH150",
+      "secondary_modifiers": [],
+      "purpose": "Developer workflow orchestration service for project management and test automation",
+      "allowed_contents": [
+        "DeveloperWorkflowService",
+        "run_workflow",
+        "run_process_step",
+        "run_registered_command"
+      ],
+      "forbidden_contents": [
+        "direct process execution without dispatcher",
+        "arbitrary shell execution",
+        "manual RegistryMatch construction"
+      ]
+    },
+    {
+      "path": "app/executors/base.py",
+      "owner_phase": "PH040",
+      "secondary_modifiers": [
+        "PH050"
+      ],
+      "purpose": "Base abstract interface for action executors",
+      "allowed_contents": [
+        "BaseExecutor abstract class",
+        "execute abstractmethod"
+      ],
+      "forbidden_contents": [
+        "direct process execution"
+      ]
+    },
+    {
+      "path": "app/executors/files.py",
+      "owner_phase": "PH040",
+      "secondary_modifiers": [
+        "PH050"
+      ],
+      "purpose": "Sandboxed file operations with canonical path validation",
+      "allowed_contents": [
+        "FileExecutor class",
+        "path validation"
+      ],
+      "forbidden_contents": [
+        "path traversal escape",
+        "arbitrary root overwrite"
+      ]
+    },
+    {
+      "path": "app/executors/process.py",
+      "owner_phase": "PH040",
+      "secondary_modifiers": [
+        "PH050"
+      ],
+      "purpose": "Safe process execution with argv allowlists and bounded buffers",
+      "allowed_contents": [
+        "ProcessExecutor class",
+        "subprocess exec"
+      ],
+      "forbidden_contents": [
+        "shell=True",
+        "unbounded output capture"
+      ]
+    },
+    {
+      "path": "app/executors/xdg.py",
+      "owner_phase": "PH040",
+      "secondary_modifiers": [
+        "PH050"
+      ],
+      "purpose": "Desktop launcher using xdg-open for validated URLs and files",
+      "allowed_contents": [
+        "XdgExecutor class",
+        "URL validation"
+      ],
+      "forbidden_contents": [
+        "arbitrary command execution"
+      ]
+    },
+    {
+      "path": "app/lifecycle.py",
+      "owner_phase": "PH050",
+      "secondary_modifiers": [
+        "PH100",
+        "PH160"
+      ],
+      "purpose": "Daemon lifecycle manager, composition root, and graceful shutdown coordinator",
+      "allowed_contents": [
+        "LifecycleManager class",
+        "monitor_memory function"
+      ],
+      "forbidden_contents": [
+        "raising MemoryMax limit"
+      ]
+    },
+    {
+      "path": "app/main.py",
+      "owner_phase": "PH000",
+      "secondary_modifiers": [
+        "PH170"
+      ],
+      "purpose": "Daemon CLI entrypoint and signal handling",
+      "allowed_contents": [
+        "main function",
+        "CLI argument parsing",
+        "daemon bootstrap"
+      ],
+      "forbidden_contents": [
+        "business logic",
+        "unbounded execution"
+      ]
+    },
+    {
+      "path": "app/policy/approvals.py",
+      "owner_phase": "PH020",
+      "secondary_modifiers": [],
+      "purpose": "Approval rule definitions and classification",
+      "allowed_contents": [
+        "ApprovalRequirement",
+        "ApprovalType enum"
+      ],
+      "forbidden_contents": [
+        "persistent state"
+      ]
+    },
+    {
+      "path": "app/policy/broker.py",
+      "owner_phase": "PH050",
+      "secondary_modifiers": [],
+      "purpose": "Interactive approval broker, cryptographic hash binding, and popup dispatch",
+      "allowed_contents": [
+        "ApprovalBroker class",
+        "ApprovalGrant",
+        "popup spawning"
+      ],
+      "forbidden_contents": [
+        "persistent grant storage",
+        "multi-use grants"
+      ]
+    },
+    {
+      "path": "app/policy/broker_schema.py",
+      "owner_phase": "PH050",
+      "secondary_modifiers": [],
+      "purpose": "Approval broker schemas, grant models, and popup decisions",
+      "allowed_contents": [
+        "PendingApproval",
+        "ApprovalGrant",
+        "PopupDecision",
+        "ApprovalOutcome",
+        "ApprovalDisplay"
+      ],
+      "forbidden_contents": [
+        "business logic",
+        "file IO"
+      ]
+    },
+    {
+      "path": "app/policy/engine.py",
+      "owner_phase": "PH020",
+      "secondary_modifiers": [
+        "PH050"
+      ],
+      "purpose": "Pure policy evaluation against preapprovals and rules",
+      "allowed_contents": [
+        "PolicyEngine class",
+        "PolicyEvaluation",
+        "PolicyDecision"
+      ],
+      "forbidden_contents": [
+        "executor invocation",
+        "subprocess calls"
+      ]
+    },
+    {
+      "path": "app/policy/paths.py",
+      "owner_phase": "PH020",
+      "secondary_modifiers": [],
+      "purpose": "Path policy evaluation and sandboxing helper",
+      "allowed_contents": [
+        "validate_path",
+        "is_within_allowed_roots"
+      ],
+      "forbidden_contents": [
+        "direct filesystem mutations"
+      ]
+    },
+    {
+      "path": "app/policy/risk.py",
+      "owner_phase": "PH020",
+      "secondary_modifiers": [],
+      "purpose": "Risk assessment schemas and risk level classifications",
+      "allowed_contents": [
+        "RiskLevel enum",
+        "RiskAssessment model"
+      ],
+      "forbidden_contents": [
+        "subprocess calls"
+      ]
+    },
+    {
+      "path": "app/storage/schema.py",
+      "owner_phase": "PH130",
+      "secondary_modifiers": [],
+      "purpose": "SQLite audit and settings data models",
+      "allowed_contents": [
+        "AuditLogEntry",
+        "SessionRecord",
+        "Pydantic database schemas"
+      ],
+      "forbidden_contents": [
+        "network calls"
+      ]
+    },
+    {
+      "path": "app/storage/sqlite.py",
+      "owner_phase": "PH130",
+      "secondary_modifiers": [],
+      "purpose": "Local SQLite storage layer with WAL mode and connection pooling",
+      "allowed_contents": [
+        "SQLiteStorage class",
+        "schema migration",
+        "audit inserts"
+      ],
+      "forbidden_contents": [
+        "storing plaintext secrets/API keys"
+      ]
+    },
+    {
+      "path": "app/tray/status_notifier.py",
+      "owner_phase": "PH100",
+      "secondary_modifiers": [],
+      "purpose": "Freedesktop StatusNotifierItem over session D-Bus",
+      "allowed_contents": [
+        "StatusNotifierTray class",
+        "D-Bus property updates"
+      ],
+      "forbidden_contents": [
+        "heavyweight GUI window creation"
+      ]
+    },
+    {
+      "path": "app/voice/audio.py",
+      "owner_phase": "PH080",
+      "secondary_modifiers": [],
+      "purpose": "Audio stream capture and bounded circular ring buffer",
+      "allowed_contents": [
+        "AudioSource class",
+        "ring buffer reading/writing"
+      ],
+      "forbidden_contents": [
+        "network socket calls",
+        "disk writing of pre-wake audio"
+      ]
+    },
+    {
+      "path": "app/voice/recorder.py",
+      "owner_phase": "PH080",
+      "secondary_modifiers": [],
+      "purpose": "Post-wake command audio recording bounded by VAD and duration",
+      "allowed_contents": [
+        "CommandRecorder class",
+        "VAD silence detection"
+      ],
+      "forbidden_contents": [
+        "pre-wake buffer retention"
+      ]
+    },
+    {
+      "path": "app/voice/stt.py",
+      "owner_phase": "PH090",
+      "secondary_modifiers": [],
+      "purpose": "Remote STT adapter for post-wake command audio transcription",
+      "allowed_contents": [
+        "STTAdapter class",
+        "audio buffer release logic"
+      ],
+      "forbidden_contents": [
+        "pre-wake audio transcription",
+        "disk persistence of audio"
+      ]
+    },
+    {
+      "path": "app/voice/wake.py",
+      "owner_phase": "PH080",
+      "secondary_modifiers": [],
+      "purpose": "Local wake word detection using openWakeWord 1-thread engine",
+      "allowed_contents": [
+        "WakeDetector class",
+        "frame inference"
+      ],
+      "forbidden_contents": [
+        "network transmission",
+        "remote STT calls"
+      ]
+    },
+    {
+      "path": "app/web/css/app.css",
+      "owner_phase": "PH140",
+      "secondary_modifiers": [],
+      "purpose": "Custom CSS layout and AI Core pulse animations",
+      "allowed_contents": [
+        "CSS styling",
+        "reduced motion media queries"
+      ],
+      "forbidden_contents": [
+        "remote @import rules"
+      ]
+    },
+    {
+      "path": "app/web/css/bootstrap.min.css",
+      "owner_phase": "PH140",
+      "secondary_modifiers": [],
+      "purpose": "Offline vendor Bootstrap 5.3 CSS stylesheet",
+      "allowed_contents": [
+        "minified vendor CSS styles"
+      ],
+      "forbidden_contents": [
+        "executable JavaScript",
+        "external CDN links"
+      ]
+    },
+    {
+      "path": "app/web/index.html",
+      "owner_phase": "PH140",
+      "secondary_modifiers": [],
+      "purpose": "Single-page static dashboard HTML shell",
+      "allowed_contents": [
+        "semantic HTML structure",
+        "tab views",
+        "SVG AI Core markup"
+      ],
+      "forbidden_contents": [
+        "inline javascript",
+        "CDN script tags"
+      ]
+    },
+    {
+      "path": "app/web/js/app.js",
+      "owner_phase": "PH140",
+      "secondary_modifiers": [],
+      "purpose": "Vanilla JavaScript dashboard state controller and SSE consumer",
+      "allowed_contents": [
+        "EventSource listener",
+        "DOM updates",
+        "fetch calls"
+      ],
+      "forbidden_contents": [
+        "Node dependencies",
+        "frontend build steps"
+      ]
+    },
+    {
+      "path": "extension/firefox/adapters/amazon.js",
+      "owner_phase": "PH120",
+      "secondary_modifiers": [],
+      "purpose": "Dedicated semantic adapter for Amazon product search results",
+      "allowed_contents": [
+        "AmazonAdapter class",
+        "product title/price extraction"
+      ],
+      "forbidden_contents": [
+        "automatic checkout",
+        "one-click purchase"
+      ]
+    },
+    {
+      "path": "extension/firefox/adapters/base.js",
+      "owner_phase": "PH120",
+      "secondary_modifiers": [],
+      "purpose": "Base site adapter interface and graceful outdated DOM failure handler",
+      "allowed_contents": [
+        "BaseAdapter class",
+        "handle_outdated_dom"
+      ],
+      "forbidden_contents": [
+        "silent failure",
+        "arbitrary selector injection"
+      ]
+    },
+    {
+      "path": "extension/firefox/adapters/chatgpt.js",
+      "owner_phase": "PH120",
+      "secondary_modifiers": [],
+      "purpose": "Dedicated semantic adapter for ChatGPT interface response extraction",
+      "allowed_contents": [
+        "ChatGPTAdapter class",
+        "response turn extraction"
+      ],
+      "forbidden_contents": [
+        "account settings modification"
+      ]
+    },
+    {
+      "path": "extension/firefox/adapters/claude.js",
+      "owner_phase": "PH120",
+      "secondary_modifiers": [],
+      "purpose": "Dedicated semantic adapter for Claude.ai response extraction",
+      "allowed_contents": [
+        "ClaudeAdapter class",
+        "response turn extraction"
+      ],
+      "forbidden_contents": [
+        "account settings modification"
+      ]
+    },
+    {
+      "path": "extension/firefox/adapters/gemini.js",
+      "owner_phase": "PH120",
+      "secondary_modifiers": [],
+      "purpose": "Dedicated semantic adapter for Gemini web interface response extraction",
+      "allowed_contents": [
+        "GeminiAdapter class",
+        "response turn extraction"
+      ],
+      "forbidden_contents": [
+        "account settings modification"
+      ]
+    },
+    {
+      "path": "extension/firefox/adapters/google.js",
+      "owner_phase": "PH120",
+      "secondary_modifiers": [],
+      "purpose": "Dedicated semantic adapter for Google Search result extraction",
+      "allowed_contents": [
+        "GoogleAdapter class",
+        "result parsing"
+      ],
+      "forbidden_contents": [
+        "ad clicking",
+        "capturing user cookies"
+      ]
+    },
+    {
+      "path": "extension/firefox/background.js",
+      "owner_phase": "PH110",
+      "secondary_modifiers": [
+        "PH120"
+      ],
+      "purpose": "Extension background service worker connecting native messaging pipe to content scripts",
+      "allowed_contents": [
+        "browser.runtime.connectNative",
+        "tab routing"
+      ],
+      "forbidden_contents": [
+        "direct remote script evaluation"
+      ]
+    },
+    {
+      "path": "extension/firefox/generic.js",
+      "owner_phase": "PH110",
+      "secondary_modifiers": [],
+      "purpose": "Generic DOM text extraction excluding passwords and sensitive elements",
+      "allowed_contents": [
+        "extractVisibleText function",
+        "sensitive field filters"
+      ],
+      "forbidden_contents": [
+        "reading password inputs",
+        "scraping cookies"
+      ]
+    },
+    {
+      "path": "extension/firefox/manifest.json",
+      "owner_phase": "PH110",
+      "secondary_modifiers": [],
+      "purpose": "Firefox WebExtension manifest declaring permissions and native messaging host",
+      "allowed_contents": [
+        "manifest metadata",
+        "permissions declarations"
+      ],
+      "forbidden_contents": [
+        "broad wildcard permissions without user prompt"
+      ]
+    },
+    {
+      "path": "extension/firefox/native.js",
+      "owner_phase": "PH110",
+      "secondary_modifiers": [],
+      "purpose": "Native messaging framing and tab origin validation routines",
+      "allowed_contents": [
+        "verifyTabOrigin function",
+        "message dispatch"
+      ],
+      "forbidden_contents": [
+        "origin mismatch execution"
+      ]
+    },
+    {
+      "path": "packaging/install.sh",
+      "owner_phase": "PH170",
+      "secondary_modifiers": [],
+      "purpose": "User installation script for Maya daemon and browser manifests",
+      "allowed_contents": [
+        "systemctl --user commands",
+        "manifest symlinks",
+        "permission checks"
+      ],
+      "forbidden_contents": [
+        "sudo/root execution",
+        "system-wide directory modifications"
+      ]
+    },
+    {
+      "path": "packaging/native-manifest/project_h_firefox.json.template",
+      "owner_phase": "PH170",
+      "secondary_modifiers": [],
+      "purpose": "Firefox native messaging host manifest template",
+      "allowed_contents": [
+        "JSON manifest template with @NATIVE_HOST_PATH@ placeholder"
+      ],
+      "forbidden_contents": [
+        "executable scripts",
+        "hardcoded usernames"
+      ]
+    },
+    {
+      "path": "packaging/systemd/project-hd.service",
+      "owner_phase": "PH170",
+      "secondary_modifiers": [],
+      "purpose": "Systemd user unit configuration for project-hd background service",
+      "allowed_contents": [
+        "Unit",
+        "Service",
+        "Install sections",
+        "ExecStart=%h/.local/share/project-h/venv/bin/project-hd"
+      ],
+      "forbidden_contents": [
+        "root privilege escalation"
+      ]
+    },
+    {
+      "path": "packaging/uninstall.sh",
+      "owner_phase": "PH170",
+      "secondary_modifiers": [],
+      "purpose": "Clean uninstallation script for Maya user service and artifacts",
+      "allowed_contents": [
+        "systemctl --user stop/disable",
+        "manifest removal",
+        "user state cleanup"
+      ],
+      "forbidden_contents": [
+        "sudo/root execution",
+        "deleting arbitrary user files"
+      ]
+    },
+    {
+      "path": "pyproject.toml",
+      "owner_phase": "PH000",
+      "secondary_modifiers": [
+        "PH060",
+        "PH080",
+        "PH090",
+        "PH100",
+        "PH130",
+        "PH170"
+      ],
+      "purpose": "Python project metadata, dependencies, and build configuration",
+      "allowed_contents": [
+        "project dependencies",
+        "optional-dependencies",
+        "scripts table"
+      ],
+      "forbidden_contents": [
+        "unpinned non-standard build backends"
+      ]
+    },
+    {
+      "path": "tests/fakes/fake_browser.py",
+      "owner_phase": "PH110",
+      "secondary_modifiers": [],
+      "purpose": "Test fake simulating browser extension native messaging pipe",
+      "allowed_contents": [
+        "FakeExtensionPipe",
+        "canned DOM responses",
+        "origin headers"
+      ],
+      "forbidden_contents": [
+        "live network/browser calls"
+      ]
+    },
+    {
+      "path": "tests/fakes/fake_dbus.py",
+      "owner_phase": "PH100",
+      "secondary_modifiers": [],
+      "purpose": "Test fake simulating D-Bus connection and StatusNotifierWatcher",
+      "allowed_contents": [
+        "FakeDBusBus",
+        "mock object registration",
+        "signal capture"
+      ],
+      "forbidden_contents": [
+        "real system bus operations"
+      ]
+    },
+    {
+      "path": "tests/fakes/fake_nvidia.py",
+      "owner_phase": "PH060",
+      "secondary_modifiers": [],
+      "purpose": "Test fake simulating OpenAI-compatible streaming API responses",
+      "allowed_contents": [
+        "FakeOpenAIClient",
+        "chunk streaming",
+        "canned tool calls"
+      ],
+      "forbidden_contents": [
+        "real network calls"
+      ]
+    },
+    {
+      "path": "tests/fakes/fake_popup.py",
+      "owner_phase": "PH050",
+      "secondary_modifiers": [],
+      "purpose": "Test fake simulating interactive native approval popup",
+      "allowed_contents": [
+        "FakePopup class",
+        "canned responses (APPROVE/DENY/TIMEOUT)"
+      ],
+      "forbidden_contents": [
+        "real GUI windows",
+        "subprocess execution"
+      ]
+    },
+    {
+      "path": "tests/fakes/fake_stt.py",
+      "owner_phase": "PH090",
+      "secondary_modifiers": [],
+      "purpose": "Test fake simulating remote STT transcription responses",
+      "allowed_contents": [
+        "FakeSTTAdapter",
+        "canned transcriptions",
+        "simulated network errors"
+      ],
+      "forbidden_contents": [
+        "live network calls"
+      ]
+    },
+    {
+      "path": "tests/fakes/fake_voice.py",
+      "owner_phase": "PH080",
+      "secondary_modifiers": [],
+      "purpose": "Test fake simulating audio streams and wake word detections",
+      "allowed_contents": [
+        "FakeAudioSource",
+        "synthetic PCM frames"
+      ],
+      "forbidden_contents": [
+        "real soundcard capture",
+        "microphone access"
+      ]
+    },
+    {
+      "path": "tests/test_agent_runtime.py",
+      "owner_phase": "PH070",
+      "secondary_modifiers": [],
+      "purpose": "Integration and bounds test suite for AgentRuntime step loop",
+      "allowed_contents": [
+        "AgentRuntime tests",
+        "step limits",
+        "tool execution assertions"
+      ],
+      "forbidden_contents": [
+        "unbounded loops",
+        "direct OS access bypassing ActionDispatcher"
+      ]
+    },
+    {
+      "path": "tests/test_approval_broker.py",
+      "owner_phase": "PH050",
+      "secondary_modifiers": [],
+      "purpose": "Unit and security test suite for ApprovalBroker and grant validation",
+      "allowed_contents": [
+        "ApprovalBroker unit/security tests",
+        "timeout assertions",
+        "mock popup"
+      ],
+      "forbidden_contents": [
+        "production code",
+        "network calls"
+      ]
+    },
+    {
+      "path": "tests/test_browser_bridge.py",
+      "owner_phase": "PH110",
+      "secondary_modifiers": [],
+      "purpose": "Unit and security test suite for Firefox Native Message bridge",
+      "allowed_contents": [
+        "NativeMessageBridge tests",
+        "1MB framing limit",
+        "tab origin security tests"
+      ],
+      "forbidden_contents": [
+        "live browser process spawning"
+      ]
+    },
+    {
+      "path": "tests/test_command_router.py",
+      "owner_phase": "PH070",
+      "secondary_modifiers": [],
+      "purpose": "Unit tests for CommandRouter 4-tier routing and classification",
+      "allowed_contents": [
+        "CommandRouter tests",
+        "exact phrase matching",
+        "tier precedence checks"
+      ],
+      "forbidden_contents": [
+        "subprocess executions",
+        "live LLM calls"
+      ]
+    },
+    {
+      "path": "tests/test_dashboard_api.py",
+      "owner_phase": "PH130",
+      "secondary_modifiers": [],
+      "purpose": "Unit and security test suite for FastAPI dashboard and SQLite storage",
+      "allowed_contents": [
+        "FastAPI TestClient requests",
+        "same-origin tests",
+        "CRUD validation"
+      ],
+      "forbidden_contents": [
+        "non-localhost network binding"
+      ]
+    },
+    {
+      "path": "tests/test_dashboard_frontend.py",
+      "owner_phase": "PH140",
+      "secondary_modifiers": [],
+      "purpose": "Unit tests for static web assets, CSS compliance, and JS event handlers",
+      "allowed_contents": [
+        "HTML/CSS structure tests",
+        "accessibility/reduced-motion assertions"
+      ],
+      "forbidden_contents": [
+        "external CDN dependencies",
+        "Node build pipelines"
+      ]
+    },
+    {
+      "path": "tests/test_developer_workflows.py",
+      "owner_phase": "PH150",
+      "secondary_modifiers": [],
+      "purpose": "Integration tests for git status, diff, test execution, and code edit tools",
+      "allowed_contents": [
+        "DeveloperToolExecutor tests",
+        "temp git repo isolation",
+        "policy gates"
+      ],
+      "forbidden_contents": [
+        "production repository modifications",
+        "auto-commit without policy"
+      ]
+    },
+    {
+      "path": "tests/test_final_acceptance.py",
+      "owner_phase": "PH180",
+      "secondary_modifiers": [],
+      "purpose": "Consolidated final acceptance test suite across 10 pillars",
+      "allowed_contents": [
+        "test_final_acceptance_*",
+        "FailingIfCalledProvider",
+        "acceptance assertions"
+      ],
+      "forbidden_contents": [
+        "live external API calls without mock"
+      ]
+    },
+    {
+      "path": "tests/test_nvidia_provider.py",
+      "owner_phase": "PH060",
+      "secondary_modifiers": [],
+      "purpose": "Unit and security test suite for NvidiaProvider and AsyncOpenAI streaming",
+      "allowed_contents": [
+        "NvidiaProvider tests",
+        "mock AsyncOpenAI client",
+        "tool call validation"
+      ],
+      "forbidden_contents": [
+        "real network requests to external API endpoints"
+      ]
+    },
+    {
+      "path": "tests/test_offline_determinism.py",
+      "owner_phase": "PH180",
+      "secondary_modifiers": [],
+      "purpose": "End-to-end verification of deterministic actions when remote AI is offline",
+      "allowed_contents": [
+        "test_offline_deterministic_actions_succeed test case"
+      ],
+      "forbidden_contents": [
+        "live API network calls"
+      ]
+    },
+    {
+      "path": "tests/test_packaging.py",
+      "owner_phase": "PH170",
+      "secondary_modifiers": [],
+      "purpose": "Packaging and installation verification test suite",
+      "allowed_contents": [
+        "Manifest syntax validation",
+        "service file parsing",
+        "permission checks"
+      ],
+      "forbidden_contents": [
+        "executing system-wide modifications"
+      ]
+    },
+    {
+      "path": "tests/test_resource_hardening.py",
+      "owner_phase": "PH160",
+      "secondary_modifiers": [],
+      "purpose": "Stress and memory boundary test suite for cgroup compliance",
+      "allowed_contents": [
+        "Bounded structure tests",
+        "memory monitoring assertions",
+        "stress runs"
+      ],
+      "forbidden_contents": [
+        "modifying cgroup limits",
+        "raising MemoryMax"
+      ]
+    },
+    {
+      "path": "tests/test_site_adapters.py",
+      "owner_phase": "PH120",
+      "secondary_modifiers": [],
+      "purpose": "Unit tests for semantic site adapters and selector degradation",
+      "allowed_contents": [
+        "Site adapter DOM parsing tests",
+        "ADAPTER_OUTDATED assertions"
+      ],
+      "forbidden_contents": [
+        "live web scraping",
+        "network calls"
+      ]
+    },
+    {
+      "path": "tests/test_stt_adapter.py",
+      "owner_phase": "PH090",
+      "secondary_modifiers": [],
+      "purpose": "Unit and security test suite for NVIDIA STT adapter and buffer release",
+      "allowed_contents": [
+        "STTAdapter tests",
+        "ephemeral buffer release assertions",
+        "error handling"
+      ],
+      "forbidden_contents": [
+        "pre-wake audio transmission",
+        "persistent audio files"
+      ]
+    },
+    {
+      "path": "tests/test_tray.py",
+      "owner_phase": "PH100",
+      "secondary_modifiers": [],
+      "purpose": "Unit tests for StatusNotifierItem tray and state transitions",
+      "allowed_contents": [
+        "StatusNotifierTray tests",
+        "property export assertions",
+        "signal emission"
+      ],
+      "forbidden_contents": [
+        "heavyweight X11/Wayland window creation"
+      ]
+    },
+    {
+      "path": "tests/test_voice_wake.py",
+      "owner_phase": "PH080",
+      "secondary_modifiers": [],
+      "purpose": "Unit and privacy test suite for AudioSource and WakeDetector",
+      "allowed_contents": [
+        "AudioSource tests",
+        "ring buffer bounds",
+        "mock openWakeWord",
+        "privacy asserts"
+      ],
+      "forbidden_contents": [
+        "network requests",
+        "disk audio persistence"
+      ]
+    }
+  ]
+}
