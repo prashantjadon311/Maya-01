@@ -28,9 +28,18 @@ from app.policy.risk import RiskLevel
 
 MAX_COMPOSITE_DEPTH = 5
 MAX_COMPOSITE_STEPS = 32
+MAX_COMPOSITE_TOTAL_STEPS = 64
 
 AuditEvent = dict[str, Any]
 AuditSink = Callable[[AuditEvent], None]
+
+
+class _CompositeBudget:
+    """Tracks global step execution budget across nested composites."""
+
+    def __init__(self, max_steps: int = MAX_COMPOSITE_TOTAL_STEPS) -> None:
+        self.max_steps = max_steps
+        self.executed_steps = 0
 
 
 class ActionDispatcher:
@@ -50,10 +59,43 @@ class ActionDispatcher:
         self.registry = registry
         self.process_executor = process_executor
         self.file_executor = file_executor
-        self.xdg_executor = xdg_executor or XdgExecutor(allowed_file_roots=policy_engine.allowed_file_roots)
+        self.xdg_executor = xdg_executor
         self.browser_bridge = browser_bridge
         self.audit_sink = audit_sink
-        self.recent_audits: collections.deque[AuditEvent] = collections.deque(maxlen=256)
+        self._recent_audits: collections.deque[AuditEvent] = collections.deque(maxlen=256)
+
+    @property
+    def recent_audits(self) -> tuple[AuditEvent, ...]:
+        """Expose an immutable tuple of dict copies of recent audit events."""
+        return tuple(dict(event) for event in self._recent_audits)
+
+    def _sanitize_error_code(self, error: str | None) -> str:
+        """Map raw error string to sanitized error_code string for audit logging."""
+        if not error:
+            return "NONE"
+        err_upper = error.upper()
+        if "DENIED BY POLICY" in err_upper or "FORBIDDEN" in err_upper:
+            return "POLICY_DENIED"
+        elif "REQUIRES USER APPROVAL" in err_upper or "APPROVAL BROKER" in err_upper:
+            return "APPROVAL_REQUIRED"
+        elif "STALE REGISTRYMATCH" in err_upper:
+            return "STALE_MATCH"
+        elif "NOT FOUND OR DISABLED" in err_upper or "IS DISABLED" in err_upper:
+            return "DISABLED_ACTION"
+        elif "INVALID COMPOSITE" in err_upper:
+            return "INVALID_COMPOSITE"
+        elif "RECURSION DEPTH" in err_upper:
+            return "RECURSION_LIMIT_EXCEEDED"
+        elif "STEP COUNT LIMIT" in err_upper:
+            return "STEP_BUDGET_EXCEEDED"
+        elif "ARGUMENT SUBSTITUTION" in err_upper:
+            return "SUBSTITUTION_FAILED"
+        elif "UNSUPPORTED EXECUTOR" in err_upper:
+            return "UNSUPPORTED_EXECUTOR"
+        elif "NOT CONFIGURED" in err_upper or "UNAVAILABLE" in err_upper:
+            return "EXECUTOR_NOT_CONFIGURED"
+        else:
+            return "EXECUTOR_FAILED"
 
     def _emit_audit(
         self,
@@ -75,6 +117,8 @@ class ActionDispatcher:
         elif request.tool.startswith("browser."):
             target = str(request.arguments.get("url", ""))
 
+        error_code = self._sanitize_error_code(error)
+
         event: AuditEvent = {
             "timestamp": time.time(),
             "request_id": request.request_id or request.id,
@@ -84,11 +128,12 @@ class ActionDispatcher:
             "target": target,
             "result_code": 0 if success else 1,
             "duration": round(duration, 6),
-            "error": error,
+            "error_code": error_code,
+            "error": error_code if not success else None,
         }
 
         # Always append to bounded internal audit deque
-        self.recent_audits.append(event)
+        self._recent_audits.append(event)
 
         if self.audit_sink is not None:
             try:
@@ -96,6 +141,26 @@ class ActionDispatcher:
             except Exception:
                 # Audit sink failure must not crash execution
                 pass
+
+    def _definition_container_gate(self, defn: ActionDefinition) -> ActionResult | None:
+        """Verify definition container approval and risk floors before composite expansion."""
+        if defn.approval == "deny":
+            return ActionResult(success=False, error="Action denied by policy")
+        if defn.approval in ("ask_user", "always_ask"):
+            return ActionResult(
+                success=False,
+                error="Action requires user approval (approval broker not yet active in PH-040)",
+            )
+        try:
+            def_risk = RiskLevel(defn.risk.upper())
+            if def_risk in (RiskLevel.HIGH, RiskLevel.CRITICAL):
+                return ActionResult(
+                    success=False,
+                    error="Action requires user approval (approval broker not yet active in PH-040)",
+                )
+        except ValueError:
+            pass
+        return None
 
     async def dispatch_request(self, request: ActionRequest) -> ActionResult:
         """
@@ -132,7 +197,13 @@ class ActionDispatcher:
 
         # 3. Composite action routing
         if defn.executor == "composite":
-            return await self._dispatch_composite(defn, match.captured_slots, snapshot_version=match.snapshot_version)
+            gate_res = self._definition_container_gate(defn)
+            if gate_res is not None:
+                return gate_res
+            budget = _CompositeBudget(MAX_COMPOSITE_TOTAL_STEPS)
+            return await self._dispatch_composite(
+                defn, match.captured_slots, snapshot_version=match.snapshot_version, depth=0, budget=budget
+            )
 
         # 4. Strict slot substitution
         try:
@@ -279,6 +350,7 @@ class ActionDispatcher:
         captured_slots: Mapping[str, str],
         snapshot_version: int,
         depth: int = 0,
+        budget: _CompositeBudget | None = None,
     ) -> ActionResult:
         """
         Execute a composite action sequentially through the central dispatcher.
@@ -290,6 +362,9 @@ class ActionDispatcher:
         - Parent approval NEVER authorizes a child.
         - If any child requires approval, is denied, or fails, the composite stops immediately.
         """
+        if budget is None:
+            budget = _CompositeBudget(MAX_COMPOSITE_TOTAL_STEPS)
+
         if depth > MAX_COMPOSITE_DEPTH:
             return ActionResult(
                 success=False,
@@ -302,6 +377,13 @@ class ActionDispatcher:
 
         outputs = []
         for step_idx, child_id in enumerate(steps):
+            budget.executed_steps += 1
+            if budget.executed_steps > budget.max_steps:
+                return ActionResult(
+                    success=False,
+                    error=f"Composite total step count limit ({budget.max_steps}) exceeded",
+                )
+
             # Verify snapshot version before each child lookup/execution
             if self.registry.snapshot_version != snapshot_version:
                 return ActionResult(
@@ -326,8 +408,14 @@ class ActionDispatcher:
 
             # 3. If child is composite, recurse with incremented depth
             if child_defn.executor == "composite":
+                gate_res = self._definition_container_gate(child_defn)
+                if gate_res is not None:
+                    return ActionResult(
+                        success=False,
+                        error=f"Composite stopped at step '{child_id}': {gate_res.error}",
+                    )
                 child_res = await self._dispatch_composite(
-                    child_defn, captured_slots, snapshot_version=snapshot_version, depth=depth + 1
+                    child_defn, captured_slots, snapshot_version=snapshot_version, depth=depth + 1, budget=budget
                 )
             else:
                 # 4. Strict slot substitution

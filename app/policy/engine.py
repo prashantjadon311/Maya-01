@@ -17,9 +17,8 @@ TRUSTED_EXEC_DIRS: tuple[Path, ...] = (
     Path("/usr/bin"),
     Path("/bin"),
     Path("/usr/local/bin"),
-    Path("/usr/lib"),
-    Path("/lib"),
 )
+
 
 
 
@@ -45,7 +44,11 @@ def resolve_trusted_executable(
             if not p.exists() or not p.is_file() or not os.access(p, os.X_OK):
                 return None
             resolved = p.resolve(strict=True)
-            in_trusted = any(resolved == root or root in resolved.parents for root in trusted_roots)
+            parent_resolved = p.parent.resolve(strict=True)
+            in_trusted = (
+                any(parent_resolved == root for root in trusted_roots)
+                or any(resolved == root or root in resolved.parents for root in trusted_roots)
+            )
             if in_trusted:
                 return resolved
             return None
@@ -57,7 +60,12 @@ def resolve_trusted_executable(
             try:
                 if candidate.exists() and candidate.is_file() and os.access(candidate, os.X_OK):
                     resolved = candidate.resolve(strict=True)
-                    if any(resolved == root or root in resolved.parents for root in trusted_roots):
+                    parent_resolved = candidate.parent.resolve(strict=True)
+                    in_trusted = (
+                        any(parent_resolved == root for root in trusted_roots)
+                        or any(resolved == root or root in resolved.parents for root in trusted_roots)
+                    )
+                    if in_trusted:
                         return resolved
             except (OSError, RuntimeError):
                 continue
