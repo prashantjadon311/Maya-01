@@ -2,9 +2,9 @@
 
 ## 1. Summary & Status
 - **Base Main SHA:** `82735686f2441190bf6b961bc6e5bd015001ab19` (main after premature PR #1 merge)
-- **Branch SHA:** TBD
-- **PR:** TBD
-- **Status:** PH040_MERGED_PREMATURELY_SECURITY_FIX_UNDER_REVIEW
+- **Branch SHA:** `030a8256b848e220fb99978188df937f831cdd33`
+- **PR:** #2 (https://github.com/prashantjadon311/Maya-01/pull/2)
+- **Status:** PH040_SECURITY_FIX_CI_GREEN_AWAITING_INDEPENDENT_REVIEW
 - **Next Exact Action:** Independent PH-040 security/code review of repair PR before merge
 
 ## 2. Security Closure Repairs Applied
